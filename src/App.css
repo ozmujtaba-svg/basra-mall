@@ -639,6 +639,32 @@ button span {
   font: inherit;
 }
 
+.wide-field {
+  grid-column: 1 / -1;
+}
+
+.product-image-preview {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid #ded8cc;
+  border-radius: 12px;
+  background: #fbfaf7;
+  color: #65706b;
+}
+
+.product-image-preview img,
+.merchant-product-image {
+  width: 96px;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 10px;
+  background: #f6f1e8;
+}
+
 .register-button {
   grid-column: 1 / -1;
   border: 0;
@@ -673,7 +699,7 @@ button span {
 
 .merchant-product-row {
   display: grid;
-  grid-template-columns: 1.2fr 0.6fr auto;
+  grid-template-columns: 96px 1.2fr 0.6fr auto;
   gap: 12px;
   align-items: center;
   padding: 14px;

@@ -303,11 +303,12 @@ function App() {
   }
 
   function addProductToStore(storeName, product) {
+    const storeCategory = stores.find((store) => store.name === storeName)?.category
     const newProduct = {
       name: product.name,
       price: `${Number(product.price).toLocaleString("en-US")} د.ع`,
       quantity: product.quantity,
-      image: categoryImages[stores.find((store) => store.name === storeName)?.category],
+      image: product.image || categoryImages[storeCategory],
     }
 
     setStores((currentStores) =>

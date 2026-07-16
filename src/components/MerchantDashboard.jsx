@@ -18,6 +18,7 @@ export function MerchantDashboard({
   const [productName, setProductName] = useState("")
   const [productPrice, setProductPrice] = useState("")
   const [productQuantity, setProductQuantity] = useState("")
+  const [productImage, setProductImage] = useState("")
   const [message, setMessage] = useState("")
   const [productMessage, setProductMessage] = useState("")
   const selectedStore = stores.find((store) => store.name === selectedStoreName) ?? stores[0]
@@ -79,10 +80,12 @@ export function MerchantDashboard({
       name: productName.trim(),
       price: numericPrice,
       quantity: numericQuantity,
+      image: productImage.trim(),
     })
     setProductName("")
     setProductPrice("")
     setProductQuantity("")
+    setProductImage("")
     setProductMessage("تمت إضافة المنتج، وظهر الآن داخل المتجر عند الزبون.")
   }
 
@@ -189,6 +192,23 @@ export function MerchantDashboard({
             />
           </label>
 
+          <label className="wide-field">
+            رابط صورة المنتج
+            <input
+              disabled={!hasStores}
+              value={productImage}
+              onChange={(event) => setProductImage(event.target.value)}
+              placeholder="اختياري: https://example.com/product.jpg"
+            />
+          </label>
+
+          {productImage.trim() && (
+            <div className="product-image-preview">
+              <img src={productImage.trim()} alt="" />
+              <span>معاينة صورة المنتج</span>
+            </div>
+          )}
+
           <button className="register-button" disabled={!hasStores} type="submit">
             حفظ المنتج
           </button>
@@ -223,6 +243,7 @@ export function MerchantDashboard({
 
               return (
                 <div className="merchant-product-row" key={`${selectedStore.name}-${product.name}`}>
+                  {product.image && <img className="merchant-product-image" src={product.image} alt="" />}
                   <div>
                     <strong>{product.name}</strong>
                     <span>{product.price}</span>
