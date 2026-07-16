@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react"
 
 const storeCategories = ["ملابس", "كوزمتك", "عطور", "أحذية", "إكسسوارات"]
+const productStatuses = ["متوفر", "مخفي مؤقتًا", "نفد"]
 
 export function MerchantDashboard({
   merchant,
   onAddProduct,
+  onDeleteProduct,
   onPrepareOrder,
   onRegisterStore,
+  onUpdateProduct,
   orders,
   stores,
 }) {
@@ -19,6 +22,8 @@ export function MerchantDashboard({
   const [productPrice, setProductPrice] = useState("")
   const [productQuantity, setProductQuantity] = useState("")
   const [productImage, setProductImage] = useState("")
+  const [productStatus, setProductStatus] = useState(productStatuses[0])
+  const [editingProductName, setEditingProductName] = useState("")
   const [message, setMessage] = useState("")
   const [productMessage, setProductMessage] = useState("")
   const selectedStore = stores.find((store) => store.name === selectedStoreName) ?? stores[0]
@@ -76,17 +81,76 @@ export function MerchantDashboard({
       return
     }
 
-    onAddProduct(selectedStoreName, {
+    const productData = {
       name: productName.trim(),
       price: numericPrice,
       quantity: numericQuantity,
       image: productImage.trim(),
-    })
+      status: numericQuantity === 0 ? "نفد" : productStatus,
+    }
+
+    if (editingProductName) {
+      onUpdateProduct(selectedStoreName, editingProductName, productData)
+      resetProductForm()
+      setProductMessage("تم تعديل المنتج، والتغيير ظهر عند الزبون.")
+      return
+    }
+
+    onAddProduct(selectedStoreName, productData)
+    resetProductForm()
+    setProductMessage("تمت إضافة المنتج، وظهر الآن داخل المتجر عند الزبون.")
+  }
+
+  function chooseProductImage(event) {
+    const file = event.target.files?.[0]
+
+    if (!file) {
+      return
+    }
+
+    if (!file.type.startsWith("image/")) {
+      setProductMessage("اختار ملف صورة فقط.")
+      return
+    }
+
+    const reader = new FileReader()
+
+    reader.onload = () => {
+      setProductImage(String(reader.result))
+      setProductMessage("تم اختيار الصورة. اضغط حفظ المنتج حتى تنحفظ.")
+    }
+
+    reader.readAsDataURL(file)
+  }
+
+  function startEditingProduct(product) {
+    setSelectedStoreName(selectedStore?.name ?? "")
+    setProductName(product.name)
+    setProductPrice(String(getPriceNumber(product.price)))
+    setProductQuantity(String(product.quantity))
+    setProductImage(product.image ?? "")
+    setProductStatus(product.status ?? productStatuses[0])
+    setEditingProductName(product.name)
+    setProductMessage("عدّل البيانات بالنموذج، وبعدها اضغط حفظ التعديل.")
+  }
+
+  function deleteProduct(productNameToDelete) {
+    onDeleteProduct(selectedStore.name, productNameToDelete)
+
+    if (editingProductName === productNameToDelete) {
+      resetProductForm()
+    }
+
+    setProductMessage("تم حذف المنتج من المتجر.")
+  }
+
+  function resetProductForm() {
     setProductName("")
     setProductPrice("")
     setProductQuantity("")
     setProductImage("")
-    setProductMessage("تمت إضافة المنتج، وظهر الآن داخل المتجر عند الزبون.")
+    setProductStatus(productStatuses[0])
+    setEditingProductName("")
   }
 
   return (
@@ -144,8 +208,12 @@ export function MerchantDashboard({
       </section>
 
       <section className="merchant-form-card">
-        <h2>إضافة منتج</h2>
-        <p>أضف منتجات لمتجرك فقط حتى تظهر للزبون داخل المول.</p>
+        <h2>{editingProductName ? "تعديل منتج" : "إضافة منتج"}</h2>
+        <p>
+          {editingProductName
+            ? `أنت تعدل المنتج: ${editingProductName}`
+            : "أضف منتجات لمتجرك فقط حتى تظهر للزبون داخل المول."}
+        </p>
         <form className="merchant-form" onSubmit={submitProduct}>
           <label>
             اختر المتجر
@@ -192,13 +260,36 @@ export function MerchantDashboard({
             />
           </label>
 
-          <label className="wide-field">
+          <label>
+            حالة المنتج
+            <select
+              disabled={!hasStores}
+              value={productStatus}
+              onChange={(event) => setProductStatus(event.target.value)}
+            >
+              {productStatuses.map((status) => (
+                <option key={status}>{status}</option>
+              ))}
+            </select>
+          </label>
+
+          <label>
             رابط صورة المنتج
             <input
               disabled={!hasStores}
               value={productImage}
               onChange={(event) => setProductImage(event.target.value)}
               placeholder="اختياري: https://example.com/product.jpg"
+            />
+          </label>
+
+          <label>
+            اختيار صورة من اللابتوب
+            <input
+              accept="image/*"
+              disabled={!hasStores}
+              onChange={chooseProductImage}
+              type="file"
             />
           </label>
 
@@ -210,8 +301,14 @@ export function MerchantDashboard({
           )}
 
           <button className="register-button" disabled={!hasStores} type="submit">
-            حفظ المنتج
+            {editingProductName ? "حفظ التعديل" : "حفظ المنتج"}
           </button>
+
+          {editingProductName && (
+            <button className="secondary-form-button" onClick={resetProductForm} type="button">
+              إلغاء التعديل
+            </button>
+          )}
         </form>
         {!hasStores && (
           <div className="order-message">سجل متجرك أولًا، وبعدها تكدر تضيف منتجات.</div>
@@ -239,7 +336,8 @@ export function MerchantDashboard({
           <div className="merchant-products">
             {selectedStore.products.map((product) => {
               const quantity = Number(product.quantity)
-              const status = getProductStatus(quantity)
+              const status = getProductStatus(quantity, product.status)
+              const hasLowStock = status.className === "low"
 
               return (
                 <div className="merchant-product-row" key={`${selectedStore.name}-${product.name}`}>
@@ -247,12 +345,25 @@ export function MerchantDashboard({
                   <div>
                     <strong>{product.name}</strong>
                     <span>{product.price}</span>
+                    {hasLowStock && <small className="low-stock-note">تنبيه: الكمية قليلة</small>}
                   </div>
                   <div>
                     <small>الكمية</small>
                     <strong>{Number.isFinite(quantity) ? quantity : "غير محددة"}</strong>
                   </div>
                   <span className={`stock-pill ${status.className}`}>{status.label}</span>
+                  <div className="merchant-product-actions">
+                    <button onClick={() => startEditingProduct(product)} type="button">
+                      تعديل
+                    </button>
+                    <button
+                      className="danger-button"
+                      onClick={() => deleteProduct(product.name)}
+                      type="button"
+                    >
+                      حذف
+                    </button>
+                  </div>
                 </div>
               )
             })}
@@ -305,7 +416,15 @@ export function MerchantDashboard({
   )
 }
 
-function getProductStatus(quantity) {
+function getProductStatus(quantity, manualStatus) {
+  if (manualStatus === "مخفي مؤقتًا") {
+    return { label: "مخفي مؤقتًا", className: "hidden" }
+  }
+
+  if (manualStatus === "نفد") {
+    return { label: "نفد", className: "empty" }
+  }
+
   if (!Number.isFinite(quantity)) {
     return { label: "غير محدد", className: "unknown" }
   }
@@ -343,4 +462,12 @@ function formatOrderItems(items) {
 
 function formatMoney(value) {
   return `${Number(value).toLocaleString("en-US")} د.ع`
+}
+
+function getPriceNumber(price) {
+  if (typeof price === "number") {
+    return price
+  }
+
+  return Number(String(price).replace(/[^\d.]/g, ""))
 }

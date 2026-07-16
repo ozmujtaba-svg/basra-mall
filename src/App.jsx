@@ -89,10 +89,21 @@ function App() {
       .find((store) => store.name === storeName)
       ?.products.find((item) => item.name === product.name)
     const availableQuantity = Number(availableProduct?.quantity)
+    const productStatus = availableProduct?.status ?? "متوفر"
     const currentCartItem = cartItems.find(
       (item) => item.store === storeName && item.name === product.name,
     )
     const cartQuantity = currentCartItem?.quantity ?? 0
+
+    if (productStatus === "مخفي مؤقتًا") {
+      setOrderMessage("هذا المنتج مخفي مؤقتًا من صاحب المتجر.")
+      return
+    }
+
+    if (productStatus === "نفد") {
+      setOrderMessage("هذا المنتج حالته نفد وما يكدر الزبون يطلبه.")
+      return
+    }
 
     if (Number.isFinite(availableQuantity) && availableQuantity <= 0) {
       setOrderMessage("هذا المنتج نفد من المخزون وما يكدر الزبون يطلبه.")
@@ -127,6 +138,12 @@ function App() {
       .find((store) => store.name === itemToUpdate.store)
       ?.products.find((product) => product.name === itemToUpdate.name)
     const availableQuantity = Number(stockItem?.quantity)
+    const productStatus = stockItem?.status ?? "متوفر"
+
+    if (productStatus === "مخفي مؤقتًا" || productStatus === "نفد") {
+      setOrderMessage("هذا المنتج غير متاح للزيادة حاليًا.")
+      return
+    }
 
     if (Number.isFinite(availableQuantity) && itemToUpdate.quantity >= availableQuantity) {
       setOrderMessage(`المتوفر من ${itemToUpdate.name} هو ${availableQuantity} فقط.`)
@@ -181,12 +198,17 @@ function App() {
         .find((store) => store.name === cartItem.store)
         ?.products.find((product) => product.name === cartItem.name)
       const availableQuantity = Number(stockItem?.quantity)
+      const productStatus = stockItem?.status ?? "متوفر"
 
-      return Number.isFinite(availableQuantity) && cartItem.quantity > availableQuantity
+      return (
+        productStatus === "مخفي مؤقتًا" ||
+        productStatus === "نفد" ||
+        (Number.isFinite(availableQuantity) && cartItem.quantity > availableQuantity)
+      )
     })
 
     if (invalidItem) {
-      setOrderMessage(`كمية ${invalidItem.name} بالسلة أكبر من الموجود بالمخزون.`)
+      setOrderMessage(`المنتج ${invalidItem.name} غير متاح أو كميته بالسلة أكبر من المخزون.`)
       return
     }
 
@@ -229,6 +251,8 @@ function App() {
           return {
             ...product,
             quantity: Math.max(currentQuantity - orderedItem.quantity, 0),
+            status:
+              Math.max(currentQuantity - orderedItem.quantity, 0) === 0 ? "نفد" : product.status,
           }
         }),
       }))
@@ -309,6 +333,7 @@ function App() {
       price: `${Number(product.price).toLocaleString("en-US")} د.ع`,
       quantity: product.quantity,
       image: product.image || categoryImages[storeCategory],
+      status: Number(product.quantity) === 0 ? "نفد" : product.status || "متوفر",
     }
 
     setStores((currentStores) =>
@@ -325,6 +350,78 @@ function App() {
         products: [...store.products, newProduct],
       }))
     }
+  }
+
+  function updateProductInStore(storeName, oldProductName, product) {
+    const storeCategory = stores.find((store) => store.name === storeName)?.category
+    const updatedProduct = {
+      name: product.name,
+      price: `${Number(product.price).toLocaleString("en-US")} د.ع`,
+      quantity: product.quantity,
+      image: product.image || categoryImages[storeCategory],
+      status: Number(product.quantity) === 0 ? "نفد" : product.status || "متوفر",
+    }
+
+    setStores((currentStores) =>
+      currentStores.map((store) =>
+        store.name === storeName
+          ? {
+              ...store,
+              products: store.products.map((storeProduct) =>
+                storeProduct.name === oldProductName ? updatedProduct : storeProduct,
+              ),
+            }
+          : store,
+      ),
+    )
+
+    if (selectedStore.name === storeName) {
+      setSelectedStore((store) => ({
+        ...store,
+        products: store.products.map((storeProduct) =>
+          storeProduct.name === oldProductName ? updatedProduct : storeProduct,
+        ),
+      }))
+    }
+
+    setCartItems((items) =>
+      items
+        .filter(
+          (item) =>
+            item.store !== storeName ||
+            item.name !== oldProductName ||
+            updatedProduct.status === "متوفر",
+        )
+        .map((item) =>
+          item.store === storeName && item.name === oldProductName
+            ? { ...updatedProduct, store: storeName, quantity: item.quantity }
+            : item,
+        ),
+    )
+  }
+
+  function deleteProductFromStore(storeName, productName) {
+    setStores((currentStores) =>
+      currentStores.map((store) =>
+        store.name === storeName
+          ? {
+              ...store,
+              products: store.products.filter((product) => product.name !== productName),
+            }
+          : store,
+      ),
+    )
+
+    if (selectedStore.name === storeName) {
+      setSelectedStore((store) => ({
+        ...store,
+        products: store.products.filter((product) => product.name !== productName),
+      }))
+    }
+
+    setCartItems((items) =>
+      items.filter((item) => item.store !== storeName || item.name !== productName),
+    )
   }
 
   return (
@@ -368,7 +465,9 @@ function App() {
             <MerchantDashboard
               merchant={activeUser}
               onAddProduct={addProductToStore}
+              onDeleteProduct={deleteProductFromStore}
               onRegisterStore={registerStore}
+              onUpdateProduct={updateProductInStore}
               orders={visibleMerchantOrders}
               onPrepareOrder={prepareOrder}
               stores={merchantStores}

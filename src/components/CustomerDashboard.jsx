@@ -1,6 +1,7 @@
 import { useState } from "react"
 
 const categories = ["الكل", "ملابس", "كوزمتك", "عطور", "أحذية", "إكسسوارات"]
+const productFilters = ["الكل", "المتوفر", "الكمية القليلة", "النافد"]
 
 export function CustomerDashboard({
   cartItems,
@@ -19,6 +20,7 @@ export function CustomerDashboard({
   stores,
 }) {
   const [activeCategory, setActiveCategory] = useState("الكل")
+  const [activeProductFilter, setActiveProductFilter] = useState("الكل")
   const [searchText, setSearchText] = useState("")
   const normalizedSearch = searchText.trim().toLowerCase()
   const categoryStores =
@@ -29,6 +31,12 @@ export function CustomerDashboard({
     0,
   )
   const finalTotal = cartItems.length > 0 ? subtotal + deliveryFee : 0
+  const visibleProducts = selectedStore.products.filter(
+    (product) => product.status !== "مخفي مؤقتًا",
+  )
+  const filteredProducts = visibleProducts.filter((product) =>
+    matchesProductFilter(product, activeProductFilter),
+  )
 
   return (
     <div className="customer-layout">
@@ -84,7 +92,7 @@ export function CustomerDashboard({
           </div>
           {selectedStore.image && <img className="store-hero-image" src={selectedStore.image} alt="" />}
           <div className="store-detail-meta">
-            <span>{selectedStore.products.length} منتجات</span>
+            <span>{filteredProducts.length} منتجات</span>
             <span>التوصيل داخل البصرة</span>
           </div>
         </div>
@@ -94,17 +102,35 @@ export function CustomerDashboard({
           </button>
           <span>المتجر المختار: {selectedStore.name}</span>
         </div>
+        <div className="product-filter-tabs">
+          {productFilters.map((filter) => (
+            <button
+              className={activeProductFilter === filter ? "active" : ""}
+              key={filter}
+              onClick={() => setActiveProductFilter(filter)}
+            >
+              {filter}
+            </button>
+          ))}
+        </div>
         <div className="product-list">
-          {selectedStore.products.length === 0 ? (
+          {visibleProducts.length === 0 ? (
             <div className="product-card">
               <h3>لا توجد منتجات بعد</h3>
               <span>هذا المتجر مسجل جديدًا. الخطوة القادمة نضيف له منتجات من واجهة صاحب المتجر.</span>
             </div>
+          ) : filteredProducts.length === 0 ? (
+            <div className="product-card">
+              <h3>لا توجد منتجات بهذا الفلتر</h3>
+              <span>غيّر الفلتر حتى تشوف منتجات ثانية داخل المتجر.</span>
+            </div>
           ) : (
-            selectedStore.products.map((product) => {
+            filteredProducts.map((product) => {
               const quantity = Number(product.quantity)
               const cartQuantity = getCartQuantity(cartItems, selectedStore.name, product.name)
-              const hasStock = !Number.isFinite(quantity) || quantity > 0
+              const isSoldOut = product.status === "نفد" || quantity === 0
+              const hasStock = !isSoldOut && (!Number.isFinite(quantity) || quantity > 0)
+              const hasLowStock = hasStock && Number.isFinite(quantity) && quantity <= 3
               const reachedLimit = Number.isFinite(quantity) && cartQuantity >= quantity
               const disabled = !hasStock || reachedLimit
 
@@ -114,6 +140,10 @@ export function CustomerDashboard({
                   <div>
                     <h3>{product.name}</h3>
                     <span>{product.price}</span>
+                    <small className={`product-status ${isSoldOut ? "sold-out" : "available"}`}>
+                      {isSoldOut ? "نفد" : "متوفر"}
+                    </small>
+                    {hasLowStock && <small className="product-status low-stock">باقي كمية قليلة</small>}
                     {Number.isFinite(quantity) && <small>المتوفر: {quantity}</small>}
                     {cartQuantity > 0 && <small>بالسلة: {cartQuantity}</small>}
                   </div>
@@ -122,7 +152,7 @@ export function CustomerDashboard({
                     disabled={disabled}
                     onClick={() => onAddToCart(product, selectedStore)}
                   >
-                    {!hasStock ? "نفد من المخزون" : reachedLimit ? "وصلت للكمية المتوفرة" : "إضافة للسلة"}
+                    {!hasStock ? "غير متاح للشراء" : reachedLimit ? "وصلت للكمية المتوفرة" : "إضافة للسلة"}
                   </button>
                 </div>
               )
@@ -289,10 +319,37 @@ function matchesSearch(store, search) {
     return true
   }
 
-  const productNames = store.products.map((product) => product.name).join(" ")
+  const productNames = store.products
+    .filter((product) => product.status !== "مخفي مؤقتًا")
+    .map((product) => product.name)
+    .join(" ")
   const searchableText = `${store.name} ${store.category} ${store.description} ${productNames}`
 
   return searchableText.toLowerCase().includes(search)
+}
+
+function matchesProductFilter(product, filter) {
+  if (filter === "الكل") {
+    return true
+  }
+
+  const quantity = Number(product.quantity)
+  const isSoldOut = product.status === "نفد" || quantity === 0
+  const hasLowStock = !isSoldOut && Number.isFinite(quantity) && quantity <= 3
+
+  if (filter === "المتوفر") {
+    return !isSoldOut
+  }
+
+  if (filter === "الكمية القليلة") {
+    return hasLowStock
+  }
+
+  if (filter === "النافد") {
+    return isSoldOut
+  }
+
+  return true
 }
 
 function getStepState(currentStatus, step) {

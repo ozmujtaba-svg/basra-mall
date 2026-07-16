@@ -243,6 +243,29 @@ button span {
   color: white;
 }
 
+.product-filter-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #ded8cc;
+  border-radius: 12px;
+  background: #fbfaf7;
+}
+
+.product-filter-tabs button {
+  padding: 10px 12px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.product-filter-tabs button.active {
+  border-color: #0c6b66;
+  background: #0c6b66;
+  color: white;
+}
+
 .store-card,
 .product-card {
   border: 1px solid #ded8cc;
@@ -390,6 +413,40 @@ button span {
   border-color: #0c6b66;
   color: #0c6b66;
   text-align: center;
+  font-weight: bold;
+}
+
+.product-status {
+  display: inline-block;
+  width: fit-content;
+  margin-top: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-weight: bold;
+}
+
+.product-status.available {
+  background: #eef7f5;
+  color: #0c6b66;
+}
+
+.product-status.sold-out {
+  background: #f3eeee;
+  color: #8b3a2d;
+}
+
+.product-status.low-stock,
+.low-stock-note {
+  background: #fff2ec;
+  color: #d76b50;
+}
+
+.low-stock-note {
+  display: inline-block;
+  width: fit-content;
+  margin-top: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
   font-weight: bold;
 }
 
@@ -639,6 +696,22 @@ button span {
   font: inherit;
 }
 
+.merchant-form input[type="file"] {
+  cursor: pointer;
+}
+
+.merchant-form input[type="file"]::file-selector-button {
+  margin-left: 10px;
+  border: 0;
+  border-radius: 8px;
+  background: #0c6b66;
+  color: white;
+  padding: 8px 10px;
+  font: inherit;
+  font-weight: bold;
+  cursor: pointer;
+}
+
 .wide-field {
   grid-column: 1 / -1;
 }
@@ -674,6 +747,14 @@ button span {
   font-weight: bold;
 }
 
+.secondary-form-button {
+  grid-column: 1 / -1;
+  border-color: #0c6b66;
+  color: #0c6b66;
+  text-align: center;
+  font-weight: bold;
+}
+
 .merchant-section-top {
   display: flex;
   justify-content: space-between;
@@ -699,7 +780,7 @@ button span {
 
 .merchant-product-row {
   display: grid;
-  grid-template-columns: 96px 1.2fr 0.6fr auto;
+  grid-template-columns: 96px 1.2fr 0.6fr auto auto;
   gap: 12px;
   align-items: center;
   padding: 14px;
@@ -713,6 +794,23 @@ button span {
   display: block;
   color: #65706b;
   margin-top: 4px;
+}
+
+.merchant-product-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.merchant-product-actions button {
+  padding: 10px 12px;
+  font-weight: bold;
+}
+
+.danger-button {
+  border-color: #d76b50;
+  background: #fff2ec;
+  color: #8b3a2d;
 }
 
 .stock-pill {
@@ -737,6 +835,11 @@ button span {
 .stock-pill.empty {
   background: #f3eeee;
   color: #8b3a2d;
+}
+
+.stock-pill.hidden {
+  background: #f6f1e8;
+  color: #65706b;
 }
 
 .stock-pill.unknown {
@@ -971,5 +1074,10 @@ button span {
   .store-toolbar,
   .merchant-section-top {
     display: grid;
+  }
+
+  .merchant-product-actions {
+    display: grid;
+    justify-content: stretch;
   }
 }
