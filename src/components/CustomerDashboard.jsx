@@ -61,11 +61,12 @@ export function CustomerDashboard({
             visibleStores.map((store) => (
               <button
                 className={`store-card ${selectedStore.name === store.name ? "active" : ""}`}
-                key={store.name}
-                onClick={() => onSelectStore(store)}
-              >
-                <small>{store.category}</small>
-                <h3>{store.name}</h3>
+              key={store.name}
+              onClick={() => onSelectStore(store)}
+            >
+              {store.image && <img className="store-thumb" src={store.image} alt="" />}
+              <small>{store.category}</small>
+              <h3>{store.name}</h3>
                 <span>{store.description}</span>
                 <strong className="store-enter">دخول المتجر</strong>
               </button>
@@ -81,6 +82,7 @@ export function CustomerDashboard({
             <h2>{selectedStore.name}</h2>
             <p>{selectedStore.description}</p>
           </div>
+          {selectedStore.image && <img className="store-hero-image" src={selectedStore.image} alt="" />}
           <div className="store-detail-meta">
             <span>{selectedStore.products.length} منتجات</span>
             <span>التوصيل داخل البصرة</span>
@@ -108,6 +110,7 @@ export function CustomerDashboard({
 
               return (
                 <div className="product-card" key={product.name}>
+                  {product.image && <img className="product-image" src={product.image} alt="" />}
                   <div>
                     <h3>{product.name}</h3>
                     <span>{product.price}</span>

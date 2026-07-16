@@ -1,6 +1,6 @@
 import { useState } from "react"
 import "./App.css"
-import { customerStores, dashboardData } from "./data"
+import { categoryImages, customerStores, dashboardData } from "./data"
 import { AdminDashboard } from "./components/AdminDashboard"
 import { CustomerDashboard } from "./components/CustomerDashboard"
 import { DriverDashboard } from "./components/DriverDashboard"
@@ -9,7 +9,6 @@ import { MerchantDashboard } from "./components/MerchantDashboard"
 import { Shell } from "./components/Shell"
 
 const DELIVERY_FEE = 5000
-
 function App() {
   const [accountType, setAccountType] = useState("زبون")
   const [currentView, setCurrentView] = useState("login")
@@ -279,6 +278,7 @@ function App() {
       ownerName: activeUser.name,
       ownerPhone: activeUser.phone,
       status: "pending",
+      image: categoryImages[store.category],
       description: `${store.category} في ${store.area}. للتواصل: ${store.phone}.`,
       products: [],
     }
@@ -307,6 +307,7 @@ function App() {
       name: product.name,
       price: `${Number(product.price).toLocaleString("en-US")} د.ع`,
       quantity: product.quantity,
+      image: categoryImages[stores.find((store) => store.name === storeName)?.category],
     }
 
     setStores((currentStores) =>

@@ -255,6 +255,15 @@ button span {
   cursor: pointer;
 }
 
+.store-thumb,
+.product-image {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-bottom: 12px;
+}
+
 .store-card.active {
   border-color: #0c6b66;
   background: #eef7f5;
@@ -304,7 +313,7 @@ button span {
 
 .store-detail-hero {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr minmax(150px, 220px) auto;
   gap: 16px;
   align-items: start;
   padding: 18px;
@@ -327,6 +336,13 @@ button span {
   margin: 0;
   color: #dbe4df;
   line-height: 1.8;
+}
+
+.store-hero-image {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 12px;
 }
 
 .store-detail-meta {

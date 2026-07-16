@@ -1,3 +1,17 @@
+import accessoriesImage from "./assets/marketplace/accessories.png"
+import clothingImage from "./assets/marketplace/clothing.png"
+import cosmeticsImage from "./assets/marketplace/cosmetics.png"
+import perfumeImage from "./assets/marketplace/perfume.png"
+import shoesImage from "./assets/marketplace/shoes.png"
+
+export const categoryImages = {
+  ملابس: clothingImage,
+  كوزمتك: cosmeticsImage,
+  عطور: perfumeImage,
+  أحذية: shoesImage,
+  إكسسوارات: accessoriesImage,
+}
+
 export const accountDetails = {
   زبون: "يتصفح المتاجر، يشتري المنتجات، ويتابع الطلب من لحظة الشراء إلى التوصيل.",
   "صاحب متجر": "يسجل متجره، يضيف المنتجات، يحدد الأسعار والكميات، ويستلم الطلبات.",
@@ -52,51 +66,56 @@ export const customerStores = [
   {
     name: "بوتيك شط العرب",
     category: "ملابس",
+    image: categoryImages["ملابس"],
     description: "ملابس يومية ومناسبات مختارة للزبائن داخل البصرة.",
     products: [
-      { name: "قميص كتان", price: "35,000 د.ع", quantity: 8 },
-      { name: "فستان صيفي", price: "58,000 د.ع", quantity: 5 },
-      { name: "جاكيت خفيف", price: "72,000 د.ع", quantity: 3 },
+      { name: "قميص كتان", price: "35,000 د.ع", quantity: 8, image: categoryImages["ملابس"] },
+      { name: "فستان صيفي", price: "58,000 د.ع", quantity: 5, image: categoryImages["ملابس"] },
+      { name: "جاكيت خفيف", price: "72,000 د.ع", quantity: 3, image: categoryImages["ملابس"] },
     ],
   },
   {
     name: "لمسة كوزمتك",
     category: "كوزمتك",
+    image: categoryImages["كوزمتك"],
     description: "مكياج وعناية بالبشرة مع منتجات مناسبة للاستخدام اليومي.",
     products: [
-      { name: "روج مطفي", price: "12,000 د.ع", quantity: 10 },
-      { name: "كريم ترطيب", price: "18,000 د.ع", quantity: 6 },
-      { name: "ماسكارا", price: "15,000 د.ع", quantity: 4 },
+      { name: "روج مطفي", price: "12,000 د.ع", quantity: 10, image: categoryImages["كوزمتك"] },
+      { name: "كريم ترطيب", price: "18,000 د.ع", quantity: 6, image: categoryImages["كوزمتك"] },
+      { name: "ماسكارا", price: "15,000 د.ع", quantity: 4, image: categoryImages["كوزمتك"] },
     ],
   },
   {
     name: "عطور البصرة",
     category: "عطور",
+    image: categoryImages["عطور"],
     description: "عطور شرقية وغربية وبخور ومجموعات هدايا.",
     products: [
-      { name: "عطر شرقي", price: "45,000 د.ع", quantity: 7 },
-      { name: "بخور فاخر", price: "20,000 د.ع", quantity: 12 },
-      { name: "مجموعة هدية", price: "65,000 د.ع", quantity: 2 },
+      { name: "عطر شرقي", price: "45,000 د.ع", quantity: 7, image: categoryImages["عطور"] },
+      { name: "بخور فاخر", price: "20,000 د.ع", quantity: 12, image: categoryImages["عطور"] },
+      { name: "مجموعة هدية", price: "65,000 د.ع", quantity: 2, image: categoryImages["عطور"] },
     ],
   },
   {
     name: "خطوة للأحذية",
     category: "أحذية",
+    image: categoryImages["أحذية"],
     description: "أحذية رياضية ورسمية وصنادل للموسم.",
     products: [
-      { name: "حذاء رياضي", price: "55,000 د.ع", quantity: 6 },
-      { name: "حذاء رسمي", price: "70,000 د.ع", quantity: 4 },
-      { name: "صندل يومي", price: "28,000 د.ع", quantity: 9 },
+      { name: "حذاء رياضي", price: "55,000 د.ع", quantity: 6, image: categoryImages["أحذية"] },
+      { name: "حذاء رسمي", price: "70,000 د.ع", quantity: 4, image: categoryImages["أحذية"] },
+      { name: "صندل يومي", price: "28,000 د.ع", quantity: 9, image: categoryImages["أحذية"] },
     ],
   },
   {
     name: "إكسسوارات كورنيش",
     category: "إكسسوارات",
+    image: categoryImages["إكسسوارات"],
     description: "حقائب وساعات ونظارات وقطع تكمل الإطلالة.",
     products: [
-      { name: "حقيبة يد", price: "42,000 د.ع", quantity: 5 },
-      { name: "ساعة بسيطة", price: "38,000 د.ع", quantity: 3 },
-      { name: "نظارة شمسية", price: "25,000 د.ع", quantity: 8 },
+      { name: "حقيبة يد", price: "42,000 د.ع", quantity: 5, image: categoryImages["إكسسوارات"] },
+      { name: "ساعة بسيطة", price: "38,000 د.ع", quantity: 3, image: categoryImages["إكسسوارات"] },
+      { name: "نظارة شمسية", price: "25,000 د.ع", quantity: 8, image: categoryImages["إكسسوارات"] },
     ],
   },
 ]
