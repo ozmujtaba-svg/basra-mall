@@ -1,13 +1,22 @@
 export function CustomerDashboard({
   cartItems,
+  customerInfo,
   customerOrders,
+  deliveryFee,
   onAddToCart,
+  onCustomerInfoChange,
   onSelectStore,
   onSendOrder,
   orderMessage,
   selectedStore,
   stores,
 }) {
+  const subtotal = cartItems.reduce(
+    (total, item) => total + getPriceValue(item.price) * item.quantity,
+    0,
+  )
+  const finalTotal = cartItems.length > 0 ? subtotal + deliveryFee : 0
+
   return (
     <div className="customer-layout">
       <div>
@@ -39,16 +48,29 @@ export function CustomerDashboard({
               <span>هذا المتجر مسجل جديدًا. الخطوة القادمة نضيف له منتجات من واجهة صاحب المتجر.</span>
             </div>
           ) : (
-            selectedStore.products.map((product) => (
-              <div className="product-card" key={product.name}>
-                <h3>{product.name}</h3>
-                <span>{product.price}</span>
-                {product.quantity && <small>الكمية: {product.quantity}</small>}
-                <button className="add-button" onClick={() => onAddToCart(product)}>
-                  إضافة للسلة
-                </button>
-              </div>
-            ))
+            selectedStore.products.map((product) => {
+              const quantity = Number(product.quantity)
+              const cartQuantity = getCartQuantity(cartItems, selectedStore.name, product.name)
+              const hasStock = !Number.isFinite(quantity) || quantity > 0
+              const reachedLimit = Number.isFinite(quantity) && cartQuantity >= quantity
+              const disabled = !hasStock || reachedLimit
+
+              return (
+                <div className="product-card" key={product.name}>
+                  <h3>{product.name}</h3>
+                  <span>{product.price}</span>
+                  {Number.isFinite(quantity) && <small>المتوفر: {quantity}</small>}
+                  {cartQuantity > 0 && <small>بالسلة: {cartQuantity}</small>}
+                  <button
+                    className="add-button"
+                    disabled={disabled}
+                    onClick={() => onAddToCart(product, selectedStore)}
+                  >
+                    {!hasStock ? "نفد من المخزون" : reachedLimit ? "وصلت للكمية المتوفرة" : "إضافة للسلة"}
+                  </button>
+                </div>
+              )
+            })
           )}
         </div>
       </div>
@@ -68,13 +90,74 @@ export function CustomerDashboard({
                   <strong>{item.name}</strong>
                   <small>{item.store}</small>
                 </div>
-                <span>{item.price}</span>
+                <span>
+                  {item.quantity} × {item.price}
+                </span>
               </div>
             ))
           )}
         </div>
+        <div className="customer-info-form">
+          <h3>بيانات التوصيل</h3>
+          <div className="customer-info-grid">
+            <label>
+              اسم الزبون
+              <input
+                value={customerInfo.name}
+                onChange={(event) => updateCustomerInfo("name", event.target.value)}
+                placeholder="مثال: علي أحمد"
+              />
+            </label>
+            <label>
+              رقم الهاتف
+              <input
+                value={customerInfo.phone}
+                onChange={(event) => updateCustomerInfo("phone", event.target.value)}
+                placeholder="مثال: 07XXXXXXXXX"
+              />
+            </label>
+            <label>
+              المنطقة
+              <input
+                value={customerInfo.area}
+                onChange={(event) => updateCustomerInfo("area", event.target.value)}
+                placeholder="مثال: العشار"
+              />
+            </label>
+            <label>
+              أقرب نقطة دلالة
+              <input
+                value={customerInfo.landmark}
+                onChange={(event) => updateCustomerInfo("landmark", event.target.value)}
+                placeholder="مثال: قرب جامع أو مدرسة"
+              />
+            </label>
+            <label className="wide-field">
+              ملاحظات للطلب
+              <textarea
+                value={customerInfo.notes}
+                onChange={(event) => updateCustomerInfo("notes", event.target.value)}
+                placeholder="مثال: الاتصال قبل الوصول"
+              />
+            </label>
+          </div>
+        </div>
+        <div className="order-summary">
+          <div>
+            <span>مجموع المنتجات</span>
+            <strong>{formatMoney(subtotal)}</strong>
+          </div>
+          <div>
+            <span>أجرة التوصيل</span>
+            <strong>{cartItems.length > 0 ? formatMoney(deliveryFee) : "0 د.ع"}</strong>
+          </div>
+          <div className="summary-total">
+            <span>المبلغ النهائي</span>
+            <strong>{formatMoney(finalTotal)}</strong>
+          </div>
+        </div>
         <button className="send-order-button" onClick={onSendOrder}>
-          إرسال الطلب
+          تأكيد الطلب
         </button>
         {orderMessage && <div className="order-message">{orderMessage}</div>}
       </div>
@@ -92,6 +175,8 @@ export function CustomerDashboard({
             <div className="tracking-card" key={`customer-${order.id}`}>
               <h3>طلب رقم {order.id}</h3>
               <span>الحالة الحالية: {order.status}</span>
+              <span>التوصيل إلى: {order.area}</span>
+              {order.total && <strong>المبلغ النهائي: {formatMoney(order.total)}</strong>}
               <div className="tracking-steps">
                 {["طلب جديد", "جاهز للتوصيل", "قيد التوصيل", "تم التسليم"].map((step) => (
                   <div className={`tracking-step ${getStepState(order.status, step)}`} key={step}>
@@ -105,6 +190,13 @@ export function CustomerDashboard({
       </div>
     </div>
   )
+
+  function updateCustomerInfo(field, value) {
+    onCustomerInfoChange((currentInfo) => ({
+      ...currentInfo,
+      [field]: value,
+    }))
+  }
 }
 
 function getStepState(currentStatus, step) {
@@ -121,4 +213,18 @@ function getStepState(currentStatus, step) {
   }
 
   return ""
+}
+
+function getCartQuantity(cartItems, storeName, productName) {
+  return (
+    cartItems.find((item) => item.store === storeName && item.name === productName)?.quantity ?? 0
+  )
+}
+
+function getPriceValue(price) {
+  return Number(String(price).replace(/[^\d]/g, ""))
+}
+
+function formatMoney(value) {
+  return `${Number(value).toLocaleString("en-US")} د.ع`
 }

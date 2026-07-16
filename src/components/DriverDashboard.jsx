@@ -16,10 +16,27 @@ export function DriverDashboard({ onUpdateStatus, orders }) {
               من: {order.items[0]?.store}
               <br />
               إلى: {order.area}
+              <br />
+              الزبون: {order.customer}
+              <br />
+              الهاتف: {order.phone}
+              {order.landmark && (
+                <>
+                  <br />
+                  الدلالة: {order.landmark}
+                </>
+              )}
+              {order.notes && (
+                <>
+                  <br />
+                  ملاحظات: {order.notes}
+                </>
+              )}
             </div>
             <div className="order-products">
-              المنتجات: {order.items.map((item) => item.name).join("، ")}
+              المنتجات: {formatOrderItems(order.items)}
             </div>
+            {order.total && <div className="order-total">المبلغ النهائي: {formatMoney(order.total)}</div>}
             <span className="status-pill">{order.status}</span>
             {order.status === "جاهز للتوصيل" && (
               <button
@@ -42,4 +59,12 @@ export function DriverDashboard({ onUpdateStatus, orders }) {
       )}
     </div>
   )
+}
+
+function formatOrderItems(items) {
+  return items.map((item) => `${item.name} × ${item.quantity}`).join("، ")
+}
+
+function formatMoney(value) {
+  return `${Number(value).toLocaleString("en-US")} د.ع`
 }

@@ -54,9 +54,9 @@ export const customerStores = [
     category: "ملابس",
     description: "ملابس يومية ومناسبات مختارة للزبائن داخل البصرة.",
     products: [
-      { name: "قميص كتان", price: "35,000 د.ع" },
-      { name: "فستان صيفي", price: "58,000 د.ع" },
-      { name: "جاكيت خفيف", price: "72,000 د.ع" },
+      { name: "قميص كتان", price: "35,000 د.ع", quantity: 8 },
+      { name: "فستان صيفي", price: "58,000 د.ع", quantity: 5 },
+      { name: "جاكيت خفيف", price: "72,000 د.ع", quantity: 3 },
     ],
   },
   {
@@ -64,9 +64,9 @@ export const customerStores = [
     category: "كوزمتك",
     description: "مكياج وعناية بالبشرة مع منتجات مناسبة للاستخدام اليومي.",
     products: [
-      { name: "روج مطفي", price: "12,000 د.ع" },
-      { name: "كريم ترطيب", price: "18,000 د.ع" },
-      { name: "ماسكارا", price: "15,000 د.ع" },
+      { name: "روج مطفي", price: "12,000 د.ع", quantity: 10 },
+      { name: "كريم ترطيب", price: "18,000 د.ع", quantity: 6 },
+      { name: "ماسكارا", price: "15,000 د.ع", quantity: 4 },
     ],
   },
   {
@@ -74,9 +74,9 @@ export const customerStores = [
     category: "عطور",
     description: "عطور شرقية وغربية وبخور ومجموعات هدايا.",
     products: [
-      { name: "عطر شرقي", price: "45,000 د.ع" },
-      { name: "بخور فاخر", price: "20,000 د.ع" },
-      { name: "مجموعة هدية", price: "65,000 د.ع" },
+      { name: "عطر شرقي", price: "45,000 د.ع", quantity: 7 },
+      { name: "بخور فاخر", price: "20,000 د.ع", quantity: 12 },
+      { name: "مجموعة هدية", price: "65,000 د.ع", quantity: 2 },
     ],
   },
   {
@@ -84,9 +84,9 @@ export const customerStores = [
     category: "أحذية",
     description: "أحذية رياضية ورسمية وصنادل للموسم.",
     products: [
-      { name: "حذاء رياضي", price: "55,000 د.ع" },
-      { name: "حذاء رسمي", price: "70,000 د.ع" },
-      { name: "صندل يومي", price: "28,000 د.ع" },
+      { name: "حذاء رياضي", price: "55,000 د.ع", quantity: 6 },
+      { name: "حذاء رسمي", price: "70,000 د.ع", quantity: 4 },
+      { name: "صندل يومي", price: "28,000 د.ع", quantity: 9 },
     ],
   },
   {
@@ -94,9 +94,9 @@ export const customerStores = [
     category: "إكسسوارات",
     description: "حقائب وساعات ونظارات وقطع تكمل الإطلالة.",
     products: [
-      { name: "حقيبة يد", price: "42,000 د.ع" },
-      { name: "ساعة بسيطة", price: "38,000 د.ع" },
-      { name: "نظارة شمسية", price: "25,000 د.ع" },
+      { name: "حقيبة يد", price: "42,000 د.ع", quantity: 5 },
+      { name: "ساعة بسيطة", price: "38,000 د.ع", quantity: 3 },
+      { name: "نظارة شمسية", price: "25,000 د.ع", quantity: 8 },
     ],
   },
 ]

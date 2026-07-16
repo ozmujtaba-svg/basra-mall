@@ -85,6 +85,11 @@ button {
   cursor: pointer;
 }
 
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
 button.active {
   border-color: #0c6b66;
   background: #eef7f5;
@@ -107,6 +112,29 @@ button span {
   padding: 18px;
   border-radius: 12px;
   line-height: 1.8;
+}
+
+.login-form {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.login-form label {
+  display: grid;
+  gap: 8px;
+  font-weight: bold;
+}
+
+.login-form input {
+  width: 100%;
+  border: 1px solid #ded8cc;
+  border-radius: 10px;
+  padding: 12px;
+  box-sizing: border-box;
+  background: #fbfaf7;
+  color: #18221f;
+  font: inherit;
 }
 
 .enter-button,
@@ -295,6 +323,79 @@ button span {
   color: #65706b;
 }
 
+.customer-info-form {
+  margin: 14px 0;
+  padding: 14px;
+  border-radius: 12px;
+  background: white;
+}
+
+.customer-info-form h3 {
+  margin: 0 0 12px;
+}
+
+.customer-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.customer-info-grid label {
+  display: grid;
+  gap: 8px;
+  font-weight: bold;
+}
+
+.customer-info-grid input,
+.customer-info-grid textarea {
+  width: 100%;
+  border: 1px solid #ded8cc;
+  border-radius: 10px;
+  padding: 12px;
+  box-sizing: border-box;
+  background: #fbfaf7;
+  color: #18221f;
+  font: inherit;
+}
+
+.customer-info-grid textarea {
+  min-height: 86px;
+  resize: vertical;
+}
+
+.wide-field {
+  grid-column: 1 / -1;
+}
+
+.order-summary {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0;
+  padding: 14px;
+  border-radius: 12px;
+  background: white;
+}
+
+.order-summary div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.order-summary span {
+  color: #65706b;
+}
+
+.order-summary strong {
+  color: #0c6b66;
+}
+
+.order-summary .summary-total {
+  padding-top: 10px;
+  border-top: 1px solid #ded8cc;
+  font-size: 18px;
+}
+
 .send-order-button {
   width: 100%;
   border: 0;
@@ -372,11 +473,81 @@ button span {
   font-weight: bold;
 }
 
+.merchant-section-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: start;
+  margin-bottom: 16px;
+}
+
+.merchant-section-top h2 {
+  margin: 0 0 8px;
+}
+
+.merchant-section-top p {
+  margin: 0;
+  color: #65706b;
+  line-height: 1.8;
+}
+
+.merchant-products {
+  display: grid;
+  gap: 10px;
+}
+
+.merchant-product-row {
+  display: grid;
+  grid-template-columns: 1.2fr 0.6fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 14px;
+  border-radius: 12px;
+  background: #fbfaf7;
+  border: 1px solid #ded8cc;
+}
+
+.merchant-product-row span,
+.merchant-product-row small {
+  display: block;
+  color: #65706b;
+  margin-top: 4px;
+}
+
+.stock-pill {
+  display: inline-block;
+  min-width: 90px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.stock-pill.available {
+  background: #eef7f5;
+  color: #0c6b66;
+}
+
+.stock-pill.low {
+  background: #fff2ec;
+  color: #d76b50;
+}
+
+.stock-pill.empty {
+  background: #f3eeee;
+  color: #8b3a2d;
+}
+
+.stock-pill.unknown {
+  background: #f6f1e8;
+  color: #65706b;
+}
+
 .admin-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
-  margin: 24px 0;
+  margin-top: 18px;
 }
 
 .admin-card,
@@ -394,14 +565,157 @@ button span {
   margin-top: 8px;
 }
 
+.admin-card span {
+  display: block;
+  margin-top: 8px;
+  color: #65706b;
+  line-height: 1.6;
+}
+
+.admin-card.highlight {
+  border-color: #d76b50;
+  background: #fff2ec;
+}
+
+.admin-section {
+  border: 1px solid #ded8cc;
+  border-radius: 16px;
+  padding: 18px;
+  background: white;
+}
+
+.admin-section h2,
+.admin-section h3 {
+  margin: 0 0 8px;
+}
+
+.admin-section p {
+  margin: 0;
+  color: #65706b;
+  line-height: 1.8;
+}
+
+.revenue-grid {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.revenue-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px;
+  border-radius: 12px;
+  background: #fbfaf7;
+}
+
+.revenue-row strong {
+  color: #0c6b66;
+}
+
+.revenue-row.total {
+  background: #eef7f5;
+  font-weight: bold;
+}
+
+.admin-table {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.admin-table-head,
+.admin-table-row {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr 0.8fr 0.8fr;
+  gap: 10px;
+  align-items: center;
+  padding: 12px;
+  border-radius: 12px;
+}
+
+.admin-table-head {
+  background: #24302d;
+  color: white;
+  font-weight: bold;
+}
+
+.admin-table-row {
+  background: #fbfaf7;
+  color: #18221f;
+}
+
+.admin-table-row small {
+  display: block;
+  margin-top: 4px;
+  color: #65706b;
+}
+
+.approve-button {
+  width: 100%;
+  border: 0;
+  background: #0c6b66;
+  color: white;
+  text-align: center;
+  font-weight: bold;
+  padding: 10px 12px;
+}
+
+.approval-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.reject-button {
+  width: 100%;
+  border: 0;
+  background: #d76b50;
+  color: white;
+  text-align: center;
+  font-weight: bold;
+  padding: 10px 12px;
+}
+
+.rejected-notice {
+  margin: 14px 0;
+  padding: 14px;
+  border-radius: 12px;
+  background: #fff2ec;
+  color: #8b3a2d;
+  font-weight: bold;
+  line-height: 1.8;
+}
+
+.admin-order-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.order-card-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: start;
+}
+
 .order-card h3 {
   margin: 0 0 8px;
 }
 
 .order-meta,
-.order-products {
+.order-products,
+.order-total {
   color: #65706b;
   line-height: 1.8;
+}
+
+.order-total {
+  margin-top: 8px;
+  color: #0c6b66;
+  font-weight: bold;
 }
 
 .status-pill {
@@ -437,9 +751,20 @@ button span {
 
   .stats,
   .customer-layout,
+  .customer-info-grid,
   .merchant-form,
+  .merchant-product-row,
   .admin-grid,
+  .admin-table-head,
+  .admin-table-row,
   .tracking-steps {
     grid-template-columns: 1fr;
+  }
+
+  .revenue-row,
+  .order-card-top,
+  .order-summary div,
+  .merchant-section-top {
+    display: grid;
   }
 }

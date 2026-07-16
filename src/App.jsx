@@ -8,6 +8,8 @@ import { LoginScreen } from "./components/LoginScreen"
 import { MerchantDashboard } from "./components/MerchantDashboard"
 import { Shell } from "./components/Shell"
 
+const DELIVERY_FEE = 5000
+
 function App() {
   const [accountType, setAccountType] = useState("زبون")
   const [currentView, setCurrentView] = useState("login")
@@ -19,24 +21,105 @@ function App() {
   const [deliveryOrders, setDeliveryOrders] = useState([])
   const [orderMessage, setOrderMessage] = useState("")
   const [nextOrderId, setNextOrderId] = useState(1)
+  const [loginInfo, setLoginInfo] = useState({
+    name: "",
+    phone: "",
+  })
+  const [loginMessage, setLoginMessage] = useState("")
+  const [customerInfo, setCustomerInfo] = useState({
+    name: "",
+    phone: "",
+    area: "",
+    landmark: "",
+    notes: "",
+  })
 
   const dashboard = dashboardData[accountType]
   const allOrders = [...merchantOrders, ...deliveryOrders]
   const deliveredOrders = deliveryOrders.filter((order) => order.status === "تم التسليم")
   const estimatedRevenue = allOrders.length * 3000 + deliveredOrders.length * 5000
+  const activeUser = {
+    accountType,
+    name: loginInfo.name.trim(),
+    phone: loginInfo.phone.trim(),
+  }
+  const merchantStores = stores.filter((store) => store.ownerPhone === activeUser.phone)
+  const merchantStoreNames = merchantStores.map((store) => store.name)
+  const approvedStores = stores.filter(
+    (store) => store.status !== "pending" && store.status !== "rejected",
+  )
+  const activeSelectedStore = approvedStores.some((store) => store.name === selectedStore.name)
+    ? selectedStore
+    : approvedStores[0]
+  const visibleMerchantOrders = merchantOrders.filter((order) =>
+    order.items.some((item) => merchantStoreNames.includes(item.store)),
+  )
   const activeStats = getActiveStats({
     accountType,
     cartItems,
     customerOrders,
-    stores,
+    stores: accountType === "زبون" ? approvedStores : stores,
+    merchantStores,
     dashboard,
     deliveryOrders,
     estimatedRevenue,
-    merchantOrders,
+    merchantOrders: visibleMerchantOrders,
   })
 
-  function addToCart(product) {
-    setCartItems((items) => [...items, { ...product, store: selectedStore.name }])
+  function enterDashboard() {
+    if (!loginInfo.name.trim() || !loginInfo.phone.trim()) {
+      setLoginMessage("اكتب الاسم ورقم الهاتف حتى تدخل للتطبيق.")
+      return
+    }
+
+    if (accountType === "زبون") {
+      setCustomerInfo((info) => ({
+        ...info,
+        name: info.name || loginInfo.name.trim(),
+        phone: info.phone || loginInfo.phone.trim(),
+      }))
+    }
+
+    setLoginMessage("")
+    setCurrentView("dashboard")
+  }
+
+  function addToCart(product, store) {
+    const storeName = store.name
+    const availableProduct = stores
+      .find((store) => store.name === storeName)
+      ?.products.find((item) => item.name === product.name)
+    const availableQuantity = Number(availableProduct?.quantity)
+    const currentCartItem = cartItems.find(
+      (item) => item.store === storeName && item.name === product.name,
+    )
+    const cartQuantity = currentCartItem?.quantity ?? 0
+
+    if (Number.isFinite(availableQuantity) && availableQuantity <= 0) {
+      setOrderMessage("هذا المنتج نفد من المخزون وما يكدر الزبون يطلبه.")
+      return
+    }
+
+    if (Number.isFinite(availableQuantity) && cartQuantity >= availableQuantity) {
+      setOrderMessage(`المتوفر من ${product.name} هو ${availableQuantity} فقط.`)
+      return
+    }
+
+    setCartItems((items) => {
+      const existingItem = items.find(
+        (item) => item.store === storeName && item.name === product.name,
+      )
+
+      if (existingItem) {
+        return items.map((item) =>
+          item.store === storeName && item.name === product.name
+            ? { ...item, quantity: item.quantity + 1 }
+            : item,
+        )
+      }
+
+      return [...items, { ...product, store: storeName, quantity: 1 }]
+    })
     setOrderMessage("")
   }
 
@@ -46,19 +129,81 @@ function App() {
       return
     }
 
-    const newOrder = {
-      id: nextOrderId,
-      customer: "زبون تجريبي",
-      area: "البصرة - الجزائر",
-      items: cartItems,
-      status: "طلب جديد",
+    if (!customerInfo.name.trim() || !customerInfo.phone.trim() || !customerInfo.area.trim()) {
+      setOrderMessage("اكتب اسم الزبون ورقم الهاتف والمنطقة قبل تأكيد الطلب.")
+      return
     }
 
-    setNextOrderId((id) => id + 1)
-    setCustomerOrders((orders) => [newOrder, ...orders])
-    setMerchantOrders((orders) => [newOrder, ...orders])
+    const invalidItem = cartItems.find((cartItem) => {
+      const stockItem = stores
+        .find((store) => store.name === cartItem.store)
+        ?.products.find((product) => product.name === cartItem.name)
+      const availableQuantity = Number(stockItem?.quantity)
+
+      return Number.isFinite(availableQuantity) && cartItem.quantity > availableQuantity
+    })
+
+    if (invalidItem) {
+      setOrderMessage(`كمية ${invalidItem.name} بالسلة أكبر من الموجود بالمخزون.`)
+      return
+    }
+
+    const orderGroups = groupCartByStore(cartItems)
+    const newOrders = orderGroups.map((items, index) => {
+      const subtotal = items.reduce(
+        (total, item) => total + getPriceValue(item.price) * item.quantity,
+        0,
+      )
+      const total = subtotal + DELIVERY_FEE
+
+      return {
+        id: nextOrderId + index,
+        customer: customerInfo.name.trim(),
+        phone: customerInfo.phone.trim(),
+        area: customerInfo.area.trim(),
+        landmark: customerInfo.landmark.trim(),
+        notes: customerInfo.notes.trim(),
+        items,
+        subtotal,
+        deliveryFee: DELIVERY_FEE,
+        total,
+        status: "طلب جديد",
+      }
+    })
+
+    setStores((currentStores) => {
+      const updatedStores = currentStores.map((store) => ({
+        ...store,
+        products: store.products.map((product) => {
+          const orderedItem = cartItems.find(
+            (item) => item.store === store.name && item.name === product.name,
+          )
+          const currentQuantity = Number(product.quantity)
+
+          if (!orderedItem || !Number.isFinite(currentQuantity)) {
+            return product
+          }
+
+          return {
+            ...product,
+            quantity: Math.max(currentQuantity - orderedItem.quantity, 0),
+          }
+        }),
+      }))
+
+      const updatedSelectedStore = updatedStores.find((store) => store.name === selectedStore.name)
+
+      if (updatedSelectedStore) {
+        setSelectedStore(updatedSelectedStore)
+      }
+
+      return updatedStores
+    })
+    setNextOrderId((id) => id + newOrders.length)
+    setCustomerOrders((orders) => [...newOrders, ...orders])
+    setMerchantOrders((orders) => [...newOrders, ...orders])
     setCartItems([])
-    setOrderMessage("تم إرسال الطلب التجريبي، وظهر الآن في واجهة صاحب المتجر.")
+    setOrderMessage("تم إرسال الطلب، وانخفضت الكمية من مخزون المتجر.")
   }
 
   function prepareOrder(orderId) {
@@ -88,12 +233,30 @@ function App() {
   function registerStore(store) {
     const newStore = {
       ...store,
+      ownerName: activeUser.name,
+      ownerPhone: activeUser.phone,
+      status: "pending",
       description: `${store.category} في ${store.area}. للتواصل: ${store.phone}.`,
       products: [],
     }
 
     setStores((currentStores) => [newStore, ...currentStores])
-    setSelectedStore(newStore)
+  }
+
+  function approveStore(storeName) {
+    setStores((currentStores) =>
+      currentStores.map((store) =>
+        store.name === storeName ? { ...store, status: "approved" } : store,
+      ),
+    )
+  }
+
+  function rejectStore(storeName) {
+    setStores((currentStores) =>
+      currentStores.map((store) =>
+        store.name === storeName ? { ...store, status: "rejected" } : store,
+      ),
+    )
   }
 
   function addProductToStore(storeName, product) {
@@ -125,30 +288,42 @@ function App() {
         <LoginScreen
           accountType={accountType}
           onAccountChange={setAccountType}
-          onEnter={() => setCurrentView("dashboard")}
+          loginInfo={loginInfo}
+          loginMessage={loginMessage}
+          onEnter={enterDashboard}
+          onLoginInfoChange={setLoginInfo}
         />
       ) : (
-        <Shell dashboard={dashboard} stats={activeStats} onBack={() => setCurrentView("login")}>
+        <Shell
+          dashboard={dashboard}
+          stats={activeStats}
+          user={activeUser}
+          onBack={() => setCurrentView("login")}
+        >
           {accountType === "زبون" && (
             <CustomerDashboard
               cartItems={cartItems}
+              customerInfo={customerInfo}
               customerOrders={customerOrders}
+              deliveryFee={DELIVERY_FEE}
               onAddToCart={addToCart}
+              onCustomerInfoChange={setCustomerInfo}
               onSendOrder={sendOrder}
               orderMessage={orderMessage}
-              selectedStore={selectedStore}
-              stores={stores}
+              selectedStore={activeSelectedStore}
+              stores={approvedStores}
               onSelectStore={setSelectedStore}
             />
           )}
 
           {accountType === "صاحب متجر" && (
             <MerchantDashboard
+              merchant={activeUser}
               onAddProduct={addProductToStore}
               onRegisterStore={registerStore}
-              orders={merchantOrders}
+              orders={visibleMerchantOrders}
               onPrepareOrder={prepareOrder}
-              stores={stores}
+              stores={merchantStores}
             />
           )}
 
@@ -159,10 +334,11 @@ function App() {
           {accountType === "الإدارة" && (
             <AdminDashboard
               allOrders={allOrders}
+              onApproveStore={approveStore}
+              onRejectStore={rejectStore}
               deliveredOrders={deliveredOrders}
-              deliveryOrders={deliveryOrders}
               estimatedRevenue={estimatedRevenue}
-              merchantOrders={merchantOrders}
+              stores={stores}
             />
           )}
         </Shell>
@@ -179,21 +355,35 @@ function getActiveStats({
   deliveryOrders,
   estimatedRevenue,
   merchantOrders,
+  merchantStores,
   stores,
 }) {
   if (accountType === "زبون") {
+    const cartQuantity = cartItems.reduce((total, item) => total + item.quantity, 0)
+
     return [
       { label: "متاجر متاحة", value: stores.length },
-      { label: "منتجات بالسلة", value: cartItems.length },
+      { label: "قطع بالسلة", value: cartQuantity },
       { label: "طلبات للمتابعة", value: customerOrders.length },
     ]
   }
 
   if (accountType === "صاحب متجر") {
+    const productCount = merchantStores.reduce((total, store) => total + store.products.length, 0)
+    const lowStockCount = merchantStores.reduce(
+      (total, store) =>
+        total +
+        store.products.filter((product) => {
+          const quantity = Number(product.quantity)
+          return Number.isFinite(quantity) && quantity > 0 && quantity <= 3
+        }).length,
+      0,
+    )
+
     return [
-      { label: "منتجات مضافة", value: "12" },
+      { label: "منتجات مضافة", value: productCount },
       { label: "طلبات جديدة", value: merchantOrders.length },
-      { label: "منتجات قليلة الكمية", value: "4" },
+      { label: "منتجات قليلة الكمية", value: lowStockCount },
     ]
   }
 
@@ -226,6 +416,27 @@ function getActiveStats({
   }
 
   return dashboard.stats
+}
+
+function getPriceValue(price) {
+  return Number(String(price).replace(/[^\d]/g, ""))
+}
+
+function groupCartByStore(cartItems) {
+  const groups = []
+
+  cartItems.forEach((item) => {
+    const group = groups.find((items) => items[0]?.store === item.store)
+
+    if (group) {
+      group.push(item)
+      return
+    }
+
+    groups.push([item])
+  })
+
+  return groups
 }
 
 export default App

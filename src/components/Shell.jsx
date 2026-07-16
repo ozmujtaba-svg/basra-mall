@@ -1,4 +1,4 @@
-export function Shell({ children, dashboard, onBack, stats }) {
+export function Shell({ children, dashboard, onBack, stats, user }) {
   return (
     <section className="dashboard">
       <div className="dashboard-hero">
@@ -11,7 +11,11 @@ export function Shell({ children, dashboard, onBack, stats }) {
         <div className="dashboard-top">
           <div>
             <h2>لوحة البداية</h2>
-            <p>هذه واجهة تجريبية حتى نرتب شكل التطبيق قبل إضافة بيانات حقيقية.</p>
+            <p>
+              داخل باسم {user.name} كـ {user.accountType}
+              <br />
+              رقم الهاتف: {user.phone}
+            </p>
           </div>
           <button className="back-button" onClick={onBack}>
             رجوع
