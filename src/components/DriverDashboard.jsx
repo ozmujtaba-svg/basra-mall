@@ -1,0 +1,45 @@
+export function DriverDashboard({ onUpdateStatus, orders }) {
+  return (
+    <div className="orders-panel">
+      <h2>طلبات التوصيل</h2>
+      <p>أي طلب يجهزه صاحب المتجر يظهر هنا حتى يستلمه السائق.</p>
+      {orders.length === 0 ? (
+        <div className="order-card">
+          <h3>لا توجد طلبات جاهزة للتوصيل</h3>
+          <p className="order-meta">جهّز طلب من واجهة صاحب المتجر حتى يظهر هنا.</p>
+        </div>
+      ) : (
+        orders.map((order) => (
+          <div className="order-card" key={order.id}>
+            <h3>توصيل طلب رقم {order.id}</h3>
+            <div className="order-meta">
+              من: {order.items[0]?.store}
+              <br />
+              إلى: {order.area}
+            </div>
+            <div className="order-products">
+              المنتجات: {order.items.map((item) => item.name).join("، ")}
+            </div>
+            <span className="status-pill">{order.status}</span>
+            {order.status === "جاهز للتوصيل" && (
+              <button
+                className="delivery-button"
+                onClick={() => onUpdateStatus(order.id, "قيد التوصيل")}
+              >
+                استلام التوصيل
+              </button>
+            )}
+            {order.status === "قيد التوصيل" && (
+              <button
+                className="delivery-button done"
+                onClick={() => onUpdateStatus(order.id, "تم التسليم")}
+              >
+                تم التسليم
+              </button>
+            )}
+          </div>
+        ))
+      )}
+    </div>
+  )
+}
