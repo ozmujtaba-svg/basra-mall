@@ -123,6 +123,49 @@ function App() {
     setOrderMessage("")
   }
 
+  function increaseCartItem(itemToUpdate) {
+    const stockItem = stores
+      .find((store) => store.name === itemToUpdate.store)
+      ?.products.find((product) => product.name === itemToUpdate.name)
+    const availableQuantity = Number(stockItem?.quantity)
+
+    if (Number.isFinite(availableQuantity) && itemToUpdate.quantity >= availableQuantity) {
+      setOrderMessage(`المتوفر من ${itemToUpdate.name} هو ${availableQuantity} فقط.`)
+      return
+    }
+
+    setCartItems((items) =>
+      items.map((item) =>
+        item.store === itemToUpdate.store && item.name === itemToUpdate.name
+          ? { ...item, quantity: item.quantity + 1 }
+          : item,
+      ),
+    )
+    setOrderMessage("")
+  }
+
+  function decreaseCartItem(itemToUpdate) {
+    setCartItems((items) =>
+      items
+        .map((item) =>
+          item.store === itemToUpdate.store && item.name === itemToUpdate.name
+            ? { ...item, quantity: item.quantity - 1 }
+            : item,
+        )
+        .filter((item) => item.quantity > 0),
+    )
+    setOrderMessage("")
+  }
+
+  function removeCartItem(itemToRemove) {
+    setCartItems((items) =>
+      items.filter(
+        (item) => item.store !== itemToRemove.store || item.name !== itemToRemove.name,
+      ),
+    )
+    setOrderMessage("")
+  }
+
   function sendOrder() {
     if (cartItems.length === 0) {
       setOrderMessage("السلة فارغة. أضف منتج أولًا حتى ترسل طلب.")
@@ -308,6 +351,9 @@ function App() {
               deliveryFee={DELIVERY_FEE}
               onAddToCart={addToCart}
               onCustomerInfoChange={setCustomerInfo}
+              onDecreaseCartItem={decreaseCartItem}
+              onIncreaseCartItem={increaseCartItem}
+              onRemoveCartItem={removeCartItem}
               onSendOrder={sendOrder}
               orderMessage={orderMessage}
               selectedStore={activeSelectedStore}

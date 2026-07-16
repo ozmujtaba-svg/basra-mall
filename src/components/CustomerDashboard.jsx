@@ -9,6 +9,9 @@ export function CustomerDashboard({
   deliveryFee,
   onAddToCart,
   onCustomerInfoChange,
+  onDecreaseCartItem,
+  onIncreaseCartItem,
+  onRemoveCartItem,
   onSelectStore,
   onSendOrder,
   orderMessage,
@@ -139,10 +142,16 @@ export function CustomerDashboard({
                 <div>
                   <strong>{item.name}</strong>
                   <small>{item.store}</small>
+                  <span>{item.price}</span>
                 </div>
-                <span>
-                  {item.quantity} × {item.price}
-                </span>
+                <div className="cart-controls">
+                  <button onClick={() => onDecreaseCartItem(item)}>-</button>
+                  <strong>{item.quantity}</strong>
+                  <button onClick={() => onIncreaseCartItem(item)}>+</button>
+                </div>
+                <button className="remove-cart-button" onClick={() => onRemoveCartItem(item)}>
+                  حذف
+                </button>
               </div>
             ))
           )}
