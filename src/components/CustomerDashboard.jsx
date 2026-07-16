@@ -1,3 +1,7 @@
+import { useState } from "react"
+
+const categories = ["الكل", "ملابس", "كوزمتك", "عطور", "أحذية", "إكسسوارات"]
+
 export function CustomerDashboard({
   cartItems,
   customerInfo,
@@ -11,6 +15,12 @@ export function CustomerDashboard({
   selectedStore,
   stores,
 }) {
+  const [activeCategory, setActiveCategory] = useState("الكل")
+  const [searchText, setSearchText] = useState("")
+  const normalizedSearch = searchText.trim().toLowerCase()
+  const categoryStores =
+    activeCategory === "الكل" ? stores : stores.filter((store) => store.category === activeCategory)
+  const visibleStores = categoryStores.filter((store) => matchesSearch(store, normalizedSearch))
   const subtotal = cartItems.reduce(
     (total, item) => total + getPriceValue(item.price) * item.quantity,
     0,
@@ -19,28 +29,66 @@ export function CustomerDashboard({
 
   return (
     <div className="customer-layout">
-      <div>
+      <section className="store-directory">
         <h2>متاجر المول</h2>
-        <p>اختر متجر حتى تشوف بضاعته التجريبية.</p>
-        <div className="store-list">
-          {stores.map((store) => (
+        <p>اختر متجر حتى تدخل لصفحته وتشوف المنتجات المتوفرة.</p>
+        <label className="store-search">
+          بحث
+          <input
+            value={searchText}
+            onChange={(event) => updateSearch(event.target.value)}
+            placeholder="اكتب اسم متجر أو نوع أو منتج"
+          />
+        </label>
+        <div className="category-tabs">
+          {categories.map((category) => (
             <button
-              className={`store-card ${selectedStore.name === store.name ? "active" : ""}`}
-              key={store.name}
-              onClick={() => onSelectStore(store)}
+              className={activeCategory === category ? "active" : ""}
+              key={category}
+              onClick={() => selectCategory(category)}
             >
-              <small>{store.category}</small>
-              <h3>{store.name}</h3>
-              <span>{store.description}</span>
+              {category}
             </button>
           ))}
         </div>
-      </div>
+        <div className="store-list">
+          {visibleStores.length === 0 ? (
+            <div className="empty-search">ماكو متجر أو منتج مطابق للبحث الحالي.</div>
+          ) : (
+            visibleStores.map((store) => (
+              <button
+                className={`store-card ${selectedStore.name === store.name ? "active" : ""}`}
+                key={store.name}
+                onClick={() => onSelectStore(store)}
+              >
+                <small>{store.category}</small>
+                <h3>{store.name}</h3>
+                <span>{store.description}</span>
+                <strong className="store-enter">دخول المتجر</strong>
+              </button>
+            ))
+          )}
+        </div>
+      </section>
 
-      <div className="product-panel">
-        <small>{selectedStore.category}</small>
-        <h2>{selectedStore.name}</h2>
-        <p>{selectedStore.description}</p>
+      <section className="store-detail-panel">
+        <div className="store-detail-hero">
+          <div>
+            <small>{selectedStore.category}</small>
+            <h2>{selectedStore.name}</h2>
+            <p>{selectedStore.description}</p>
+          </div>
+          <div className="store-detail-meta">
+            <span>{selectedStore.products.length} منتجات</span>
+            <span>التوصيل داخل البصرة</span>
+          </div>
+        </div>
+        <div className="store-toolbar">
+          <button className="mini-back-button" onClick={() => onSelectStore(stores[0])}>
+            رجوع للمتاجر
+          </button>
+          <span>المتجر المختار: {selectedStore.name}</span>
+        </div>
         <div className="product-list">
           {selectedStore.products.length === 0 ? (
             <div className="product-card">
@@ -57,10 +105,12 @@ export function CustomerDashboard({
 
               return (
                 <div className="product-card" key={product.name}>
-                  <h3>{product.name}</h3>
-                  <span>{product.price}</span>
-                  {Number.isFinite(quantity) && <small>المتوفر: {quantity}</small>}
-                  {cartQuantity > 0 && <small>بالسلة: {cartQuantity}</small>}
+                  <div>
+                    <h3>{product.name}</h3>
+                    <span>{product.price}</span>
+                    {Number.isFinite(quantity) && <small>المتوفر: {quantity}</small>}
+                    {cartQuantity > 0 && <small>بالسلة: {cartQuantity}</small>}
+                  </div>
                   <button
                     className="add-button"
                     disabled={disabled}
@@ -73,7 +123,7 @@ export function CustomerDashboard({
             })
           )}
         </div>
-      </div>
+      </section>
 
       <div className="cart-panel">
         <h2>السلة</h2>
@@ -197,6 +247,40 @@ export function CustomerDashboard({
       [field]: value,
     }))
   }
+
+  function selectCategory(category) {
+    const nextStores =
+      category === "الكل" ? stores : stores.filter((store) => store.category === category)
+    const nextVisibleStores = nextStores.filter((store) => matchesSearch(store, normalizedSearch))
+
+    setActiveCategory(category)
+
+    if (nextVisibleStores.length > 0) {
+      onSelectStore(nextVisibleStores[0])
+    }
+  }
+
+  function updateSearch(value) {
+    const nextSearch = value.trim().toLowerCase()
+    const nextVisibleStores = categoryStores.filter((store) => matchesSearch(store, nextSearch))
+
+    setSearchText(value)
+
+    if (nextVisibleStores.length > 0) {
+      onSelectStore(nextVisibleStores[0])
+    }
+  }
+}
+
+function matchesSearch(store, search) {
+  if (!search) {
+    return true
+  }
+
+  const productNames = store.products.map((product) => product.name).join(" ")
+  const searchableText = `${store.name} ${store.category} ${store.description} ${productNames}`
+
+  return searchableText.toLowerCase().includes(search)
 }
 
 function getStepState(currentStatus, step) {

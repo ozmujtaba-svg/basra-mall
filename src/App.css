@@ -194,7 +194,7 @@ button span {
 
 .customer-layout {
   display: grid;
-  grid-template-columns: minmax(260px, 0.9fr) minmax(280px, 1.1fr);
+  grid-template-columns: minmax(240px, 0.8fr) minmax(360px, 1.2fr);
   gap: 18px;
   margin-top: 24px;
 }
@@ -203,6 +203,44 @@ button span {
 .product-list {
   display: grid;
   gap: 12px;
+}
+
+.store-search {
+  display: grid;
+  gap: 8px;
+  margin: 16px 0 0;
+  font-weight: bold;
+}
+
+.store-search input {
+  width: 100%;
+  border: 1px solid #ded8cc;
+  border-radius: 10px;
+  padding: 12px;
+  box-sizing: border-box;
+  background: #fbfaf7;
+  color: #18221f;
+  font: inherit;
+}
+
+.category-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.category-tabs button {
+  padding: 10px 12px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.category-tabs button.active {
+  border-color: #0c6b66;
+  background: #0c6b66;
+  color: white;
 }
 
 .store-card,
@@ -232,11 +270,102 @@ button span {
   margin: 6px 0;
 }
 
-.product-panel {
+.store-enter {
+  display: block;
+  margin-top: 10px;
+  color: #0c6b66;
+}
+
+.empty-search {
+  padding: 16px;
+  border-radius: 12px;
+  background: #fbfaf7;
+  color: #65706b;
+  line-height: 1.8;
+}
+
+.store-directory,
+.store-detail-panel {
   border: 1px solid #ded8cc;
   border-radius: 16px;
   padding: 18px;
   background: white;
+}
+
+.store-directory p {
+  color: #65706b;
+  line-height: 1.8;
+}
+
+.store-detail-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.store-detail-hero {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 16px;
+  align-items: start;
+  padding: 18px;
+  border-radius: 14px;
+  background: #24302d;
+  color: white;
+}
+
+.store-detail-hero small {
+  color: #f6d18a;
+  font-weight: bold;
+}
+
+.store-detail-hero h2 {
+  margin: 8px 0;
+  font-size: 30px;
+}
+
+.store-detail-hero p {
+  margin: 0;
+  color: #dbe4df;
+  line-height: 1.8;
+}
+
+.store-detail-meta {
+  display: grid;
+  gap: 8px;
+  min-width: 150px;
+}
+
+.store-detail-meta span {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+  text-align: center;
+}
+
+.store-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  color: #65706b;
+}
+
+.mini-back-button {
+  border-color: #0c6b66;
+  color: #0c6b66;
+  padding: 10px 12px;
+  font-weight: bold;
+}
+
+.store-detail-panel .product-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.store-detail-panel .product-card {
+  display: grid;
+  align-content: space-between;
+  gap: 12px;
 }
 
 .add-button {
@@ -752,6 +881,8 @@ button span {
   .stats,
   .customer-layout,
   .customer-info-grid,
+  .store-detail-hero,
+  .store-detail-panel .product-list,
   .merchant-form,
   .merchant-product-row,
   .admin-grid,
@@ -764,6 +895,7 @@ button span {
   .revenue-row,
   .order-card-top,
   .order-summary div,
+  .store-toolbar,
   .merchant-section-top {
     display: grid;
   }
