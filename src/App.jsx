@@ -34,7 +34,12 @@ function App() {
   })
 
   const dashboard = dashboardData[accountType]
-  const allOrders = [...merchantOrders, ...deliveryOrders]
+  const allOrders = [
+    ...merchantOrders,
+    ...deliveryOrders.filter(
+      (deliveryOrder) => !merchantOrders.some((order) => order.id === deliveryOrder.id),
+    ),
+  ]
   const deliveredOrders = deliveryOrders.filter((order) => order.status === "تم التسليم")
   const estimatedRevenue = allOrders.length * 3000 + deliveredOrders.length * 5000
   const activeUser = {
@@ -232,6 +237,7 @@ function App() {
         deliveryFee: DELIVERY_FEE,
         total,
         status: "طلب جديد",
+        internalNote: "",
       }
     })
 
@@ -272,6 +278,15 @@ function App() {
     setOrderMessage("تم إرسال الطلب، وانخفضت الكمية من مخزون المتجر.")
   }
 
+  function updateMerchantOrderStatus(orderId, status) {
+    setCustomerOrders((orders) =>
+      orders.map((order) => (order.id === orderId ? { ...order, status } : order)),
+    )
+    setMerchantOrders((orders) =>
+      orders.map((order) => (order.id === orderId ? { ...order, status } : order)),
+    )
+  }
+
   function prepareOrder(orderId) {
     const orderToPrepare = merchantOrders.find((order) => order.id === orderId)
 
@@ -283,17 +298,91 @@ function App() {
     setCustomerOrders((orders) =>
       orders.map((order) => (order.id === orderId ? preparedOrder : order)),
     )
-    setMerchantOrders((orders) => orders.filter((order) => order.id !== orderId))
-    setDeliveryOrders((orders) => [preparedOrder, ...orders])
+    setMerchantOrders((orders) =>
+      orders.map((order) => (order.id === orderId ? preparedOrder : order)),
+    )
+    setDeliveryOrders((orders) => {
+      const exists = orders.some((order) => order.id === orderId)
+
+      if (exists) {
+        return orders.map((order) => (order.id === orderId ? preparedOrder : order))
+      }
+
+      return [preparedOrder, ...orders]
+    })
   }
 
   function updateDeliveryStatus(orderId, status) {
     setCustomerOrders((orders) =>
       orders.map((order) => (order.id === orderId ? { ...order, status } : order)),
     )
+    setMerchantOrders((orders) =>
+      orders.map((order) => (order.id === orderId ? { ...order, status } : order)),
+    )
     setDeliveryOrders((orders) =>
       orders.map((order) => (order.id === orderId ? { ...order, status } : order)),
     )
+  }
+
+  function updateOrderNote(orderId, internalNote) {
+    setCustomerOrders((orders) =>
+      orders.map((order) => (order.id === orderId ? { ...order, internalNote } : order)),
+    )
+    setMerchantOrders((orders) =>
+      orders.map((order) => (order.id === orderId ? { ...order, internalNote } : order)),
+    )
+    setDeliveryOrders((orders) =>
+      orders.map((order) => (order.id === orderId ? { ...order, internalNote } : order)),
+    )
+  }
+
+  function cancelOrder(orderId) {
+    const orderToCancel =
+      customerOrders.find((order) => order.id === orderId) ??
+      merchantOrders.find((order) => order.id === orderId)
+
+    if (!orderToCancel || orderToCancel.status === "ملغي") {
+      return
+    }
+
+    const canceledOrder = { ...orderToCancel, status: "ملغي" }
+
+    setStores((currentStores) => {
+      const updatedStores = currentStores.map((store) => ({
+        ...store,
+        products: store.products.map((product) => {
+          const canceledItem = orderToCancel.items.find(
+            (item) => item.store === store.name && item.name === product.name,
+          )
+          const currentQuantity = Number(product.quantity)
+
+          if (!canceledItem || !Number.isFinite(currentQuantity)) {
+            return product
+          }
+
+          return {
+            ...product,
+            quantity: currentQuantity + canceledItem.quantity,
+            status: product.status === "نفد" ? "متوفر" : product.status,
+          }
+        }),
+      }))
+      const updatedSelectedStore = updatedStores.find((store) => store.name === selectedStore.name)
+
+      if (updatedSelectedStore) {
+        setSelectedStore(updatedSelectedStore)
+      }
+
+      return updatedStores
+    })
+
+    setCustomerOrders((orders) =>
+      orders.map((order) => (order.id === orderId ? canceledOrder : order)),
+    )
+    setMerchantOrders((orders) =>
+      orders.map((order) => (order.id === orderId ? canceledOrder : order)),
+    )
+    setDeliveryOrders((orders) => orders.filter((order) => order.id !== orderId))
   }
 
   function registerStore(store) {
@@ -450,6 +539,7 @@ function App() {
               deliveryFee={DELIVERY_FEE}
               onAddToCart={addToCart}
               onCustomerInfoChange={setCustomerInfo}
+              onCancelOrder={cancelOrder}
               onDecreaseCartItem={decreaseCartItem}
               onIncreaseCartItem={increaseCartItem}
               onRemoveCartItem={removeCartItem}
@@ -467,7 +557,10 @@ function App() {
               onAddProduct={addProductToStore}
               onDeleteProduct={deleteProductFromStore}
               onRegisterStore={registerStore}
+              onCancelOrder={cancelOrder}
               onUpdateProduct={updateProductInStore}
+              onUpdateOrderStatus={updateMerchantOrderStatus}
+              onUpdateOrderNote={updateOrderNote}
               orders={visibleMerchantOrders}
               onPrepareOrder={prepareOrder}
               stores={merchantStores}
@@ -475,7 +568,11 @@ function App() {
           )}
 
           {accountType === "سائق" && (
-            <DriverDashboard orders={deliveryOrders} onUpdateStatus={updateDeliveryStatus} />
+            <DriverDashboard
+              orders={deliveryOrders}
+              onUpdateOrderNote={updateOrderNote}
+              onUpdateStatus={updateDeliveryStatus}
+            />
           )}
 
           {accountType === "الإدارة" && (

@@ -9,6 +9,7 @@ export function CustomerDashboard({
   customerOrders,
   deliveryFee,
   onAddToCart,
+  onCancelOrder,
   onCustomerInfoChange,
   onDecreaseCartItem,
   onIncreaseCartItem,
@@ -269,13 +270,25 @@ export function CustomerDashboard({
               <span>الحالة الحالية: {order.status}</span>
               <span>التوصيل إلى: {order.area}</span>
               {order.total && <strong>المبلغ النهائي: {formatMoney(order.total)}</strong>}
+              {order.internalNote && (
+                <div className="tracking-note">
+                  <strong>ملاحظة الطلب</strong>
+                  <span>{order.internalNote}</span>
+                </div>
+              )}
               <div className="tracking-steps">
-                {["طلب جديد", "جاهز للتوصيل", "قيد التوصيل", "تم التسليم"].map((step) => (
+                {["طلب جديد", "قيد التجهيز", "جاهز للتوصيل", "قيد التوصيل", "تم التسليم"].map((step) => (
                   <div className={`tracking-step ${getStepState(order.status, step)}`} key={step}>
                     {step}
                   </div>
                 ))}
               </div>
+              {order.status === "ملغي" && <div className="canceled-order-note">تم إلغاء الطلب</div>}
+              {order.status === "طلب جديد" && (
+                <button className="danger-action-button" onClick={() => onCancelOrder(order.id)}>
+                  إلغاء الطلب
+                </button>
+              )}
             </div>
           ))
         )}
@@ -353,7 +366,11 @@ function matchesProductFilter(product, filter) {
 }
 
 function getStepState(currentStatus, step) {
-  const steps = ["طلب جديد", "جاهز للتوصيل", "قيد التوصيل", "تم التسليم"]
+  if (currentStatus === "ملغي") {
+    return ""
+  }
+
+  const steps = ["طلب جديد", "قيد التجهيز", "جاهز للتوصيل", "قيد التوصيل", "تم التسليم"]
   const currentIndex = steps.indexOf(currentStatus)
   const stepIndex = steps.indexOf(step)
 

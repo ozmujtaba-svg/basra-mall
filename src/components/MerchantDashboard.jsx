@@ -6,9 +6,12 @@ const productStatuses = ["متوفر", "مخفي مؤقتًا", "نفد"]
 export function MerchantDashboard({
   merchant,
   onAddProduct,
+  onCancelOrder,
   onDeleteProduct,
   onPrepareOrder,
   onRegisterStore,
+  onUpdateOrderStatus,
+  onUpdateOrderNote,
   onUpdateProduct,
   orders,
   stores,
@@ -24,11 +27,24 @@ export function MerchantDashboard({
   const [productImage, setProductImage] = useState("")
   const [productStatus, setProductStatus] = useState(productStatuses[0])
   const [editingProductName, setEditingProductName] = useState("")
+  const [orderSearch, setOrderSearch] = useState("")
   const [message, setMessage] = useState("")
   const [productMessage, setProductMessage] = useState("")
   const selectedStore = stores.find((store) => store.name === selectedStoreName) ?? stores[0]
   const hasStores = stores.length > 0
   const rejectedStores = stores.filter((store) => store.status === "rejected")
+  const filteredOrders = orders.filter((order) => matchesOrderSearch(order, orderSearch))
+  const orderGroups = [
+    { title: "طلبات جديدة", status: "طلب جديد" },
+    { title: "قيد التجهيز", status: "قيد التجهيز" },
+    { title: "جاهزة للتوصيل", status: "جاهز للتوصيل" },
+    { title: "قيد التوصيل", status: "قيد التوصيل" },
+    { title: "مكتملة", status: "تم التسليم" },
+    { title: "ملغية", status: "ملغي" },
+  ].map((group) => ({
+    ...group,
+    orders: filteredOrders.filter((order) => order.status === group.status),
+  }))
 
   useEffect(() => {
     if (!stores.some((store) => store.name === selectedStoreName)) {
@@ -372,45 +388,97 @@ export function MerchantDashboard({
       </section>
 
       <h2>طلبات المتجر</h2>
-      <p>أي طلب يرسله الزبون يظهر هنا حتى يجهزه صاحب المتجر.</p>
+      <p>الطلبات مرتبة حسب المرحلة حتى تعرف شنو يحتاج تجهيز وشنو صار جاهز للتوصيل.</p>
+      <label className="order-search">
+        بحث الطلبات
+        <input
+          value={orderSearch}
+          onChange={(event) => setOrderSearch(event.target.value)}
+          placeholder="رقم الطلب، اسم الزبون، الهاتف، المنطقة، أو المنتج"
+        />
+      </label>
       {orders.length === 0 ? (
         <div className="order-card">
           <h3>لا توجد طلبات جديدة بعد</h3>
           <p className="order-meta">جرّب ترجع كزبون، أضف منتج للسلة، ثم اضغط إرسال الطلب.</p>
         </div>
+      ) : filteredOrders.length === 0 ? (
+        <div className="order-card">
+          <h3>لا توجد نتائج مطابقة</h3>
+          <p className="order-meta">غيّر كلمة البحث حتى تظهر الطلبات.</p>
+        </div>
       ) : (
-        orders.map((order) => (
-          <div className="order-card" key={order.id}>
-            <h3>طلب رقم {order.id}</h3>
-            <div className="order-meta">
-              الزبون: {order.customer}
-              <br />
-              الهاتف: {order.phone}
-              <br />
-              المنطقة: {order.area}
-              {order.landmark && (
-                <>
-                  <br />
-                  الدلالة: {order.landmark}
-                </>
+        <div className="merchant-order-groups">
+          {orderGroups.map((group) => (
+            <section className="merchant-order-group" key={group.status}>
+              <div className="merchant-order-group-header">
+                <h3>{group.title}</h3>
+                <span>{group.orders.length}</span>
+              </div>
+              {group.orders.length === 0 ? (
+                <div className="empty-order-group">لا توجد طلبات في هذه المرحلة.</div>
+              ) : (
+                group.orders.map((order) => (
+                  <div className="order-card" key={order.id}>
+                    <h3>طلب رقم {order.id}</h3>
+                    <div className="order-meta">
+                      الزبون: {order.customer}
+                      <br />
+                      الهاتف: {order.phone}
+                      <br />
+                      المنطقة: {order.area}
+                      {order.landmark && (
+                        <>
+                          <br />
+                          الدلالة: {order.landmark}
+                        </>
+                      )}
+                      {order.notes && (
+                        <>
+                          <br />
+                          ملاحظات: {order.notes}
+                        </>
+                      )}
+                    </div>
+                    <div className="order-products">
+                      المنتجات: {formatOrderItems(order.items)}
+                    </div>
+                    {order.total && (
+                      <div className="order-total">المبلغ النهائي: {formatMoney(order.total)}</div>
+                    )}
+                    <label className="order-note-box">
+                      ملاحظة متابعة
+                      <textarea
+                        value={order.internalNote ?? ""}
+                        onChange={(event) => onUpdateOrderNote(order.id, event.target.value)}
+                        placeholder="مثال: اتصلت بالزبون، الطلب ناقص قطعة، التوصيل العصر"
+                      />
+                    </label>
+                    <span className="status-pill">{order.status}</span>
+                    {order.status === "طلب جديد" && (
+                      <button
+                        className="prepare-button"
+                        onClick={() => onUpdateOrderStatus(order.id, "قيد التجهيز")}
+                      >
+                        بدء التجهيز
+                      </button>
+                    )}
+                    {order.status === "قيد التجهيز" && (
+                      <button className="prepare-button" onClick={() => onPrepareOrder(order.id)}>
+                        جاهز للتوصيل
+                      </button>
+                    )}
+                    {["طلب جديد", "قيد التجهيز", "جاهز للتوصيل"].includes(order.status) && (
+                      <button className="danger-action-button" onClick={() => onCancelOrder(order.id)}>
+                        إلغاء الطلب
+                      </button>
+                    )}
+                  </div>
+                ))
               )}
-              {order.notes && (
-                <>
-                  <br />
-                  ملاحظات: {order.notes}
-                </>
-              )}
-            </div>
-            <div className="order-products">
-              المنتجات: {formatOrderItems(order.items)}
-            </div>
-            {order.total && <div className="order-total">المبلغ النهائي: {formatMoney(order.total)}</div>}
-            <span className="status-pill">{order.status}</span>
-            <button className="prepare-button" onClick={() => onPrepareOrder(order.id)}>
-              تجهيز الطلب
-            </button>
-          </div>
-        ))
+            </section>
+          ))}
+        </div>
       )}
     </div>
   )
@@ -462,6 +530,19 @@ function formatOrderItems(items) {
 
 function formatMoney(value) {
   return `${Number(value).toLocaleString("en-US")} د.ع`
+}
+
+function matchesOrderSearch(order, searchText) {
+  const search = searchText.trim().toLowerCase()
+
+  if (!search) {
+    return true
+  }
+
+  const items = order.items.map((item) => `${item.name} ${item.store}`).join(" ")
+  const searchableText = `${order.id} ${order.customer} ${order.phone} ${order.area} ${order.landmark} ${order.notes} ${order.internalNote} ${items}`
+
+  return searchableText.toLowerCase().includes(search)
 }
 
 function getPriceNumber(price) {

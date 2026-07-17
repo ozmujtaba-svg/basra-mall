@@ -223,6 +223,23 @@ button span {
   font: inherit;
 }
 
+.order-search {
+  display: grid;
+  gap: 8px;
+  font-weight: bold;
+}
+
+.order-search input {
+  width: 100%;
+  border: 1px solid #ded8cc;
+  border-radius: 10px;
+  padding: 12px;
+  box-sizing: border-box;
+  background: #fbfaf7;
+  color: #18221f;
+  font: inherit;
+}
+
 .category-tabs {
   display: flex;
   flex-wrap: wrap;
@@ -478,7 +495,7 @@ button span {
 
 .tracking-steps {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -503,6 +520,20 @@ button span {
   background: #fff2ec;
   color: #d76b50;
   font-weight: bold;
+}
+
+.tracking-note {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #fff2ec;
+  color: #8b3a2d;
+}
+
+.tracking-note strong,
+.tracking-note span {
+  color: inherit;
 }
 
 .cart-list {
@@ -650,6 +681,88 @@ button span {
 
 .delivery-button.done {
   background: #d76b50;
+}
+
+.danger-action-button {
+  margin-top: 12px;
+  width: 100%;
+  border-color: #d76b50;
+  background: #fff2ec;
+  color: #8b3a2d;
+  text-align: center;
+  font-weight: bold;
+}
+
+.canceled-order-note {
+  padding: 12px;
+  border-radius: 12px;
+  background: #f3eeee;
+  color: #8b3a2d;
+  font-weight: bold;
+  text-align: center;
+}
+
+.delivery-groups {
+  display: grid;
+  gap: 14px;
+}
+
+.delivery-group {
+  display: grid;
+  gap: 12px;
+  border: 1px solid #ded8cc;
+  border-radius: 16px;
+  padding: 14px;
+  background: white;
+}
+
+.delivery-group-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.delivery-group-header h3 {
+  margin: 0;
+}
+
+.delivery-group-header span {
+  min-width: 36px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #eef7f5;
+  color: #0c6b66;
+  text-align: center;
+  font-weight: bold;
+}
+
+.delivery-order-card {
+  display: grid;
+  gap: 12px;
+}
+
+.delivery-route {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.delivery-route div {
+  padding: 12px;
+  border: 1px solid #ded8cc;
+  border-radius: 12px;
+  background: white;
+}
+
+.delivery-route small {
+  display: block;
+  color: #65706b;
+  margin-bottom: 6px;
+}
+
+.delivery-route strong {
+  color: #18221f;
 }
 
 .order-message {
@@ -805,6 +918,48 @@ button span {
 .merchant-product-actions button {
   padding: 10px 12px;
   font-weight: bold;
+}
+
+.merchant-order-groups {
+  display: grid;
+  gap: 14px;
+}
+
+.merchant-order-group {
+  display: grid;
+  gap: 12px;
+  border: 1px solid #ded8cc;
+  border-radius: 16px;
+  padding: 14px;
+  background: white;
+}
+
+.merchant-order-group-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.merchant-order-group-header h3 {
+  margin: 0;
+}
+
+.merchant-order-group-header span {
+  min-width: 36px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #eef7f5;
+  color: #0c6b66;
+  text-align: center;
+  font-weight: bold;
+}
+
+.empty-order-group {
+  padding: 14px;
+  border-radius: 12px;
+  background: #fbfaf7;
+  color: #65706b;
 }
 
 .danger-button {
@@ -1022,6 +1177,26 @@ button span {
   font-weight: bold;
 }
 
+.order-note-box {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  font-weight: bold;
+}
+
+.order-note-box textarea {
+  width: 100%;
+  min-height: 76px;
+  border: 1px solid #ded8cc;
+  border-radius: 10px;
+  padding: 12px;
+  box-sizing: border-box;
+  background: white;
+  color: #18221f;
+  font: inherit;
+  resize: vertical;
+}
+
 .status-pill {
   display: inline-block;
   margin-top: 12px;
@@ -1063,6 +1238,7 @@ button span {
   .admin-grid,
   .admin-table-head,
   .admin-table-row,
+  .delivery-route,
   .tracking-steps {
     grid-template-columns: 1fr;
   }
