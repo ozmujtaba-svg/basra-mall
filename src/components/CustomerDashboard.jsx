@@ -2,20 +2,32 @@ import { useState } from "react"
 
 const categories = ["الكل", "ملابس", "كوزمتك", "عطور", "أحذية", "إكسسوارات"]
 const productFilters = ["الكل", "المتوفر", "الكمية القليلة", "النافد"]
+const quickOrderNotes = [
+  "الاتصال قبل الوصول",
+  "التوصيل بعد العصر",
+  "لا تدق الباب، اتصل",
+  "احتاج تبديل إذا المقاس ما يناسب",
+]
 
 export function CustomerDashboard({
   cartItems,
   customerInfo,
   customerOrders,
   deliveryFee,
+  favoriteStoreNames,
+  savedCustomerAddress,
   onAddToCart,
   onCancelOrder,
   onCustomerInfoChange,
   onDecreaseCartItem,
   onIncreaseCartItem,
   onRemoveCartItem,
+  onReorder,
+  onSaveCustomerAddress,
   onSelectStore,
   onSendOrder,
+  onToggleFavoriteStore,
+  onUseSavedCustomerAddress,
   orderMessage,
   selectedStore,
   stores,
@@ -33,6 +45,7 @@ export function CustomerDashboard({
   const categoryStores =
     activeCategory === "الكل" ? stores : stores.filter((store) => store.category === activeCategory)
   const visibleStores = categoryStores.filter((store) => matchesSearch(store, normalizedSearch))
+  const favoriteStores = stores.filter((store) => favoriteStoreNames.includes(store.name))
   const subtotal = cartItems.reduce(
     (total, item) => total + getPriceValue(item.price) * item.quantity,
     0,
@@ -44,6 +57,7 @@ export function CustomerDashboard({
   const filteredProducts = visibleProducts.filter((product) =>
     matchesProductFilter(product, activeProductFilter),
   )
+  const latestOrder = customerOrders[0]
 
   return (
     <div className="customer-layout">
@@ -58,6 +72,23 @@ export function CustomerDashboard({
             placeholder="اكتب اسم متجر أو نوع أو منتج"
           />
         </label>
+        <div className="favorite-stores">
+          <div className="favorite-stores-header">
+            <h3>متاجري المفضلة</h3>
+            <span>{favoriteStores.length}</span>
+          </div>
+          {favoriteStores.length === 0 ? (
+            <div className="empty-favorites">ما ضايف متجر للمفضلة بعد.</div>
+          ) : (
+            <div className="favorite-store-list">
+              {favoriteStores.map((store) => (
+                <button key={store.name} onClick={() => onSelectStore(store)}>
+                  {store.name}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         <div className="category-tabs">
           {categories.map((category) => (
             <button
@@ -74,17 +105,24 @@ export function CustomerDashboard({
             <div className="empty-search">ماكو متجر أو منتج مطابق للبحث الحالي.</div>
           ) : (
             visibleStores.map((store) => (
-              <button
+              <div
                 className={`store-card ${safeSelectedStore.name === store.name ? "active" : ""}`}
-              key={store.name}
-              onClick={() => onSelectStore(store)}
-            >
-              {store.image && <img className="store-thumb" src={store.image} alt="" />}
-              <small>{store.category}</small>
-              <h3>{store.name}</h3>
+                key={store.name}
+              >
+                {store.image && <img className="store-thumb" src={store.image} alt="" />}
+                <small>{store.category}</small>
+                <h3>{store.name}</h3>
                 <span>{store.description}</span>
-                <strong className="store-enter">دخول المتجر</strong>
-              </button>
+                <div className="store-actions">
+                  <button onClick={() => onSelectStore(store)}>دخول المتجر</button>
+                  <button
+                    className={favoriteStoreNames.includes(store.name) ? "active" : ""}
+                    onClick={() => onToggleFavoriteStore(store.name)}
+                  >
+                    {favoriteStoreNames.includes(store.name) ? "إزالة من المفضلة" : "إضافة للمفضلة"}
+                  </button>
+                </div>
+              </div>
             ))
           )}
         </div>
@@ -169,6 +207,18 @@ export function CustomerDashboard({
       </section>
 
       <div className="cart-panel">
+        {latestOrder && (
+          <div className="latest-order-card">
+            <div>
+              <small>آخر طلب</small>
+              <h3>طلب رقم {latestOrder.id}</h3>
+              <span>الحالة: {latestOrder.status}</span>
+              <span>المنطقة: {latestOrder.area}</span>
+              {latestOrder.total && <strong>{formatMoney(latestOrder.total)}</strong>}
+            </div>
+            <button onClick={scrollToTracking}>عرض الطلبات</button>
+          </div>
+        )}
         <h2>السلة</h2>
         <p>المنتجات التي يختارها الزبون قبل إرسال الطلب.</p>
         <div className="cart-list">
@@ -198,6 +248,26 @@ export function CustomerDashboard({
         </div>
         <div className="customer-info-form">
           <h3>بيانات التوصيل</h3>
+          <div className="saved-address-card">
+            <div>
+              <span>العنوان المحفوظ</span>
+              {savedCustomerAddress.area ? (
+                <strong>
+                  {savedCustomerAddress.area} - {savedCustomerAddress.landmark || "بدون دلالة"}
+                </strong>
+              ) : (
+                <strong>ماكو عنوان محفوظ بعد</strong>
+              )}
+            </div>
+            <div className="saved-address-actions">
+              <button type="button" onClick={onSaveCustomerAddress}>
+                حفظ هذا العنوان
+              </button>
+              <button type="button" onClick={onUseSavedCustomerAddress}>
+                استخدام العنوان
+              </button>
+            </div>
+          </div>
           <div className="customer-info-grid">
             <label>
               اسم الزبون
@@ -239,6 +309,16 @@ export function CustomerDashboard({
                 placeholder="مثال: الاتصال قبل الوصول"
               />
             </label>
+            <div className="quick-notes wide-field">
+              <span>ملاحظات سريعة</span>
+              <div className="quick-notes-list">
+                {quickOrderNotes.map((note) => (
+                  <button key={note} type="button" onClick={() => addQuickNote(note)}>
+                    {note}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
         <div className="order-summary">
@@ -261,7 +341,7 @@ export function CustomerDashboard({
         {orderMessage && <div className="order-message">{orderMessage}</div>}
       </div>
 
-      <div className="tracking-panel">
+      <div className="tracking-panel" id="customer-tracking">
         <h2>تتبع الطلب</h2>
         <p>هنا يشوف الزبون حالة طلباته من الإرسال إلى التسليم.</p>
         {customerOrders.length === 0 ? (
@@ -295,6 +375,9 @@ export function CustomerDashboard({
                   إلغاء الطلب
                 </button>
               )}
+              <button className="reorder-button" onClick={() => onReorder(order)}>
+                إعادة الطلب
+              </button>
             </div>
           ))
         )}
@@ -307,6 +390,21 @@ export function CustomerDashboard({
       ...currentInfo,
       [field]: value,
     }))
+  }
+
+  function addQuickNote(note) {
+    onCustomerInfoChange((currentInfo) => {
+      const currentNotes = currentInfo.notes.trim()
+
+      if (currentNotes.includes(note)) {
+        return currentInfo
+      }
+
+      return {
+        ...currentInfo,
+        notes: currentNotes ? `${currentNotes}، ${note}` : note,
+      }
+    })
   }
 
   function selectCategory(category) {
@@ -330,6 +428,10 @@ export function CustomerDashboard({
     if (nextVisibleStores.length > 0) {
       onSelectStore(nextVisibleStores[0])
     }
+  }
+
+  function scrollToTracking() {
+    document.getElementById("customer-tracking")?.scrollIntoView({ behavior: "smooth" })
   }
 }
 

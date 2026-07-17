@@ -27,6 +27,8 @@ function App() {
   const [customerOrders, setCustomerOrders] = useState(savedAppData.customerOrders)
   const [merchantOrders, setMerchantOrders] = useState(savedAppData.merchantOrders)
   const [deliveryOrders, setDeliveryOrders] = useState(savedAppData.deliveryOrders)
+  const [favoriteStoreNames, setFavoriteStoreNames] = useState(savedAppData.favoriteStoreNames)
+  const [savedCustomerAddress, setSavedCustomerAddress] = useState(savedAppData.savedCustomerAddress)
   const [platformSettings, setPlatformSettings] = useState(loadPlatformSettings)
   const [orderMessage, setOrderMessage] = useState("")
   const [nextOrderId, setNextOrderId] = useState(savedAppData.nextOrderId)
@@ -93,8 +95,10 @@ function App() {
           customerInfo,
           customerOrders,
           deliveryOrders,
+          favoriteStoreNames,
           merchantOrders,
           nextOrderId,
+          savedCustomerAddress,
           selectedStoreName: selectedStore.name,
           stores,
         }),
@@ -107,8 +111,10 @@ function App() {
     customerInfo,
     customerOrders,
     deliveryOrders,
+    favoriteStoreNames,
     merchantOrders,
     nextOrderId,
+    savedCustomerAddress,
     selectedStore,
     stores,
   ])
@@ -139,6 +145,12 @@ function App() {
     setCustomerOrders([])
     setMerchantOrders([])
     setDeliveryOrders([])
+    setFavoriteStoreNames([])
+    setSavedCustomerAddress({
+      area: "",
+      landmark: "",
+      notes: "",
+    })
     setNextOrderId(1)
     setCustomerInfo({
       name: activeUser.accountType === "زبون" ? activeUser.name : "",
@@ -200,6 +212,43 @@ function App() {
     setOrderMessage("")
   }
 
+  function toggleFavoriteStore(storeName) {
+    setFavoriteStoreNames((currentFavorites) =>
+      currentFavorites.includes(storeName)
+        ? currentFavorites.filter((name) => name !== storeName)
+        : [...currentFavorites, storeName],
+    )
+  }
+
+  function saveCustomerAddress() {
+    if (!customerInfo.area.trim() || !customerInfo.landmark.trim()) {
+      setOrderMessage("اكتب المنطقة وأقرب نقطة دلالة حتى نحفظ العنوان.")
+      return
+    }
+
+    setSavedCustomerAddress({
+      area: customerInfo.area.trim(),
+      landmark: customerInfo.landmark.trim(),
+      notes: customerInfo.notes.trim(),
+    })
+    setOrderMessage("تم حفظ العنوان. تكدر تستخدمه بالطلبات الجاية.")
+  }
+
+  function useSavedCustomerAddress() {
+    if (!savedCustomerAddress.area.trim()) {
+      setOrderMessage("ماكو عنوان محفوظ بعد.")
+      return
+    }
+
+    setCustomerInfo((info) => ({
+      ...info,
+      area: savedCustomerAddress.area,
+      landmark: savedCustomerAddress.landmark,
+      notes: savedCustomerAddress.notes || info.notes,
+    }))
+    setOrderMessage("تم استخدام العنوان المحفوظ.")
+  }
+
   function increaseCartItem(itemToUpdate) {
     const stockItem = stores
       .find((store) => store.name === itemToUpdate.store)
@@ -247,6 +296,67 @@ function App() {
       ),
     )
     setOrderMessage("")
+  }
+
+  function reorderCustomerOrder(order) {
+    const unavailableItems = []
+    const itemsToAdd = []
+
+    order.items.forEach((orderItem) => {
+      const stockItem = stores
+        .find((store) => store.name === orderItem.store)
+        ?.products.find((product) => product.name === orderItem.name)
+      const availableQuantity = Number(stockItem?.quantity)
+      const productStatus = stockItem?.status ?? "متوفر"
+      const cartQuantity =
+        cartItems.find((item) => item.store === orderItem.store && item.name === orderItem.name)
+          ?.quantity ?? 0
+
+      if (
+        !stockItem ||
+        productStatus === "مخفي مؤقتًا" ||
+        productStatus === "نفد" ||
+        (Number.isFinite(availableQuantity) && cartQuantity + orderItem.quantity > availableQuantity)
+      ) {
+        unavailableItems.push(orderItem.name)
+        return
+      }
+
+      itemsToAdd.push({ ...stockItem, store: orderItem.store, quantity: orderItem.quantity })
+    })
+
+    if (itemsToAdd.length === 0) {
+      setOrderMessage("ما قدرنا نعيد الطلب لأن المنتجات غير متوفرة حاليًا.")
+      return
+    }
+
+    setCartItems((items) => {
+      const nextItems = [...items]
+
+      itemsToAdd.forEach((itemToAdd) => {
+        const existingItemIndex = nextItems.findIndex(
+          (item) => item.store === itemToAdd.store && item.name === itemToAdd.name,
+        )
+
+        if (existingItemIndex >= 0) {
+          nextItems[existingItemIndex] = {
+            ...nextItems[existingItemIndex],
+            quantity: nextItems[existingItemIndex].quantity + itemToAdd.quantity,
+          }
+          return
+        }
+
+        nextItems.push(itemToAdd)
+      })
+
+      return nextItems
+    })
+
+    setOrderMessage(
+      unavailableItems.length > 0
+        ? `أضفنا المتوفر للسلة. غير المتوفر: ${unavailableItems.join("، ")}.`
+        : "تمت إعادة الطلب وإضافة المنتجات للسلة.",
+    )
   }
 
   function sendOrder() {
@@ -599,13 +709,19 @@ function App() {
               customerInfo={customerInfo}
               customerOrders={customerOrders}
               deliveryFee={platformSettings.deliveryFee}
+              favoriteStoreNames={favoriteStoreNames}
+              savedCustomerAddress={savedCustomerAddress}
               onAddToCart={addToCart}
               onCustomerInfoChange={setCustomerInfo}
               onCancelOrder={cancelOrder}
               onDecreaseCartItem={decreaseCartItem}
               onIncreaseCartItem={increaseCartItem}
               onRemoveCartItem={removeCartItem}
+              onReorder={reorderCustomerOrder}
+              onSaveCustomerAddress={saveCustomerAddress}
               onSendOrder={sendOrder}
+              onToggleFavoriteStore={toggleFavoriteStore}
+              onUseSavedCustomerAddress={useSavedCustomerAddress}
               orderMessage={orderMessage}
               selectedStore={activeSelectedStore}
               stores={approvedStores}
@@ -790,8 +906,14 @@ function loadAppData() {
     },
     customerOrders: [],
     deliveryOrders: [],
+    favoriteStoreNames: [],
     merchantOrders: [],
     nextOrderId: 1,
+    savedCustomerAddress: {
+      area: "",
+      landmark: "",
+      notes: "",
+    },
     selectedStore: customerStores[0],
     stores: customerStores,
   }
@@ -808,8 +930,15 @@ function loadAppData() {
       customerInfo: savedData.customerInfo ?? defaultAppData.customerInfo,
       customerOrders: Array.isArray(savedData.customerOrders) ? savedData.customerOrders : [],
       deliveryOrders: Array.isArray(savedData.deliveryOrders) ? savedData.deliveryOrders : [],
+      favoriteStoreNames: Array.isArray(savedData.favoriteStoreNames)
+        ? savedData.favoriteStoreNames
+        : [],
       merchantOrders: Array.isArray(savedData.merchantOrders) ? savedData.merchantOrders : [],
       nextOrderId: Number.isFinite(savedData.nextOrderId) ? savedData.nextOrderId : 1,
+      savedCustomerAddress: normalizeSavedAddress(
+        savedData.savedCustomerAddress,
+        defaultAppData.savedCustomerAddress,
+      ),
       stores:
         Array.isArray(savedData.stores) && savedData.stores.length > 0
           ? savedData.stores.map(normalizeStore)
@@ -833,6 +962,18 @@ function normalizeStore(store) {
   return {
     ...store,
     products: Array.isArray(store.products) ? store.products : [],
+  }
+}
+
+function normalizeSavedAddress(address, fallback) {
+  if (!address || typeof address !== "object") {
+    return fallback
+  }
+
+  return {
+    area: typeof address.area === "string" ? address.area : "",
+    landmark: typeof address.landmark === "string" ? address.landmark : "",
+    notes: typeof address.notes === "string" ? address.notes : "",
   }
 }
 

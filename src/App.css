@@ -260,6 +260,55 @@ button span {
   color: white;
 }
 
+.favorite-stores {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #ded8cc;
+  border-radius: 12px;
+  background: #fbfaf7;
+}
+
+.favorite-stores-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.favorite-stores-header h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.favorite-stores-header span {
+  min-width: 32px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #eef7f5;
+  color: #0c6b66;
+  text-align: center;
+  font-weight: bold;
+}
+
+.favorite-store-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.favorite-store-list button {
+  padding: 10px 12px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.empty-favorites {
+  color: #65706b;
+  line-height: 1.6;
+}
+
 .product-filter-tabs {
   display: flex;
   flex-wrap: wrap;
@@ -325,6 +374,26 @@ button span {
   color: #0c6b66;
 }
 
+.store-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.store-actions button {
+  padding: 10px 12px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.store-actions button:first-child,
+.store-actions button.active {
+  border-color: #0c6b66;
+  background: #0c6b66;
+  color: white;
+}
+
 .empty-search {
   padding: 16px;
   border-radius: 12px;
@@ -349,6 +418,44 @@ button span {
 .store-detail-panel {
   display: grid;
   gap: 16px;
+}
+
+.latest-order-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 16px;
+  border-radius: 14px;
+  background: #eef7f5;
+  border: 1px solid #b8d8d3;
+}
+
+.latest-order-card small,
+.latest-order-card span {
+  display: block;
+  color: #65706b;
+  line-height: 1.6;
+}
+
+.latest-order-card h3 {
+  margin: 4px 0;
+}
+
+.latest-order-card strong {
+  display: block;
+  margin-top: 6px;
+  color: #0c6b66;
+}
+
+.latest-order-card button {
+  border: 0;
+  background: #0c6b66;
+  color: white;
+  padding: 12px 14px;
+  text-align: center;
+  font-weight: bold;
 }
 
 .store-detail-hero {
@@ -597,6 +704,49 @@ button span {
   margin: 0 0 12px;
 }
 
+.saved-address-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 14px;
+  padding: 14px;
+  border: 1px solid #c9ddd9;
+  border-radius: 12px;
+  background: #eef7f5;
+}
+
+.saved-address-card span {
+  display: block;
+  color: #65706b;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.saved-address-card strong {
+  display: block;
+  color: #0c6b66;
+  line-height: 1.6;
+}
+
+.saved-address-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.saved-address-actions button {
+  padding: 10px 12px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.saved-address-actions button:first-child {
+  border-color: #0c6b66;
+  background: #0c6b66;
+  color: white;
+}
+
 .customer-info-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -628,6 +778,31 @@ button span {
 
 .wide-field {
   grid-column: 1 / -1;
+}
+
+.quick-notes {
+  display: grid;
+  gap: 8px;
+}
+
+.quick-notes > span {
+  font-weight: bold;
+}
+
+.quick-notes-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.quick-notes-list button {
+  border-color: #c9ddd9;
+  border-radius: 999px;
+  background: #eef7f5;
+  color: #0c6b66;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-weight: bold;
 }
 
 .order-summary {
@@ -689,6 +864,15 @@ button span {
   border-color: #d76b50;
   background: #fff2ec;
   color: #8b3a2d;
+  text-align: center;
+  font-weight: bold;
+}
+
+.reorder-button {
+  width: 100%;
+  border: 0;
+  background: #0c6b66;
+  color: white;
   text-align: center;
   font-weight: bold;
 }
@@ -1537,6 +1721,7 @@ button span {
   .admin-table-row,
   .delivery-route,
   .settings-grid,
+  .saved-address-card,
   .tracking-steps {
     grid-template-columns: 1fr;
   }
@@ -1546,6 +1731,7 @@ button span {
   .order-summary div,
   .cart-item,
   .store-toolbar,
+  .latest-order-card,
   .merchant-section-top,
   .section-header-actions,
   .admin-section.danger-zone {
@@ -1555,5 +1741,9 @@ button span {
   .merchant-product-actions {
     display: grid;
     justify-content: stretch;
+  }
+
+  .saved-address-actions {
+    display: grid;
   }
 }
