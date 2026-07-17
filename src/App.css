@@ -1210,6 +1210,73 @@ button span {
   gap: 10px;
 }
 
+.merchant-order-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 14px 0;
+}
+
+.merchant-order-summary div {
+  padding: 14px;
+  border: 1px solid #ded8cc;
+  border-radius: 12px;
+  background: white;
+}
+
+.merchant-order-summary span {
+  display: block;
+  color: #65706b;
+  line-height: 1.6;
+}
+
+.merchant-order-summary strong {
+  display: block;
+  color: #0c6b66;
+  font-size: 24px;
+}
+
+.merchant-order-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0;
+  padding: 12px;
+  border: 1px solid #ded8cc;
+  border-radius: 12px;
+  background: white;
+}
+
+.merchant-order-filter button {
+  border-radius: 999px;
+  padding: 10px 12px;
+  font-weight: bold;
+}
+
+.merchant-order-filter button.active {
+  border-color: #0c6b66;
+  background: #0c6b66;
+  color: white;
+}
+
+.merchant-order-sort {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 14px;
+  font-weight: bold;
+}
+
+.merchant-order-sort select {
+  width: 100%;
+  border: 1px solid #ded8cc;
+  border-radius: 10px;
+  padding: 12px;
+  box-sizing: border-box;
+  background: white;
+  color: #18221f;
+  font: inherit;
+}
+
 .merchant-order-groups {
   display: grid;
   gap: 14px;
@@ -1250,6 +1317,115 @@ button span {
   border-radius: 12px;
   background: #fbfaf7;
   color: #65706b;
+}
+
+.merchant-order-card {
+  display: grid;
+  gap: 14px;
+}
+
+.merchant-order-card-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: start;
+}
+
+.merchant-order-card-top small {
+  display: block;
+  color: #65706b;
+  line-height: 1.6;
+}
+
+.merchant-order-card-top h3 {
+  margin: 0;
+  font-size: 28px;
+}
+
+.merchant-order-facts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.merchant-order-facts div,
+.merchant-order-money,
+.merchant-order-items div {
+  padding: 12px;
+  border-radius: 12px;
+  background: #fbfaf7;
+}
+
+.merchant-order-facts span,
+.merchant-order-items small,
+.merchant-order-money span {
+  display: block;
+  color: #65706b;
+  line-height: 1.6;
+}
+
+.merchant-order-facts strong,
+.merchant-order-items strong,
+.merchant-order-money strong {
+  display: block;
+  color: #18221f;
+}
+
+.merchant-order-items {
+  display: grid;
+  gap: 8px;
+}
+
+.merchant-order-items div {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.merchant-order-money {
+  display: grid;
+  gap: 4px;
+  background: #eef7f5;
+}
+
+.merchant-order-money strong {
+  color: #0c6b66;
+  font-size: 18px;
+}
+
+.merchant-order-quick-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.merchant-order-quick-summary div {
+  padding: 12px;
+  border: 1px solid #c9ddd9;
+  border-radius: 12px;
+  background: #eef7f5;
+}
+
+.merchant-order-quick-summary span {
+  display: block;
+  color: #65706b;
+  line-height: 1.6;
+}
+
+.merchant-order-quick-summary strong {
+  display: block;
+  color: #0c6b66;
+}
+
+.merchant-order-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.merchant-order-actions button {
+  margin-top: 0;
 }
 
 .danger-button {
@@ -1714,6 +1890,11 @@ button span {
   .store-detail-panel .product-list,
   .merchant-form,
   .merchant-product-row,
+  .merchant-order-summary,
+  .merchant-order-facts,
+  .merchant-order-items div,
+  .merchant-order-quick-summary,
+  .merchant-order-actions,
   .admin-grid,
   .quick-stats-grid,
   .status-breakdown,
@@ -1732,6 +1913,7 @@ button span {
   .cart-item,
   .store-toolbar,
   .latest-order-card,
+  .merchant-order-card-top,
   .merchant-section-top,
   .section-header-actions,
   .admin-section.danger-zone {

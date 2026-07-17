@@ -2,6 +2,20 @@ import { useEffect, useState } from "react"
 
 const storeCategories = ["ملابس", "كوزمتك", "عطور", "أحذية", "إكسسوارات"]
 const productStatuses = ["متوفر", "مخفي مؤقتًا", "نفد"]
+const orderStatusFilters = [
+  { label: "الكل", value: "الكل" },
+  { label: "طلب جديد", value: "طلب جديد" },
+  { label: "قيد التجهيز", value: "قيد التجهيز" },
+  { label: "جاهز للتوصيل", value: "جاهز للتوصيل" },
+  { label: "قيد التوصيل", value: "قيد التوصيل" },
+  { label: "تم التسليم", value: "تم التسليم" },
+  { label: "ملغي", value: "ملغي" },
+]
+const orderSortOptions = [
+  { label: "الأحدث أولًا", value: "newest" },
+  { label: "الأقدم أولًا", value: "oldest" },
+  { label: "الأعلى مبلغًا", value: "highest-total" },
+]
 const MAX_PRODUCT_IMAGE_SIZE = 900
 
 export function MerchantDashboard({
@@ -30,13 +44,21 @@ export function MerchantDashboard({
   const [productStatus, setProductStatus] = useState(productStatuses[0])
   const [editingProductName, setEditingProductName] = useState("")
   const [orderSearch, setOrderSearch] = useState("")
+  const [orderStatusFilter, setOrderStatusFilter] = useState("الكل")
+  const [orderSort, setOrderSort] = useState(orderSortOptions[0].value)
   const [message, setMessage] = useState("")
   const [productMessage, setProductMessage] = useState("")
   const selectedStore = stores.find((store) => store.name === selectedStoreName) ?? stores[0]
   const hasStores = stores.length > 0
   const rejectedStores = stores.filter((store) => store.status === "rejected")
   const merchantRevenue = calculateMerchantRevenue(orders, commissionRate)
-  const filteredOrders = orders.filter((order) => matchesOrderSearch(order, orderSearch))
+  const filteredOrders = orders.filter(
+    (order) =>
+      matchesOrderSearch(order, orderSearch) &&
+      (orderStatusFilter === "الكل" || order.status === orderStatusFilter),
+  )
+  const sortedOrders = sortOrders(filteredOrders, orderSort)
+  const merchantOrderSummary = getMerchantOrderSummary(orders)
   const orderGroups = [
     { title: "طلبات جديدة", status: "طلب جديد" },
     { title: "قيد التجهيز", status: "قيد التجهيز" },
@@ -46,8 +68,8 @@ export function MerchantDashboard({
     { title: "ملغية", status: "ملغي" },
   ].map((group) => ({
     ...group,
-    orders: filteredOrders.filter((order) => order.status === group.status),
-  }))
+    orders: sortedOrders.filter((order) => order.status === group.status),
+  })).filter((group) => orderStatusFilter === "الكل" || group.status === orderStatusFilter)
 
   useEffect(() => {
     if (!stores.some((store) => store.name === selectedStoreName)) {
@@ -429,6 +451,35 @@ export function MerchantDashboard({
 
       <h2>طلبات المتجر</h2>
       <p>الطلبات مرتبة حسب المرحلة حتى تعرف شنو يحتاج تجهيز وشنو صار جاهز للتوصيل.</p>
+      <div className="merchant-order-summary">
+        <div>
+          <span>طلبات جديدة</span>
+          <strong>{merchantOrderSummary.newOrders}</strong>
+        </div>
+        <div>
+          <span>قيد التجهيز</span>
+          <strong>{merchantOrderSummary.preparingOrders}</strong>
+        </div>
+        <div>
+          <span>جاهزة للتوصيل</span>
+          <strong>{merchantOrderSummary.readyOrders}</strong>
+        </div>
+        <div>
+          <span>مجموع الطلبات</span>
+          <strong>{merchantOrderSummary.totalOrders}</strong>
+        </div>
+      </div>
+      <div className="merchant-order-filter">
+        {orderStatusFilters.map((filter) => (
+          <button
+            className={orderStatusFilter === filter.value ? "active" : ""}
+            key={filter.value}
+            onClick={() => setOrderStatusFilter(filter.value)}
+          >
+            {filter.label}
+          </button>
+        ))}
+      </div>
       <label className="order-search">
         بحث الطلبات
         <input
@@ -436,6 +487,16 @@ export function MerchantDashboard({
           onChange={(event) => setOrderSearch(event.target.value)}
           placeholder="رقم الطلب، اسم الزبون، الهاتف، المنطقة، أو المنتج"
         />
+      </label>
+      <label className="merchant-order-sort">
+        ترتيب الطلبات
+        <select value={orderSort} onChange={(event) => setOrderSort(event.target.value)}>
+          {orderSortOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
       </label>
       {orders.length === 0 ? (
         <div className="order-card">
@@ -459,33 +520,64 @@ export function MerchantDashboard({
                 <div className="empty-order-group">لا توجد طلبات في هذه المرحلة.</div>
               ) : (
                 group.orders.map((order) => (
-                  <div className="order-card" key={order.id}>
-                    <h3>طلب رقم {order.id}</h3>
-                    <div className="order-meta">
-                      الزبون: {order.customer}
-                      <br />
-                      الهاتف: {order.phone}
-                      <br />
-                      المنطقة: {order.area}
-                      {order.landmark && (
-                        <>
-                          <br />
-                          الدلالة: {order.landmark}
-                        </>
-                      )}
-                      {order.notes && (
-                        <>
-                          <br />
-                          ملاحظات: {order.notes}
-                        </>
-                      )}
+                  <div className="order-card merchant-order-card" key={order.id}>
+                    <div className="merchant-order-card-top">
+                      <div>
+                        <small>طلب رقم</small>
+                        <h3>{order.id}</h3>
+                      </div>
+                      <span className="status-pill">{order.status}</span>
                     </div>
-                    <div className="order-products">
-                      المنتجات: {formatOrderItems(order.items)}
+                    <div className="merchant-order-facts">
+                      <div>
+                        <span>الزبون</span>
+                        <strong>{order.customer}</strong>
+                      </div>
+                      <div>
+                        <span>الهاتف</span>
+                        <strong>{order.phone}</strong>
+                      </div>
+                      <div>
+                        <span>المنطقة</span>
+                        <strong>{order.area}</strong>
+                      </div>
+                      <div>
+                        <span>عدد القطع</span>
+                        <strong>{getOrderItemCount(order.items)}</strong>
+                      </div>
                     </div>
-                    {order.total && (
-                      <div className="order-total">المبلغ النهائي: {formatMoney(order.total)}</div>
+                    {order.landmark && (
+                      <div className="order-meta">الدلالة: {order.landmark}</div>
                     )}
+                    {order.notes && <div className="order-meta">ملاحظات الزبون: {order.notes}</div>}
+                    <div className="merchant-order-items">
+                      {order.items.map((item) => (
+                        <div key={`${order.id}-${item.store}-${item.name}`}>
+                          <span>{item.name}</span>
+                          <strong>{item.quantity} قطعة</strong>
+                          <small>{item.store}</small>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="merchant-order-money">
+                      <span>مجموع المنتجات: {formatMoney(order.subtotal)}</span>
+                      <span>التوصيل: {formatMoney(order.deliveryFee)}</span>
+                      <strong>المبلغ الكلي: {formatMoney(order.total)}</strong>
+                    </div>
+                    <div className="merchant-order-quick-summary">
+                      <div>
+                        <span>عمولة الإدارة</span>
+                        <strong>{formatMoney(getOrderCommission(order, commissionRate))}</strong>
+                      </div>
+                      <div>
+                        <span>ربح المتجر المتوقع</span>
+                        <strong>{formatMoney(getOrderMerchantProfit(order, commissionRate))}</strong>
+                      </div>
+                      <div>
+                        <span>حالة العمل</span>
+                        <strong>{getMerchantOrderWorkLabel(order.status)}</strong>
+                      </div>
+                    </div>
                     <label className="order-note-box">
                       ملاحظة متابعة
                       <textarea
@@ -494,25 +586,26 @@ export function MerchantDashboard({
                         placeholder="مثال: اتصلت بالزبون، الطلب ناقص قطعة، التوصيل العصر"
                       />
                     </label>
-                    <span className="status-pill">{order.status}</span>
-                    {order.status === "طلب جديد" && (
-                      <button
-                        className="prepare-button"
-                        onClick={() => onUpdateOrderStatus(order.id, "قيد التجهيز")}
-                      >
-                        بدء التجهيز
-                      </button>
-                    )}
-                    {order.status === "قيد التجهيز" && (
-                      <button className="prepare-button" onClick={() => onPrepareOrder(order.id)}>
-                        جاهز للتوصيل
-                      </button>
-                    )}
-                    {["طلب جديد", "قيد التجهيز", "جاهز للتوصيل"].includes(order.status) && (
-                      <button className="danger-action-button" onClick={() => onCancelOrder(order.id)}>
-                        إلغاء الطلب
-                      </button>
-                    )}
+                    <div className="merchant-order-actions">
+                      {order.status === "طلب جديد" && (
+                        <button
+                          className="prepare-button"
+                          onClick={() => onUpdateOrderStatus(order.id, "قيد التجهيز")}
+                        >
+                          قبول الطلب
+                        </button>
+                      )}
+                      {order.status === "قيد التجهيز" && (
+                        <button className="prepare-button" onClick={() => onPrepareOrder(order.id)}>
+                          جاهز للتوصيل
+                        </button>
+                      )}
+                      {["طلب جديد", "قيد التجهيز", "جاهز للتوصيل"].includes(order.status) && (
+                        <button className="danger-action-button" onClick={() => onCancelOrder(order.id)}>
+                          رفض الطلب
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))
               )}
@@ -594,8 +687,63 @@ function getStoreStatusLabel(store) {
   return store.name
 }
 
-function formatOrderItems(items) {
-  return items.map((item) => `${item.name} × ${item.quantity}`).join("، ")
+function getOrderItemCount(items) {
+  return items.reduce((total, item) => total + Number(item.quantity), 0)
+}
+
+function getMerchantOrderSummary(orders) {
+  return {
+    newOrders: orders.filter((order) => order.status === "طلب جديد").length,
+    preparingOrders: orders.filter((order) => order.status === "قيد التجهيز").length,
+    readyOrders: orders.filter((order) => order.status === "جاهز للتوصيل").length,
+    totalOrders: orders.length,
+  }
+}
+
+function sortOrders(orders, sortType) {
+  return [...orders].sort((firstOrder, secondOrder) => {
+    if (sortType === "oldest") {
+      return firstOrder.id - secondOrder.id
+    }
+
+    if (sortType === "highest-total") {
+      return Number(secondOrder.total) - Number(firstOrder.total)
+    }
+
+    return secondOrder.id - firstOrder.id
+  })
+}
+
+function getOrderCommission(order, commissionRate) {
+  return Number(order.subtotal) * commissionRate
+}
+
+function getOrderMerchantProfit(order, commissionRate) {
+  return Number(order.subtotal) - getOrderCommission(order, commissionRate)
+}
+
+function getMerchantOrderWorkLabel(status) {
+  if (status === "طلب جديد") {
+    return "يحتاج قبول"
+  }
+
+  if (status === "قيد التجهيز") {
+    return "يحتاج تجهيز"
+  }
+
+  if (status === "جاهز للتوصيل") {
+    return "ينتظر السائق"
+  }
+
+  if (status === "قيد التوصيل") {
+    return "عند السائق"
+  }
+
+  if (status === "تم التسليم") {
+    return "مكتمل"
+  }
+
+  return "متوقف"
 }
 
 function formatMoney(value) {
