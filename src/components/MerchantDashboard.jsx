@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 
 const storeCategories = ["ملابس", "كوزمتك", "عطور", "أحذية", "إكسسوارات"]
 const productStatuses = ["متوفر", "مخفي مؤقتًا", "نفد"]
+const MAX_PRODUCT_IMAGE_SIZE = 900
 
 export function MerchantDashboard({
   commissionRate,
@@ -133,9 +134,14 @@ export function MerchantDashboard({
 
     const reader = new FileReader()
 
-    reader.onload = () => {
-      setProductImage(String(reader.result))
-      setProductMessage("تم اختيار الصورة. اضغط حفظ المنتج حتى تنحفظ.")
+    reader.onload = async () => {
+      try {
+        const image = await resizeImage(String(reader.result))
+        setProductImage(image)
+        setProductMessage("تم اختيار الصورة وتصغيرها. اضغط حفظ المنتج حتى تنحفظ.")
+      } catch {
+        setProductMessage("ما قدرنا نجهز الصورة. جرّب صورة ثانية أو استخدم رابط صورة.")
+      }
     }
 
     reader.readAsDataURL(file)
@@ -540,6 +546,36 @@ function getProductStatus(quantity, manualStatus) {
   }
 
   return { label: "متوفر", className: "available" }
+}
+
+function resizeImage(imageSource) {
+  return new Promise((resolve, reject) => {
+    const image = new Image()
+
+    image.onload = () => {
+      const ratio = Math.min(
+        MAX_PRODUCT_IMAGE_SIZE / image.width,
+        MAX_PRODUCT_IMAGE_SIZE / image.height,
+        1,
+      )
+      const canvas = document.createElement("canvas")
+      canvas.width = Math.round(image.width * ratio)
+      canvas.height = Math.round(image.height * ratio)
+
+      const context = canvas.getContext("2d")
+
+      if (!context) {
+        reject(new Error("Canvas is not available"))
+        return
+      }
+
+      context.drawImage(image, 0, 0, canvas.width, canvas.height)
+      resolve(canvas.toDataURL("image/jpeg", 0.78))
+    }
+
+    image.onerror = reject
+    image.src = imageSource
+  })
 }
 
 function getStoreStatusLabel(store) {

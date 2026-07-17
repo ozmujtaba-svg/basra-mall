@@ -23,6 +23,12 @@ export function CustomerDashboard({
   const [activeCategory, setActiveCategory] = useState("الكل")
   const [activeProductFilter, setActiveProductFilter] = useState("الكل")
   const [searchText, setSearchText] = useState("")
+  const safeSelectedStore = selectedStore ?? stores[0] ?? {
+    category: "",
+    description: "لا يوجد متجر متاح حاليًا.",
+    name: "لا يوجد متجر",
+    products: [],
+  }
   const normalizedSearch = searchText.trim().toLowerCase()
   const categoryStores =
     activeCategory === "الكل" ? stores : stores.filter((store) => store.category === activeCategory)
@@ -32,7 +38,7 @@ export function CustomerDashboard({
     0,
   )
   const finalTotal = cartItems.length > 0 ? subtotal + deliveryFee : 0
-  const visibleProducts = selectedStore.products.filter(
+  const visibleProducts = safeSelectedStore.products.filter(
     (product) => product.status !== "مخفي مؤقتًا",
   )
   const filteredProducts = visibleProducts.filter((product) =>
@@ -69,7 +75,7 @@ export function CustomerDashboard({
           ) : (
             visibleStores.map((store) => (
               <button
-                className={`store-card ${selectedStore.name === store.name ? "active" : ""}`}
+                className={`store-card ${safeSelectedStore.name === store.name ? "active" : ""}`}
               key={store.name}
               onClick={() => onSelectStore(store)}
             >
@@ -87,11 +93,11 @@ export function CustomerDashboard({
       <section className="store-detail-panel">
         <div className="store-detail-hero">
           <div>
-            <small>{selectedStore.category}</small>
-            <h2>{selectedStore.name}</h2>
-            <p>{selectedStore.description}</p>
+            <small>{safeSelectedStore.category}</small>
+            <h2>{safeSelectedStore.name}</h2>
+            <p>{safeSelectedStore.description}</p>
           </div>
-          {selectedStore.image && <img className="store-hero-image" src={selectedStore.image} alt="" />}
+          {safeSelectedStore.image && <img className="store-hero-image" src={safeSelectedStore.image} alt="" />}
           <div className="store-detail-meta">
             <span>{filteredProducts.length} منتجات</span>
             <span>التوصيل داخل البصرة</span>
@@ -101,7 +107,7 @@ export function CustomerDashboard({
           <button className="mini-back-button" onClick={() => onSelectStore(stores[0])}>
             رجوع للمتاجر
           </button>
-          <span>المتجر المختار: {selectedStore.name}</span>
+          <span>المتجر المختار: {safeSelectedStore.name}</span>
         </div>
         <div className="product-filter-tabs">
           {productFilters.map((filter) => (
@@ -128,7 +134,7 @@ export function CustomerDashboard({
           ) : (
             filteredProducts.map((product) => {
               const quantity = Number(product.quantity)
-              const cartQuantity = getCartQuantity(cartItems, selectedStore.name, product.name)
+              const cartQuantity = getCartQuantity(cartItems, safeSelectedStore.name, product.name)
               const isSoldOut = product.status === "نفد" || quantity === 0
               const hasStock = !isSoldOut && (!Number.isFinite(quantity) || quantity > 0)
               const hasLowStock = hasStock && Number.isFinite(quantity) && quantity <= 3
@@ -151,7 +157,7 @@ export function CustomerDashboard({
                   <button
                     className="add-button"
                     disabled={disabled}
-                    onClick={() => onAddToCart(product, selectedStore)}
+                    onClick={() => onAddToCart(product, safeSelectedStore)}
                   >
                     {!hasStock ? "غير متاح للشراء" : reachedLimit ? "وصلت للكمية المتوفرة" : "إضافة للسلة"}
                   </button>

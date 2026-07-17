@@ -1,3 +1,5 @@
+import { useState } from "react"
+
 export function AdminDashboard({
   allOrders,
   commissionRate,
@@ -5,10 +7,12 @@ export function AdminDashboard({
   estimatedRevenue,
   onApproveStore,
   onRejectStore,
+  onResetData,
   onSettingsChange,
   settings,
   stores,
 }) {
+  const [dataMessage, setDataMessage] = useState("")
   const pendingStores = stores.filter((store) => store.status === "pending")
   const rejectedStores = stores.filter((store) => store.status === "rejected")
   const canceledOrders = allOrders.filter((order) => order.status === "ملغي")
@@ -93,6 +97,17 @@ export function AdminDashboard({
         </div>
       </section>
 
+      <section className="admin-section danger-zone">
+        <div>
+          <h3>إدارة البيانات التجريبية</h3>
+          <p>استخدم هذا الزر فقط إذا تريد ترجع المتاجر والطلبات والسلة للوضع الأول.</p>
+        </div>
+        <button className="reset-data-button" onClick={confirmResetData}>
+          مسح البيانات التجريبية
+        </button>
+        {dataMessage && <div className="admin-success-message">{dataMessage}</div>}
+      </section>
+
       <section className="admin-section">
         <h3>تفصيل الأرباح</h3>
         <div className="revenue-grid">
@@ -165,7 +180,15 @@ export function AdminDashboard({
       </section>
 
       <section className="admin-section">
-        <h3>متابعة الطلبات</h3>
+        <div className="section-header-actions">
+          <div>
+            <h3>متابعة الطلبات</h3>
+            <p>صدّر ملخص الطلبات حتى تراجعه خارج التطبيق.</p>
+          </div>
+          <button className="export-orders-button" onClick={exportOrders}>
+            تصدير ملخص الطلبات
+          </button>
+        </div>
         {allOrders.length === 0 ? (
           <div className="order-card">
             <h3>لا توجد طلبات بعد</h3>
@@ -228,10 +251,69 @@ export function AdminDashboard({
       [field]: value,
     }))
   }
+
+  function confirmResetData() {
+    const accepted = window.confirm(
+      "متأكد تريد تمسح البيانات التجريبية؟ راح ترجع المتاجر والطلبات والسلة للبداية.",
+    )
+
+    if (accepted) {
+      onResetData()
+      setDataMessage("تم مسح البيانات التجريبية ورجع التطبيق للبداية.")
+    }
+  }
+
+  function exportOrders() {
+    if (allOrders.length === 0) {
+      setDataMessage("ماكو طلبات حاليًا حتى نصدرها.")
+      return
+    }
+
+    const rows = [
+      [
+        "رقم الطلب",
+        "الزبون",
+        "الهاتف",
+        "المنطقة",
+        "الحالة",
+        "المنتجات",
+        "مجموع المنتجات",
+        "أجرة التوصيل",
+        "المبلغ النهائي",
+      ],
+      ...allOrders.map((order) => [
+        order.id,
+        order.customer,
+        order.phone,
+        order.area,
+        order.status,
+        formatOrderItems(order.items),
+        order.subtotal,
+        order.deliveryFee,
+        order.total,
+      ]),
+    ]
+    const csvContent = rows.map((row) => row.map(formatCsvCell).join(",")).join("\n")
+    const blob = new Blob([`\uFEFF${csvContent}`], { type: "text/csv;charset=utf-8" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+
+    link.href = url
+    link.download = "basra-mall-orders.csv"
+    link.click()
+    URL.revokeObjectURL(url)
+    setDataMessage("تم تجهيز ملف ملخص الطلبات.")
+  }
 }
 
 function formatOrderItems(items) {
   return items.map((item) => `${item.name} × ${item.quantity}`).join("، ")
+}
+
+function formatCsvCell(value) {
+  const text = String(value ?? "")
+
+  return `"${text.replaceAll('"', '""')}"`
 }
 
 function getStoreStatusLabel(status) {

@@ -11,35 +11,31 @@ import { Shell } from "./components/Shell"
 const DELIVERY_FEE = 5000
 const ADMIN_COMMISSION_RATE = 0.05
 const SETTINGS_STORAGE_KEY = "basra-mall-settings"
+const APP_DATA_STORAGE_KEY = "basra-mall-data"
 const defaultPlatformSettings = {
   commissionRate: ADMIN_COMMISSION_RATE,
   deliveryFee: DELIVERY_FEE,
 }
 
 function App() {
+  const [savedAppData] = useState(loadAppData)
   const [accountType, setAccountType] = useState("زبون")
   const [currentView, setCurrentView] = useState("login")
-  const [stores, setStores] = useState(customerStores)
-  const [selectedStore, setSelectedStore] = useState(customerStores[0])
-  const [cartItems, setCartItems] = useState([])
-  const [customerOrders, setCustomerOrders] = useState([])
-  const [merchantOrders, setMerchantOrders] = useState([])
-  const [deliveryOrders, setDeliveryOrders] = useState([])
+  const [stores, setStores] = useState(savedAppData.stores)
+  const [selectedStore, setSelectedStore] = useState(savedAppData.selectedStore)
+  const [cartItems, setCartItems] = useState(savedAppData.cartItems)
+  const [customerOrders, setCustomerOrders] = useState(savedAppData.customerOrders)
+  const [merchantOrders, setMerchantOrders] = useState(savedAppData.merchantOrders)
+  const [deliveryOrders, setDeliveryOrders] = useState(savedAppData.deliveryOrders)
   const [platformSettings, setPlatformSettings] = useState(loadPlatformSettings)
   const [orderMessage, setOrderMessage] = useState("")
-  const [nextOrderId, setNextOrderId] = useState(1)
+  const [nextOrderId, setNextOrderId] = useState(savedAppData.nextOrderId)
   const [loginInfo, setLoginInfo] = useState({
     name: "",
     phone: "",
   })
   const [loginMessage, setLoginMessage] = useState("")
-  const [customerInfo, setCustomerInfo] = useState({
-    name: "",
-    phone: "",
-    area: "",
-    landmark: "",
-    notes: "",
-  })
+  const [customerInfo, setCustomerInfo] = useState(savedAppData.customerInfo)
 
   const dashboard = dashboardData[accountType]
   const allOrders = [
@@ -88,6 +84,35 @@ function App() {
     localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(platformSettings))
   }, [platformSettings])
 
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        APP_DATA_STORAGE_KEY,
+        JSON.stringify({
+          cartItems,
+          customerInfo,
+          customerOrders,
+          deliveryOrders,
+          merchantOrders,
+          nextOrderId,
+          selectedStoreName: selectedStore.name,
+          stores,
+        }),
+      )
+    } catch (error) {
+      console.warn("Could not save Basra Mall data.", error)
+    }
+  }, [
+    cartItems,
+    customerInfo,
+    customerOrders,
+    deliveryOrders,
+    merchantOrders,
+    nextOrderId,
+    selectedStore,
+    stores,
+  ])
+
   function enterDashboard() {
     if (!loginInfo.name.trim() || !loginInfo.phone.trim()) {
       setLoginMessage("اكتب الاسم ورقم الهاتف حتى تدخل للتطبيق.")
@@ -104,6 +129,25 @@ function App() {
 
     setLoginMessage("")
     setCurrentView("dashboard")
+  }
+
+  function resetDemoData() {
+    localStorage.removeItem(APP_DATA_STORAGE_KEY)
+    setStores(customerStores)
+    setSelectedStore(customerStores[0])
+    setCartItems([])
+    setCustomerOrders([])
+    setMerchantOrders([])
+    setDeliveryOrders([])
+    setNextOrderId(1)
+    setCustomerInfo({
+      name: activeUser.accountType === "زبون" ? activeUser.name : "",
+      phone: activeUser.accountType === "زبون" ? activeUser.phone : "",
+      area: "",
+      landmark: "",
+      notes: "",
+    })
+    setOrderMessage("")
   }
 
   function addToCart(product, store) {
@@ -600,6 +644,7 @@ function App() {
               commissionRate={platformSettings.commissionRate}
               onApproveStore={approveStore}
               onRejectStore={rejectStore}
+              onResetData={resetDemoData}
               deliveredOrders={deliveredOrders}
               estimatedRevenue={estimatedRevenue}
               onSettingsChange={setPlatformSettings}
@@ -731,6 +776,64 @@ function loadPlatformSettings() {
   }
 
   return defaultPlatformSettings
+}
+
+function loadAppData() {
+  const defaultAppData = {
+    cartItems: [],
+    customerInfo: {
+      name: "",
+      phone: "",
+      area: "",
+      landmark: "",
+      notes: "",
+    },
+    customerOrders: [],
+    deliveryOrders: [],
+    merchantOrders: [],
+    nextOrderId: 1,
+    selectedStore: customerStores[0],
+    stores: customerStores,
+  }
+
+  try {
+    const savedData = JSON.parse(localStorage.getItem(APP_DATA_STORAGE_KEY))
+
+    if (!savedData) {
+      return defaultAppData
+    }
+
+    const appData = {
+      cartItems: Array.isArray(savedData.cartItems) ? savedData.cartItems : [],
+      customerInfo: savedData.customerInfo ?? defaultAppData.customerInfo,
+      customerOrders: Array.isArray(savedData.customerOrders) ? savedData.customerOrders : [],
+      deliveryOrders: Array.isArray(savedData.deliveryOrders) ? savedData.deliveryOrders : [],
+      merchantOrders: Array.isArray(savedData.merchantOrders) ? savedData.merchantOrders : [],
+      nextOrderId: Number.isFinite(savedData.nextOrderId) ? savedData.nextOrderId : 1,
+      stores:
+        Array.isArray(savedData.stores) && savedData.stores.length > 0
+          ? savedData.stores.map(normalizeStore)
+          : customerStores,
+    }
+
+    const selectedStoreName = savedData.selectedStoreName ?? savedData.selectedStore?.name
+    const selectedStore =
+      appData.stores.find((store) => store.name === selectedStoreName) ?? appData.stores[0]
+
+    return {
+      ...appData,
+      selectedStore,
+    }
+  } catch {
+    return defaultAppData
+  }
+}
+
+function normalizeStore(store) {
+  return {
+    ...store,
+    products: Array.isArray(store.products) ? store.products : [],
+  }
 }
 
 export default App
