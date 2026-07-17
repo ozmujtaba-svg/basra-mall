@@ -3,6 +3,10 @@ import { useState } from "react"
 export function DriverDashboard({ onUpdateOrderNote, onUpdateStatus, orders }) {
   const [orderSearch, setOrderSearch] = useState("")
   const filteredOrders = orders.filter((order) => matchesOrderSearch(order, orderSearch))
+  const deliveredOrders = orders.filter((order) => order.status === "تم التسليم")
+  const activeDeliveries = orders.filter((order) => order.status === "قيد التوصيل")
+  const availableDeliveries = orders.filter((order) => order.status === "جاهز للتوصيل")
+  const deliveryEarnings = deliveredOrders.reduce((total, order) => total + order.deliveryFee, 0)
   const orderGroups = [
     { title: "جاهزة للاستلام", status: "جاهز للتوصيل" },
     { title: "قيد التوصيل", status: "قيد التوصيل" },
@@ -16,6 +20,32 @@ export function DriverDashboard({ onUpdateOrderNote, onUpdateStatus, orders }) {
     <div className="orders-panel">
       <h2>طلبات التوصيل</h2>
       <p>الطلبات مرتبة حسب مرحلة التوصيل حتى يعرف السائق شنو يستلم وشنو يوصل.</p>
+
+      <section className="driver-earnings-card">
+        <div>
+          <h3>أرباح السائق</h3>
+          <p>ملخص أجور التوصيل للطلبات التي تم تسليمها.</p>
+        </div>
+        <div className="driver-earnings-grid">
+          <div className="revenue-row">
+            <span>طلبات جاهزة للاستلام</span>
+            <strong>{availableDeliveries.length}</strong>
+          </div>
+          <div className="revenue-row">
+            <span>طلبات قيد التوصيل</span>
+            <strong>{activeDeliveries.length}</strong>
+          </div>
+          <div className="revenue-row">
+            <span>طلبات تم تسليمها</span>
+            <strong>{deliveredOrders.length}</strong>
+          </div>
+          <div className="revenue-row total">
+            <span>أجور التوصيل المسلّمة</span>
+            <strong>{formatMoney(deliveryEarnings)}</strong>
+          </div>
+        </div>
+      </section>
+
       <label className="order-search">
         بحث الطلبات
         <input
@@ -88,6 +118,9 @@ export function DriverDashboard({ onUpdateOrderNote, onUpdateStatus, orders }) {
                     {order.total && (
                       <div className="order-total">المبلغ النهائي: {formatMoney(order.total)}</div>
                     )}
+                    <div className="delivery-fee-line">
+                      أجرة التوصيل: {formatMoney(order.deliveryFee)}
+                    </div>
 
                     <label className="order-note-box">
                       ملاحظة متابعة

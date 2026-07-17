@@ -707,6 +707,30 @@ button span {
   gap: 14px;
 }
 
+.driver-earnings-card {
+  display: grid;
+  gap: 14px;
+  border: 1px solid #ded8cc;
+  border-radius: 16px;
+  padding: 18px;
+  background: white;
+}
+
+.driver-earnings-card h3 {
+  margin: 0 0 8px;
+}
+
+.driver-earnings-card p {
+  margin: 0;
+  color: #65706b;
+  line-height: 1.8;
+}
+
+.driver-earnings-grid {
+  display: grid;
+  gap: 10px;
+}
+
 .delivery-group {
   display: grid;
   gap: 12px;
@@ -763,6 +787,14 @@ button span {
 
 .delivery-route strong {
   color: #18221f;
+}
+
+.delivery-fee-line {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #eef7f5;
+  color: #0c6b66;
+  font-weight: bold;
 }
 
 .order-message {
@@ -920,6 +952,11 @@ button span {
   font-weight: bold;
 }
 
+.merchant-revenue-grid {
+  display: grid;
+  gap: 10px;
+}
+
 .merchant-order-groups {
   display: grid;
   gap: 14px;
@@ -1054,6 +1091,47 @@ button span {
   line-height: 1.8;
 }
 
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.settings-grid label {
+  display: grid;
+  gap: 8px;
+  font-weight: bold;
+}
+
+.setting-control {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.setting-control input {
+  width: 100%;
+  border: 1px solid #ded8cc;
+  border-radius: 10px;
+  padding: 12px;
+  box-sizing: border-box;
+  background: #fbfaf7;
+  color: #18221f;
+  font: inherit;
+}
+
+.setting-control span {
+  min-width: 50px;
+  padding: 12px;
+  border-radius: 10px;
+  background: #eef7f5;
+  color: #0c6b66;
+  text-align: center;
+  font-weight: bold;
+}
+
 .revenue-grid {
   display: grid;
   gap: 10px;
@@ -1071,6 +1149,11 @@ button span {
 
 .revenue-row strong {
   color: #0c6b66;
+}
+
+.revenue-row.muted {
+  background: #f6f1e8;
+  color: #65706b;
 }
 
 .revenue-row.total {
@@ -1177,6 +1260,15 @@ button span {
   font-weight: bold;
 }
 
+.admin-profit-line {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #eef7f5;
+  color: #0c6b66;
+  font-weight: bold;
+}
+
 .order-note-box {
   display: grid;
   gap: 8px;
@@ -1239,6 +1331,7 @@ button span {
   .admin-table-head,
   .admin-table-row,
   .delivery-route,
+  .settings-grid,
   .tracking-steps {
     grid-template-columns: 1fr;
   }

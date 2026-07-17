@@ -4,6 +4,7 @@ const storeCategories = ["ملابس", "كوزمتك", "عطور", "أحذية",
 const productStatuses = ["متوفر", "مخفي مؤقتًا", "نفد"]
 
 export function MerchantDashboard({
+  commissionRate,
   merchant,
   onAddProduct,
   onCancelOrder,
@@ -33,6 +34,7 @@ export function MerchantDashboard({
   const selectedStore = stores.find((store) => store.name === selectedStoreName) ?? stores[0]
   const hasStores = stores.length > 0
   const rejectedStores = stores.filter((store) => store.status === "rejected")
+  const merchantRevenue = calculateMerchantRevenue(orders, commissionRate)
   const filteredOrders = orders.filter((order) => matchesOrderSearch(order, orderSearch))
   const orderGroups = [
     { title: "طلبات جديدة", status: "طلب جديد" },
@@ -387,6 +389,38 @@ export function MerchantDashboard({
         )}
       </section>
 
+      <section className="merchant-form-card">
+        <div className="merchant-section-top">
+          <div>
+            <h2>أرباح المتجر</h2>
+            <p>ملخص مبيعات متاجرك بعد استبعاد الطلبات الملغية واحتساب عمولة الإدارة.</p>
+          </div>
+          <span className="status-pill">عمولة {formatPercent(commissionRate)}</span>
+        </div>
+        <div className="merchant-revenue-grid">
+          <div className="revenue-row">
+            <span>مجموع المبيعات</span>
+            <strong>{formatMoney(merchantRevenue.totalSales)}</strong>
+          </div>
+          <div className="revenue-row">
+            <span>عدد الطلبات المحتسبة</span>
+            <strong>{merchantRevenue.activeOrders}</strong>
+          </div>
+          <div className="revenue-row muted">
+            <span>طلبات ملغية</span>
+            <strong>{merchantRevenue.canceledOrders}</strong>
+          </div>
+          <div className="revenue-row">
+            <span>عمولة الإدارة</span>
+            <strong>{formatMoney(merchantRevenue.commission)}</strong>
+          </div>
+          <div className="revenue-row total">
+            <span>صافي المبلغ المتوقع للمتجر</span>
+            <strong>{formatMoney(merchantRevenue.netPayout)}</strong>
+          </div>
+        </div>
+      </section>
+
       <h2>طلبات المتجر</h2>
       <p>الطلبات مرتبة حسب المرحلة حتى تعرف شنو يحتاج تجهيز وشنو صار جاهز للتوصيل.</p>
       <label className="order-search">
@@ -529,7 +563,26 @@ function formatOrderItems(items) {
 }
 
 function formatMoney(value) {
-  return `${Number(value).toLocaleString("en-US")} د.ع`
+  return `${Math.round(Number(value)).toLocaleString("en-US")} د.ع`
+}
+
+function formatPercent(value) {
+  return `${Math.round(value * 100)}%`
+}
+
+function calculateMerchantRevenue(orders, commissionRate) {
+  const activeOrders = orders.filter((order) => order.status !== "ملغي")
+  const canceledOrders = orders.length - activeOrders.length
+  const totalSales = activeOrders.reduce((total, order) => total + order.subtotal, 0)
+  const commission = totalSales * commissionRate
+
+  return {
+    activeOrders: activeOrders.length,
+    canceledOrders,
+    commission,
+    netPayout: totalSales - commission,
+    totalSales,
+  }
 }
 
 function matchesOrderSearch(order, searchText) {

@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import "./App.css"
 import { categoryImages, customerStores, dashboardData } from "./data"
 import { AdminDashboard } from "./components/AdminDashboard"
@@ -9,6 +9,13 @@ import { MerchantDashboard } from "./components/MerchantDashboard"
 import { Shell } from "./components/Shell"
 
 const DELIVERY_FEE = 5000
+const ADMIN_COMMISSION_RATE = 0.05
+const SETTINGS_STORAGE_KEY = "basra-mall-settings"
+const defaultPlatformSettings = {
+  commissionRate: ADMIN_COMMISSION_RATE,
+  deliveryFee: DELIVERY_FEE,
+}
+
 function App() {
   const [accountType, setAccountType] = useState("زبون")
   const [currentView, setCurrentView] = useState("login")
@@ -18,6 +25,7 @@ function App() {
   const [customerOrders, setCustomerOrders] = useState([])
   const [merchantOrders, setMerchantOrders] = useState([])
   const [deliveryOrders, setDeliveryOrders] = useState([])
+  const [platformSettings, setPlatformSettings] = useState(loadPlatformSettings)
   const [orderMessage, setOrderMessage] = useState("")
   const [nextOrderId, setNextOrderId] = useState(1)
   const [loginInfo, setLoginInfo] = useState({
@@ -41,7 +49,13 @@ function App() {
     ),
   ]
   const deliveredOrders = deliveryOrders.filter((order) => order.status === "تم التسليم")
-  const estimatedRevenue = allOrders.length * 3000 + deliveredOrders.length * 5000
+  const nonCanceledOrders = allOrders.filter((order) => order.status !== "ملغي")
+  const estimatedRevenue =
+    nonCanceledOrders.reduce(
+      (total, order) => total + order.subtotal * platformSettings.commissionRate,
+      0,
+    ) +
+    deliveredOrders.reduce((total, order) => total + order.deliveryFee, 0)
   const activeUser = {
     accountType,
     name: loginInfo.name.trim(),
@@ -69,6 +83,10 @@ function App() {
     estimatedRevenue,
     merchantOrders: visibleMerchantOrders,
   })
+
+  useEffect(() => {
+    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(platformSettings))
+  }, [platformSettings])
 
   function enterDashboard() {
     if (!loginInfo.name.trim() || !loginInfo.phone.trim()) {
@@ -223,7 +241,7 @@ function App() {
         (total, item) => total + getPriceValue(item.price) * item.quantity,
         0,
       )
-      const total = subtotal + DELIVERY_FEE
+      const total = subtotal + platformSettings.deliveryFee
 
       return {
         id: nextOrderId + index,
@@ -234,7 +252,7 @@ function App() {
         notes: customerInfo.notes.trim(),
         items,
         subtotal,
-        deliveryFee: DELIVERY_FEE,
+        deliveryFee: platformSettings.deliveryFee,
         total,
         status: "طلب جديد",
         internalNote: "",
@@ -536,7 +554,7 @@ function App() {
               cartItems={cartItems}
               customerInfo={customerInfo}
               customerOrders={customerOrders}
-              deliveryFee={DELIVERY_FEE}
+              deliveryFee={platformSettings.deliveryFee}
               onAddToCart={addToCart}
               onCustomerInfoChange={setCustomerInfo}
               onCancelOrder={cancelOrder}
@@ -553,6 +571,7 @@ function App() {
 
           {accountType === "صاحب متجر" && (
             <MerchantDashboard
+              commissionRate={platformSettings.commissionRate}
               merchant={activeUser}
               onAddProduct={addProductToStore}
               onDeleteProduct={deleteProductFromStore}
@@ -578,10 +597,13 @@ function App() {
           {accountType === "الإدارة" && (
             <AdminDashboard
               allOrders={allOrders}
+              commissionRate={platformSettings.commissionRate}
               onApproveStore={approveStore}
               onRejectStore={rejectStore}
               deliveredOrders={deliveredOrders}
               estimatedRevenue={estimatedRevenue}
+              onSettingsChange={setPlatformSettings}
+              settings={platformSettings}
               stores={stores}
             />
           )}
@@ -649,13 +671,20 @@ function getActiveStats({
   }
 
   if (accountType === "الإدارة") {
+    const uniqueOrders = [
+      ...merchantOrders,
+      ...deliveryOrders.filter(
+        (deliveryOrder) => !merchantOrders.some((order) => order.id === deliveryOrder.id),
+      ),
+    ]
+
     return [
-      { label: "كل الطلبات", value: merchantOrders.length + deliveryOrders.length },
+      { label: "كل الطلبات", value: uniqueOrders.length },
       {
         label: "قيد التوصيل",
         value: deliveryOrders.filter((order) => order.status !== "تم التسليم").length,
       },
-      { label: "ربح تجريبي", value: `${estimatedRevenue.toLocaleString("en-US")} د.ع` },
+      { label: "صافي الربح", value: `${Math.round(estimatedRevenue).toLocaleString("en-US")} د.ع` },
     ]
   }
 
@@ -681,6 +710,27 @@ function groupCartByStore(cartItems) {
   })
 
   return groups
+}
+
+function loadPlatformSettings() {
+  try {
+    const savedSettings = JSON.parse(localStorage.getItem(SETTINGS_STORAGE_KEY))
+
+    if (
+      savedSettings &&
+      Number.isFinite(savedSettings.commissionRate) &&
+      Number.isFinite(savedSettings.deliveryFee)
+    ) {
+      return {
+        commissionRate: savedSettings.commissionRate,
+        deliveryFee: savedSettings.deliveryFee,
+      }
+    }
+  } catch {
+    return defaultPlatformSettings
+  }
+
+  return defaultPlatformSettings
 }
 
 export default App

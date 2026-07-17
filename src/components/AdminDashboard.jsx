@@ -1,15 +1,25 @@
 export function AdminDashboard({
   allOrders,
+  commissionRate,
   deliveredOrders,
   estimatedRevenue,
   onApproveStore,
   onRejectStore,
+  onSettingsChange,
+  settings,
   stores,
 }) {
   const pendingStores = stores.filter((store) => store.status === "pending")
   const rejectedStores = stores.filter((store) => store.status === "rejected")
-  const salesCommission = allOrders.length * 3000
-  const deliveryRevenue = deliveredOrders.length * 5000
+  const canceledOrders = allOrders.filter((order) => order.status === "ملغي")
+  const nonCanceledOrders = allOrders.filter((order) => order.status !== "ملغي")
+  const totalSales = nonCanceledOrders.reduce((total, order) => total + order.subtotal, 0)
+  const salesCommission = nonCanceledOrders.reduce(
+    (total, order) => total + order.subtotal * commissionRate,
+    0,
+  )
+  const deliveryRevenue = deliveredOrders.reduce((total, order) => total + order.deliveryFee, 0)
+  const averageOrderValue = nonCanceledOrders.length > 0 ? totalSales / nonCanceledOrders.length : 0
 
   return (
     <div className="orders-panel">
@@ -34,11 +44,52 @@ export function AdminDashboard({
             <strong>{deliveredOrders.length}</strong>
             <span>طلبات وصلت للزبائن</span>
           </div>
-          <div className="admin-card highlight">
-            الربح التجريبي
-            <strong>{estimatedRevenue.toLocaleString("en-US")} د.ع</strong>
-            <span>عمولة بيع + أجرة توصيل</span>
+          <div className="admin-card">
+            الطلبات الملغية
+            <strong>{canceledOrders.length}</strong>
+            <span>لا تدخل ضمن حساب الربح</span>
           </div>
+          <div className="admin-card highlight">
+            صافي ربح الإدارة
+            <strong>{estimatedRevenue.toLocaleString("en-US")} د.ع</strong>
+            <span>عمولة بيع + أجور توصيل مسلّمة</span>
+          </div>
+        </div>
+      </section>
+
+      <section className="admin-section">
+        <h3>إعدادات العمولة والتوصيل</h3>
+        <p>هذه الإعدادات محفوظة داخل المتصفح وتبقى بعد تحديث الصفحة.</p>
+        <div className="settings-grid">
+          <label>
+            نسبة عمولة الإدارة
+            <div className="setting-control">
+              <input
+                min="0"
+                max="30"
+                step="1"
+                type="number"
+                value={Math.round(settings.commissionRate * 100)}
+                onChange={(event) =>
+                  updateSettings("commissionRate", Number(event.target.value) / 100)
+                }
+              />
+              <span>%</span>
+            </div>
+          </label>
+          <label>
+            أجرة التوصيل
+            <div className="setting-control">
+              <input
+                min="0"
+                step="500"
+                type="number"
+                value={settings.deliveryFee}
+                onChange={(event) => updateSettings("deliveryFee", Number(event.target.value))}
+              />
+              <span>د.ع</span>
+            </div>
+          </label>
         </div>
       </section>
 
@@ -46,16 +97,28 @@ export function AdminDashboard({
         <h3>تفصيل الأرباح</h3>
         <div className="revenue-grid">
           <div className="revenue-row">
-            <span>عمولة البيع</span>
-            <strong>{salesCommission.toLocaleString("en-US")} د.ع</strong>
+            <span>مجموع المبيعات</span>
+            <strong>{formatMoney(totalSales)}</strong>
           </div>
           <div className="revenue-row">
-            <span>أجرة التوصيل</span>
-            <strong>{deliveryRevenue.toLocaleString("en-US")} د.ع</strong>
+            <span>متوسط قيمة الطلب</span>
+            <strong>{formatMoney(averageOrderValue)}</strong>
+          </div>
+          <div className="revenue-row">
+            <span>عمولة الإدارة ({formatPercent(commissionRate)})</span>
+            <strong>{formatMoney(salesCommission)}</strong>
+          </div>
+          <div className="revenue-row">
+            <span>أجور التوصيل المسلّمة</span>
+            <strong>{formatMoney(deliveryRevenue)}</strong>
+          </div>
+          <div className="revenue-row muted">
+            <span>طلبات ملغية مستبعدة</span>
+            <strong>{canceledOrders.length}</strong>
           </div>
           <div className="revenue-row total">
-            <span>المجموع</span>
-            <strong>{estimatedRevenue.toLocaleString("en-US")} د.ع</strong>
+            <span>صافي ربح الإدارة</span>
+            <strong>{formatMoney(estimatedRevenue)}</strong>
           </div>
         </div>
       </section>
@@ -139,6 +202,14 @@ export function AdminDashboard({
                   المنتجات: {formatOrderItems(order.items)}
                 </div>
                 {order.total && <div className="order-total">المبلغ النهائي: {formatMoney(order.total)}</div>}
+                {order.status !== "ملغي" && (
+                  <div className="admin-profit-line">
+                    عمولة الإدارة: {formatMoney(order.subtotal * commissionRate)}
+                    {order.status === "تم التسليم" && (
+                      <> + توصيل: {formatMoney(order.deliveryFee)}</>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -146,6 +217,17 @@ export function AdminDashboard({
       </section>
     </div>
   )
+
+  function updateSettings(field, value) {
+    if (!Number.isFinite(value) || value < 0) {
+      return
+    }
+
+    onSettingsChange((currentSettings) => ({
+      ...currentSettings,
+      [field]: value,
+    }))
+  }
 }
 
 function formatOrderItems(items) {
@@ -165,5 +247,9 @@ function getStoreStatusLabel(status) {
 }
 
 function formatMoney(value) {
-  return `${Number(value).toLocaleString("en-US")} د.ع`
+  return `${Math.round(Number(value)).toLocaleString("en-US")} د.ع`
+}
+
+function formatPercent(value) {
+  return `${Math.round(value * 100)}%`
 }
