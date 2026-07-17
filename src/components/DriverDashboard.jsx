@@ -7,8 +7,15 @@ const deliverySortOptions = [
   "أعلى أجرة توصيل",
   "أقل أجرة توصيل",
 ]
+const quickDriverNotes = [
+  "اتصلت بالزبون",
+  "الزبون ما رد",
+  "وصلت للمحل",
+  "الطلب تأخر بالمحل",
+  "تم التسليم نقدًا",
+]
 
-export function DriverDashboard({ onUpdateOrderNote, onUpdateStatus, orders }) {
+export function DriverDashboard({ onUpdateOrderNote, onUpdateStatus, orders, stores = [] }) {
   const [orderSearch, setOrderSearch] = useState("")
   const [deliveryStatusFilter, setDeliveryStatusFilter] = useState(deliveryStatusFilters[0])
   const [deliverySort, setDeliverySort] = useState(deliverySortOptions[0])
@@ -125,91 +132,134 @@ export function DriverDashboard({ onUpdateOrderNote, onUpdateStatus, orders }) {
               {group.orders.length === 0 ? (
                 <div className="empty-order-group">لا توجد طلبات في هذه المرحلة.</div>
               ) : (
-                group.orders.map((order) => (
-                  <div className="order-card delivery-order-card" key={order.id}>
-                    <div className="order-card-top">
-                      <h3>توصيل طلب رقم {order.id}</h3>
-                      <span className="status-pill">{order.status}</span>
-                    </div>
+                group.orders.map((order) => {
+                  const pickupStore = getPickupStore(order, stores)
 
-                    <div className="delivery-route">
-                      <div>
-                        <small>من المحل</small>
-                        <strong>{order.items[0]?.store}</strong>
+                  return (
+                    <div className="order-card delivery-order-card" key={order.id}>
+                      <div className="order-card-top">
+                        <h3>توصيل طلب رقم {order.id}</h3>
+                        <span className="status-pill">{order.status}</span>
                       </div>
-                      <div>
-                        <small>إلى الزبون</small>
-                        <strong>{order.area}</strong>
+
+                      <div className="driver-task-summary">
+                        <div>
+                          <span>أجرة التوصيل</span>
+                          <strong>{formatMoney(order.deliveryFee)}</strong>
+                        </div>
+                        <div>
+                          <span>حالة المهمة</span>
+                          <strong>{getDriverTaskStatus(order.status)}</strong>
+                        </div>
+                        <div>
+                          <span>عدد القطع</span>
+                          <strong>{getOrderItemCount(order.items)}</strong>
+                        </div>
+                        <div>
+                          <span>المطلوب الآن</span>
+                          <strong>{getDriverNextStep(order.status)}</strong>
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="order-meta">
-                      الزبون: {order.customer}
-                      <br />
-                      الهاتف: {order.phone}
-                      {order.landmark && (
-                        <>
-                          <br />
-                          الدلالة: {order.landmark}
-                        </>
+                      <div className="delivery-route-details">
+                        <div className="route-stop pickup">
+                          <small>استلام من المتجر</small>
+                          <strong>{pickupStore?.name ?? order.items[0]?.store}</strong>
+                          <span>المنطقة: {pickupStore?.area ?? "غير محددة"}</span>
+                          <span>رقم المتجر: {pickupStore?.phone ?? "غير متوفر"}</span>
+                          {pickupStore?.phone && (
+                            <div className="route-contact-actions">
+                              <a href={`tel:${getPhoneLink(pickupStore.phone)}`}>اتصال بالمتجر</a>
+                              <button
+                                onClick={() => copyPhoneNumber(pickupStore.phone, "المتجر")}
+                                type="button"
+                              >
+                                نسخ رقم المتجر
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                        <div className="route-stop dropoff">
+                          <small>تسليم إلى الزبون</small>
+                          <strong>{order.customer}</strong>
+                          <span>المنطقة: {order.area}</span>
+                          {order.landmark && <span>الدلالة: {order.landmark}</span>}
+                          <span>رقم الزبون: {order.phone}</span>
+                          <div className="route-contact-actions">
+                            <a href={`tel:${getPhoneLink(order.phone)}`}>اتصال بالزبون</a>
+                            <button onClick={() => copyPhoneNumber(order.phone, "الزبون")} type="button">
+                              نسخ رقم الزبون
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {order.notes && <div className="order-meta">ملاحظات الزبون: {order.notes}</div>}
+
+                      <div className="order-products">
+                        المنتجات: {formatOrderItems(order.items)}
+                      </div>
+                      {order.total && (
+                        <div className="order-total">المبلغ النهائي: {formatMoney(order.total)}</div>
                       )}
-                      {order.notes && (
-                        <>
-                          <br />
-                          ملاحظات: {order.notes}
-                        </>
+                      <div className="delivery-fee-line">
+                        أجرة التوصيل: {formatMoney(order.deliveryFee)}
+                      </div>
+                      <div className="driver-contact-actions">
+                        <a className="call-customer-button" href={`tel:${getPhoneLink(order.phone)}`}>
+                          اتصال سريع بالزبون
+                        </a>
+                        <button
+                          className="copy-delivery-button"
+                          onClick={() => copyDeliveryInfo(order, pickupStore)}
+                          type="button"
+                        >
+                          نسخ بيانات الطريق
+                        </button>
+                      </div>
+
+                      <label className="order-note-box">
+                        ملاحظة متابعة
+                        <textarea
+                          value={order.internalNote ?? ""}
+                          onChange={(event) => onUpdateOrderNote(order.id, event.target.value)}
+                          placeholder="مثال: الزبون يريد التوصيل العصر، العنوان يحتاج توضيح"
+                        />
+                      </label>
+                      <div className="driver-quick-notes">
+                        <span>ملاحظات سريعة للسائق</span>
+                        <div>
+                          {quickDriverNotes.map((note) => (
+                            <button
+                              key={note}
+                              onClick={() => addQuickDriverNote(order, note)}
+                              type="button"
+                            >
+                              {note}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {order.status === "جاهز للتوصيل" && (
+                        <button
+                          className="delivery-button"
+                          onClick={() => onUpdateStatus(order.id, "قيد التوصيل")}
+                        >
+                          استلام التوصيل
+                        </button>
+                      )}
+                      {order.status === "قيد التوصيل" && (
+                        <button
+                          className="delivery-button done"
+                          onClick={() => onUpdateStatus(order.id, "تم التسليم")}
+                        >
+                          تم التسليم
+                        </button>
                       )}
                     </div>
-
-                    <div className="order-products">
-                      المنتجات: {formatOrderItems(order.items)}
-                    </div>
-                    {order.total && (
-                      <div className="order-total">المبلغ النهائي: {formatMoney(order.total)}</div>
-                    )}
-                    <div className="delivery-fee-line">
-                      أجرة التوصيل: {formatMoney(order.deliveryFee)}
-                    </div>
-                    <div className="driver-contact-actions">
-                      <a className="call-customer-button" href={`tel:${getPhoneLink(order.phone)}`}>
-                        اتصال بالزبون
-                      </a>
-                      <button
-                        className="copy-delivery-button"
-                        onClick={() => copyDeliveryInfo(order)}
-                        type="button"
-                      >
-                        نسخ بيانات التوصيل
-                      </button>
-                    </div>
-
-                    <label className="order-note-box">
-                      ملاحظة متابعة
-                      <textarea
-                        value={order.internalNote ?? ""}
-                        onChange={(event) => onUpdateOrderNote(order.id, event.target.value)}
-                        placeholder="مثال: الزبون يريد التوصيل العصر، العنوان يحتاج توضيح"
-                      />
-                    </label>
-
-                    {order.status === "جاهز للتوصيل" && (
-                      <button
-                        className="delivery-button"
-                        onClick={() => onUpdateStatus(order.id, "قيد التوصيل")}
-                      >
-                        استلام التوصيل
-                      </button>
-                    )}
-                    {order.status === "قيد التوصيل" && (
-                      <button
-                        className="delivery-button done"
-                        onClick={() => onUpdateStatus(order.id, "تم التسليم")}
-                      >
-                        تم التسليم
-                      </button>
-                    )}
-                  </div>
-                ))
+                  )
+                })
               )}
             </section>
           ))}
@@ -218,8 +268,8 @@ export function DriverDashboard({ onUpdateOrderNote, onUpdateStatus, orders }) {
     </div>
   )
 
-  async function copyDeliveryInfo(order) {
-    const deliveryText = formatDeliveryInfo(order)
+  async function copyDeliveryInfo(order, pickupStore) {
+    const deliveryText = formatDeliveryInfo(order, pickupStore)
 
     try {
       await navigator.clipboard.writeText(deliveryText)
@@ -228,6 +278,28 @@ export function DriverDashboard({ onUpdateOrderNote, onUpdateStatus, orders }) {
     }
 
     setCopyMessage(`تم نسخ بيانات طلب رقم ${order.id}.`)
+  }
+
+  async function copyPhoneNumber(phone, ownerLabel) {
+    const phoneNumber = String(phone)
+
+    try {
+      await navigator.clipboard.writeText(phoneNumber)
+    } catch {
+      copyTextFallback(phoneNumber)
+    }
+
+    setCopyMessage(`تم نسخ رقم ${ownerLabel}: ${phoneNumber}`)
+  }
+
+  function addQuickDriverNote(order, note) {
+    const currentNote = (order.internalNote ?? "").trim()
+
+    if (currentNote.includes(note)) {
+      return
+    }
+
+    onUpdateOrderNote(order.id, currentNote ? `${currentNote}، ${note}` : note)
   }
 }
 
@@ -243,15 +315,53 @@ function getDeliveryFees(orders) {
   return orders.reduce((total, order) => total + Number(order.deliveryFee ?? 0), 0)
 }
 
-function formatDeliveryInfo(order) {
+function getOrderItemCount(items) {
+  return items.reduce((total, item) => total + Number(item.quantity ?? 0), 0)
+}
+
+function getDriverTaskStatus(status) {
+  if (status === "جاهز للتوصيل") {
+    return "بانتظار الاستلام"
+  }
+
+  if (status === "قيد التوصيل") {
+    return "بالطريق"
+  }
+
+  if (status === "تم التسليم") {
+    return "مكتملة"
+  }
+
+  return status
+}
+
+function getDriverNextStep(status) {
+  if (status === "جاهز للتوصيل") {
+    return "استلام من المتجر"
+  }
+
+  if (status === "قيد التوصيل") {
+    return "تسليم للزبون"
+  }
+
+  if (status === "تم التسليم") {
+    return "لا يوجد إجراء"
+  }
+
+  return "متابعة الطلب"
+}
+
+function formatDeliveryInfo(order, pickupStore) {
   return [
     `طلب رقم: ${order.id}`,
+    `استلام من: ${pickupStore?.name ?? order.items[0]?.store ?? ""}`,
+    pickupStore?.area ? `منطقة المتجر: ${pickupStore.area}` : "",
+    pickupStore?.phone ? `رقم المتجر: ${pickupStore.phone}` : "",
     `الزبون: ${order.customer}`,
-    `الهاتف: ${order.phone}`,
-    `المنطقة: ${order.area}`,
+    `رقم الزبون: ${order.phone}`,
+    `منطقة الزبون: ${order.area}`,
     order.landmark ? `الدلالة: ${order.landmark}` : "",
     order.notes ? `ملاحظات: ${order.notes}` : "",
-    `المحل: ${order.items[0]?.store ?? ""}`,
     `المنتجات: ${formatOrderItems(order.items)}`,
     `أجرة التوصيل: ${formatMoney(order.deliveryFee)}`,
     order.total ? `المبلغ النهائي: ${formatMoney(order.total)}` : "",
@@ -275,6 +385,12 @@ function copyTextFallback(text) {
 
 function getPhoneLink(phone) {
   return String(phone).replace(/[^\d+]/g, "")
+}
+
+function getPickupStore(order, stores) {
+  const storeName = order.items[0]?.store
+
+  return stores.find((store) => store.name === storeName)
 }
 
 function matchesOrderSearch(order, searchText) {

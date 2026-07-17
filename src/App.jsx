@@ -751,6 +751,7 @@ function App() {
               orders={deliveryOrders}
               onUpdateOrderNote={updateOrderNote}
               onUpdateStatus={updateDeliveryStatus}
+              stores={stores}
             />
           )}
 

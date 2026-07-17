@@ -963,6 +963,31 @@ button span {
   font-weight: bold;
 }
 
+.driver-quick-notes {
+  display: grid;
+  gap: 8px;
+}
+
+.driver-quick-notes > span {
+  font-weight: bold;
+}
+
+.driver-quick-notes div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.driver-quick-notes button {
+  border-color: #c9ddd9;
+  border-radius: 999px;
+  background: #eef7f5;
+  color: #0c6b66;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-weight: bold;
+}
+
 .driver-contact-actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -982,6 +1007,30 @@ button span {
 
 .call-customer-button {
   background: #0c6b66;
+}
+
+.driver-task-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.driver-task-summary div {
+  padding: 12px;
+  border: 1px solid #c9ddd9;
+  border-radius: 12px;
+  background: #eef7f5;
+}
+
+.driver-task-summary span {
+  display: block;
+  color: #65706b;
+  line-height: 1.6;
+}
+
+.driver-task-summary strong {
+  display: block;
+  color: #0c6b66;
 }
 
 .delivery-group {
@@ -1040,6 +1089,70 @@ button span {
 
 .delivery-route strong {
   color: #18221f;
+}
+
+.delivery-route-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.route-stop {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid #ded8cc;
+  border-radius: 14px;
+  background: white;
+}
+
+.route-stop.pickup {
+  border-color: #c9ddd9;
+  background: #eef7f5;
+}
+
+.route-stop.dropoff {
+  border-color: #f0d3c2;
+  background: #fff8f2;
+}
+
+.route-stop small,
+.route-stop span {
+  color: #65706b;
+  line-height: 1.6;
+}
+
+.route-stop strong {
+  color: #18221f;
+  font-size: 18px;
+}
+
+.route-contact-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.route-contact-actions a,
+.route-contact-actions button {
+  border-radius: 10px;
+  padding: 10px 12px;
+  text-align: center;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.route-contact-actions a {
+  border: 0;
+  background: #0c6b66;
+  color: white;
+}
+
+.route-contact-actions button {
+  border-color: #c9ddd9;
+  background: white;
+  color: #0c6b66;
 }
 
 .delivery-fee-line {
@@ -1900,7 +2013,10 @@ button span {
   .status-breakdown,
   .admin-table-head,
   .admin-table-row,
+  .driver-task-summary,
   .delivery-route,
+  .delivery-route-details,
+  .route-contact-actions,
   .settings-grid,
   .saved-address-card,
   .tracking-steps {
