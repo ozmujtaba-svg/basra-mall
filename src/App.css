@@ -1137,6 +1137,94 @@ button span {
   white-space: nowrap;
 }
 
+.admin-order-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #ded8cc;
+  border-radius: 12px;
+  background: #fbfaf7;
+}
+
+.admin-order-filter button {
+  padding: 10px 12px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.admin-order-filter button.active {
+  border-color: #0c6b66;
+  background: #0c6b66;
+  color: white;
+}
+
+.admin-order-search,
+.admin-order-sort {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-weight: bold;
+}
+
+.admin-order-search input,
+.admin-order-sort select {
+  width: 100%;
+  border: 1px solid #ded8cc;
+  border-radius: 10px;
+  padding: 12px;
+  box-sizing: border-box;
+  background: #fbfaf7;
+  color: #18221f;
+  font: inherit;
+}
+
+.quick-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.quick-stat,
+.status-count {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  border-radius: 12px;
+  background: #fbfaf7;
+  border: 1px solid #eee7dc;
+}
+
+.quick-stat.wide {
+  grid-column: span 2;
+}
+
+.quick-stat span,
+.status-count span,
+.quick-stat small {
+  color: #65706b;
+  line-height: 1.5;
+}
+
+.quick-stat strong,
+.status-count strong {
+  color: #0c6b66;
+  font-size: 24px;
+}
+
+.quick-stat.wide strong {
+  font-size: 20px;
+}
+
+.status-breakdown {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
 .settings-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1374,6 +1462,8 @@ button span {
   .merchant-form,
   .merchant-product-row,
   .admin-grid,
+  .quick-stats-grid,
+  .status-breakdown,
   .admin-table-head,
   .admin-table-row,
   .delivery-route,
@@ -1387,7 +1477,9 @@ button span {
   .order-summary div,
   .cart-item,
   .store-toolbar,
-  .merchant-section-top {
+  .merchant-section-top,
+  .section-header-actions,
+  .admin-section.danger-zone {
     display: grid;
   }
 

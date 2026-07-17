@@ -1,5 +1,21 @@
 import { useState } from "react"
 
+const orderStatusFilters = [
+  "الكل",
+  "طلب جديد",
+  "قيد التجهيز",
+  "جاهز للتوصيل",
+  "قيد التوصيل",
+  "تم التسليم",
+  "ملغي",
+]
+const orderSortOptions = [
+  "الأحدث أولًا",
+  "الأقدم أولًا",
+  "الأعلى مبلغًا",
+  "الأقل مبلغًا",
+]
+
 export function AdminDashboard({
   allOrders,
   commissionRate,
@@ -13,10 +29,16 @@ export function AdminDashboard({
   stores,
 }) {
   const [dataMessage, setDataMessage] = useState("")
+  const [orderStatusFilter, setOrderStatusFilter] = useState(orderStatusFilters[0])
+  const [orderSearch, setOrderSearch] = useState("")
+  const [orderSort, setOrderSort] = useState(orderSortOptions[0])
   const pendingStores = stores.filter((store) => store.status === "pending")
   const rejectedStores = stores.filter((store) => store.status === "rejected")
+  const approvedStores = stores.filter((store) => store.status !== "pending" && store.status !== "rejected")
   const canceledOrders = allOrders.filter((order) => order.status === "ملغي")
   const nonCanceledOrders = allOrders.filter((order) => order.status !== "ملغي")
+  const productCount = stores.reduce((total, store) => total + store.products.length, 0)
+  const topStore = getTopStore(nonCanceledOrders)
   const totalSales = nonCanceledOrders.reduce((total, order) => total + order.subtotal, 0)
   const salesCommission = nonCanceledOrders.reduce(
     (total, order) => total + order.subtotal * commissionRate,
@@ -24,6 +46,10 @@ export function AdminDashboard({
   )
   const deliveryRevenue = deliveredOrders.reduce((total, order) => total + order.deliveryFee, 0)
   const averageOrderValue = nonCanceledOrders.length > 0 ? totalSales / nonCanceledOrders.length : 0
+  const filteredOrders = allOrders
+    .filter((order) => orderStatusFilter === "الكل" || order.status === orderStatusFilter)
+    .filter((order) => matchesOrderSearch(order, orderSearch))
+    .sort((firstOrder, secondOrder) => sortOrders(firstOrder, secondOrder, orderSort))
 
   return (
     <div className="orders-panel">
@@ -58,6 +84,42 @@ export function AdminDashboard({
             <strong>{estimatedRevenue.toLocaleString("en-US")} د.ع</strong>
             <span>عمولة بيع + أجور توصيل مسلّمة</span>
           </div>
+        </div>
+      </section>
+
+      <section className="admin-section">
+        <h3>نظرة سريعة</h3>
+        <p>أرقام مختصرة تساعدك تعرف وضع المول بدون الدخول بالتفاصيل.</p>
+        <div className="quick-stats-grid">
+          <div className="quick-stat">
+            <span>متاجر موافق عليها</span>
+            <strong>{approvedStores.length}</strong>
+          </div>
+          <div className="quick-stat">
+            <span>قيد المراجعة</span>
+            <strong>{pendingStores.length}</strong>
+          </div>
+          <div className="quick-stat">
+            <span>كل المنتجات</span>
+            <strong>{productCount}</strong>
+          </div>
+          <div className="quick-stat">
+            <span>كل الطلبات</span>
+            <strong>{allOrders.length}</strong>
+          </div>
+          <div className="quick-stat wide">
+            <span>أفضل متجر بالمبيعات</span>
+            <strong>{topStore.name}</strong>
+            <small>{topStore.sales > 0 ? formatMoney(topStore.sales) : "لا توجد مبيعات بعد"}</small>
+          </div>
+        </div>
+        <div className="status-breakdown">
+          {["طلب جديد", "قيد التجهيز", "جاهز للتوصيل", "قيد التوصيل", "تم التسليم", "ملغي"].map((status) => (
+            <div className="status-count" key={status}>
+              <span>{status}</span>
+              <strong>{allOrders.filter((order) => order.status === status).length}</strong>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -183,20 +245,52 @@ export function AdminDashboard({
         <div className="section-header-actions">
           <div>
             <h3>متابعة الطلبات</h3>
-            <p>صدّر ملخص الطلبات حتى تراجعه خارج التطبيق.</p>
+            <p>فلتر وابحث ورتب الطلبات، ثم صدّر نفس النتائج الظاهرة.</p>
           </div>
           <button className="export-orders-button" onClick={exportOrders}>
-            تصدير ملخص الطلبات
+            تصدير النتائج الظاهرة
           </button>
+        </div>
+        <label className="admin-order-search">
+          بحث الطلبات
+          <input
+            value={orderSearch}
+            onChange={(event) => setOrderSearch(event.target.value)}
+            placeholder="رقم الطلب، الزبون، الهاتف، المنطقة، أو المنتج"
+          />
+        </label>
+        <label className="admin-order-sort">
+          فرز الطلبات
+          <select value={orderSort} onChange={(event) => setOrderSort(event.target.value)}>
+            {orderSortOptions.map((option) => (
+              <option key={option}>{option}</option>
+            ))}
+          </select>
+        </label>
+        <div className="admin-order-filter">
+          {orderStatusFilters.map((status) => (
+            <button
+              className={orderStatusFilter === status ? "active" : ""}
+              key={status}
+              onClick={() => setOrderStatusFilter(status)}
+            >
+              {status}
+            </button>
+          ))}
         </div>
         {allOrders.length === 0 ? (
           <div className="order-card">
             <h3>لا توجد طلبات بعد</h3>
             <p className="order-meta">أرسل طلب من واجهة الزبون حتى يظهر هنا.</p>
           </div>
+        ) : filteredOrders.length === 0 ? (
+          <div className="order-card">
+            <h3>لا توجد طلبات مطابقة</h3>
+            <p className="order-meta">غيّر البحث أو الفلتر حتى تظهر طلبات ثانية.</p>
+          </div>
         ) : (
           <div className="admin-order-list">
-            {allOrders.map((order) => (
+            {filteredOrders.map((order) => (
               <div className="order-card" key={`admin-${order.id}`}>
                 <div className="order-card-top">
                   <h3>طلب رقم {order.id}</h3>
@@ -264,8 +358,8 @@ export function AdminDashboard({
   }
 
   function exportOrders() {
-    if (allOrders.length === 0) {
-      setDataMessage("ماكو طلبات حاليًا حتى نصدرها.")
+    if (filteredOrders.length === 0) {
+      setDataMessage("ماكو طلبات مطابقة حتى نصدرها.")
       return
     }
 
@@ -281,7 +375,7 @@ export function AdminDashboard({
         "أجرة التوصيل",
         "المبلغ النهائي",
       ],
-      ...allOrders.map((order) => [
+      ...filteredOrders.map((order) => [
         order.id,
         order.customer,
         order.phone,
@@ -299,15 +393,61 @@ export function AdminDashboard({
     const link = document.createElement("a")
 
     link.href = url
-    link.download = "basra-mall-orders.csv"
+    link.download = "basra-mall-visible-orders.csv"
     link.click()
     URL.revokeObjectURL(url)
-    setDataMessage("تم تجهيز ملف ملخص الطلبات.")
+    setDataMessage("تم تجهيز ملف النتائج الظاهرة.")
   }
 }
 
 function formatOrderItems(items) {
   return items.map((item) => `${item.name} × ${item.quantity}`).join("، ")
+}
+
+function getTopStore(orders) {
+  const storeSales = new Map()
+
+  orders.forEach((order) => {
+    order.items.forEach((item) => {
+      const currentSales = storeSales.get(item.store) ?? 0
+
+      storeSales.set(item.store, currentSales + getPriceNumber(item.price) * item.quantity)
+    })
+  })
+
+  const [name = "لا يوجد بعد", sales = 0] =
+    [...storeSales.entries()].sort((firstStore, secondStore) => secondStore[1] - firstStore[1])[0] ?? []
+
+  return { name, sales }
+}
+
+function matchesOrderSearch(order, searchText) {
+  const search = searchText.trim().toLowerCase()
+
+  if (!search) {
+    return true
+  }
+
+  const items = order.items.map((item) => `${item.name} ${item.store}`).join(" ")
+  const searchableText = `${order.id} ${order.customer} ${order.phone} ${order.area} ${order.landmark} ${order.notes} ${order.status} ${items}`
+
+  return searchableText.toLowerCase().includes(search)
+}
+
+function sortOrders(firstOrder, secondOrder, sortType) {
+  if (sortType === "الأقدم أولًا") {
+    return firstOrder.id - secondOrder.id
+  }
+
+  if (sortType === "الأعلى مبلغًا") {
+    return Number(secondOrder.total ?? 0) - Number(firstOrder.total ?? 0)
+  }
+
+  if (sortType === "الأقل مبلغًا") {
+    return Number(firstOrder.total ?? 0) - Number(secondOrder.total ?? 0)
+  }
+
+  return secondOrder.id - firstOrder.id
 }
 
 function formatCsvCell(value) {
@@ -330,6 +470,10 @@ function getStoreStatusLabel(status) {
 
 function formatMoney(value) {
   return `${Math.round(Number(value)).toLocaleString("en-US")} د.ع`
+}
+
+function getPriceNumber(price) {
+  return Number(String(price).replace(/[^\d]/g, ""))
 }
 
 function formatPercent(value) {
