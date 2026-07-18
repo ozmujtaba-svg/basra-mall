@@ -15,6 +15,7 @@ const orderSortOptions = [
   "الأعلى مبلغًا",
   "الأقل مبلغًا",
 ]
+const orderDateFilters = ["كل الطلبات", "طلبات اليوم", "طلبات قديمة"]
 
 export function AdminDashboard({
   allOrders,
@@ -30,6 +31,7 @@ export function AdminDashboard({
 }) {
   const [dataMessage, setDataMessage] = useState("")
   const [orderStatusFilter, setOrderStatusFilter] = useState(orderStatusFilters[0])
+  const [orderDateFilter, setOrderDateFilter] = useState(orderDateFilters[0])
   const [orderSearch, setOrderSearch] = useState("")
   const [orderSort, setOrderSort] = useState(orderSortOptions[0])
   const pendingStores = stores.filter((store) => store.status === "pending")
@@ -51,6 +53,10 @@ export function AdminDashboard({
     commissionRate,
     pendingStores,
   })
+  const todayStats = getTodayStats(allOrders, commissionRate)
+  const weekStats = getWeekStats(allOrders, commissionRate)
+  const topWeeklyStores = getTopWeeklyStores(allOrders)
+  const topWeeklyProducts = getTopWeeklyProducts(allOrders)
   const adminAlerts = getAdminAlerts({
     allOrders,
     canceledOrders,
@@ -59,6 +65,7 @@ export function AdminDashboard({
   const adminTasks = getAdminTasks({ allOrders, canceledOrders, pendingStores })
   const filteredOrders = allOrders
     .filter((order) => orderStatusFilter === "الكل" || order.status === orderStatusFilter)
+    .filter((order) => matchesDateFilter(order, orderDateFilter))
     .filter((order) => matchesOrderSearch(order, orderSearch))
     .sort((firstOrder, secondOrder) => sortOrders(firstOrder, secondOrder, orderSort))
 
@@ -183,6 +190,124 @@ export function AdminDashboard({
             <small>محسوبة من الطلبات المؤرخة بتاريخ اليوم</small>
           </div>
         </div>
+      </section>
+
+      <section className="admin-section">
+        <div className="admin-monitor-header">
+          <div>
+            <h3>إحصائيات اليوم</h3>
+            <p>ملخص سريع للطلبات المسجلة بتاريخ اليوم فقط.</p>
+          </div>
+          <span>{formatTodayLabel()}</span>
+        </div>
+        <div className="today-stats-grid">
+          <div>
+            <span>طلبات اليوم</span>
+            <strong>{todayStats.orders}</strong>
+          </div>
+          <div>
+            <span>مبيعات اليوم</span>
+            <strong>{formatMoney(todayStats.sales)}</strong>
+          </div>
+          <div>
+            <span>عمولة اليوم</span>
+            <strong>{formatMoney(todayStats.commission)}</strong>
+          </div>
+          <div>
+            <span>توصيل اليوم</span>
+            <strong>{formatMoney(todayStats.delivery)}</strong>
+          </div>
+          <div className="warning">
+            <span>ملغية اليوم</span>
+            <strong>{todayStats.canceled}</strong>
+          </div>
+        </div>
+      </section>
+
+      <section className="admin-section">
+        <div className="admin-monitor-header">
+          <div>
+            <h3>إحصائيات الأسبوع</h3>
+            <p>ملخص آخر 7 أيام حتى تعرف حركة المول مو بس اليوم.</p>
+          </div>
+          <span>آخر 7 أيام</span>
+        </div>
+        <div className="today-stats-grid week-stats-grid">
+          <div>
+            <span>طلبات الأسبوع</span>
+            <strong>{weekStats.orders}</strong>
+          </div>
+          <div>
+            <span>مبيعات الأسبوع</span>
+            <strong>{formatMoney(weekStats.sales)}</strong>
+          </div>
+          <div>
+            <span>عمولة الأسبوع</span>
+            <strong>{formatMoney(weekStats.commission)}</strong>
+          </div>
+          <div>
+            <span>توصيل الأسبوع</span>
+            <strong>{formatMoney(weekStats.delivery)}</strong>
+          </div>
+          <div className="warning">
+            <span>ملغية بالأسبوع</span>
+            <strong>{weekStats.canceled}</strong>
+          </div>
+        </div>
+      </section>
+
+      <section className="admin-section">
+        <div className="admin-monitor-header">
+          <div>
+            <h3>أفضل المتاجر هذا الأسبوع</h3>
+            <p>ترتيب المتاجر حسب مبيعات آخر 7 أيام، بدون الطلبات الملغية.</p>
+          </div>
+          <span>{topWeeklyStores.length} متاجر نشطة</span>
+        </div>
+        {topWeeklyStores.length === 0 ? (
+          <div className="top-store-empty">لا توجد مبيعات خلال آخر 7 أيام بعد.</div>
+        ) : (
+          <div className="top-store-list">
+            {topWeeklyStores.map((store, index) => (
+              <div className="top-store-row" key={store.name}>
+                <span className="top-store-rank">{index + 1}</span>
+                <div>
+                  <strong>{store.name}</strong>
+                  <small>{store.orders} طلبات خلال الأسبوع</small>
+                </div>
+                <strong>{formatMoney(store.sales)}</strong>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="admin-section">
+        <div className="admin-monitor-header">
+          <div>
+            <h3>أفضل المنتجات هذا الأسبوع</h3>
+            <p>أكثر المنتجات طلبًا خلال آخر 7 أيام، بدون الطلبات الملغية.</p>
+          </div>
+          <span>{topWeeklyProducts.length} منتجات نشطة</span>
+        </div>
+        {topWeeklyProducts.length === 0 ? (
+          <div className="top-store-empty">لا توجد منتجات مطلوبة خلال آخر 7 أيام بعد.</div>
+        ) : (
+          <div className="top-store-list">
+            {topWeeklyProducts.map((product, index) => (
+              <div className="top-store-row top-product-row" key={`${product.store}-${product.name}`}>
+                <span className="top-store-rank">{index + 1}</span>
+                <div>
+                  <strong>{product.name}</strong>
+                  <small>
+                    {product.store} - {product.quantity} قطعة مباعة
+                  </small>
+                </div>
+                <strong>{formatMoney(product.sales)}</strong>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="admin-section">
@@ -376,6 +501,17 @@ export function AdminDashboard({
             </button>
           ))}
         </div>
+        <div className="admin-order-filter date-filter">
+          {orderDateFilters.map((filter) => (
+            <button
+              className={orderDateFilter === filter ? "active" : ""}
+              key={filter}
+              onClick={() => setOrderDateFilter(filter)}
+            >
+              {filter}
+            </button>
+          ))}
+        </div>
         {allOrders.length === 0 ? (
           <div className="order-card">
             <h3>لا توجد طلبات بعد</h3>
@@ -545,6 +681,113 @@ function getMonitoringStats({ allOrders, commissionRate, pendingStores }) {
   }
 }
 
+function getTodayStats(allOrders, commissionRate) {
+  const todayOrders = allOrders.filter((order) => isToday(order.createdAt))
+  const activeTodayOrders = todayOrders.filter((order) => order.status !== "ملغي")
+  const deliveredTodayOrders = todayOrders.filter((order) => order.status === "تم التسليم")
+
+  const sales = activeTodayOrders.reduce(
+    (total, order) => total + Number(order.subtotal ?? 0),
+    0,
+  )
+  const delivery = deliveredTodayOrders.reduce(
+    (total, order) => total + Number(order.deliveryFee ?? 0),
+    0,
+  )
+
+  return {
+    orders: todayOrders.length,
+    sales,
+    commission: sales * commissionRate,
+    delivery,
+    canceled: todayOrders.filter((order) => order.status === "ملغي").length,
+  }
+}
+
+function getWeekStats(allOrders, commissionRate) {
+  const weekOrders = allOrders.filter((order) => isWithinLastDays(order.createdAt, 7))
+  const activeWeekOrders = weekOrders.filter((order) => order.status !== "ملغي")
+  const deliveredWeekOrders = weekOrders.filter((order) => order.status === "تم التسليم")
+
+  const sales = activeWeekOrders.reduce(
+    (total, order) => total + Number(order.subtotal ?? 0),
+    0,
+  )
+  const delivery = deliveredWeekOrders.reduce(
+    (total, order) => total + Number(order.deliveryFee ?? 0),
+    0,
+  )
+
+  return {
+    orders: weekOrders.length,
+    sales,
+    commission: sales * commissionRate,
+    delivery,
+    canceled: weekOrders.filter((order) => order.status === "ملغي").length,
+  }
+}
+
+function getTopWeeklyStores(allOrders) {
+  const storeStats = new Map()
+  const weekOrders = allOrders.filter(
+    (order) => order.status !== "ملغي" && isWithinLastDays(order.createdAt, 7),
+  )
+
+  weekOrders.forEach((order) => {
+    const orderStores = new Set()
+
+    order.items.forEach((item) => {
+      const currentStats = storeStats.get(item.store) ?? { name: item.store, orders: 0, sales: 0 }
+
+      currentStats.sales += getPriceNumber(item.price) * item.quantity
+      storeStats.set(item.store, currentStats)
+      orderStores.add(item.store)
+    })
+
+    orderStores.forEach((storeName) => {
+      const currentStats = storeStats.get(storeName)
+
+      storeStats.set(storeName, {
+        ...currentStats,
+        orders: currentStats.orders + 1,
+      })
+    })
+  })
+
+  return [...storeStats.values()]
+    .sort((firstStore, secondStore) => secondStore.sales - firstStore.sales)
+    .slice(0, 3)
+}
+
+function getTopWeeklyProducts(allOrders) {
+  const productStats = new Map()
+  const weekOrders = allOrders.filter(
+    (order) => order.status !== "ملغي" && isWithinLastDays(order.createdAt, 7),
+  )
+
+  weekOrders.forEach((order) => {
+    order.items.forEach((item) => {
+      const productKey = `${item.store}-${item.name}`
+      const currentStats = productStats.get(productKey) ?? {
+        name: item.name,
+        store: item.store,
+        quantity: 0,
+        sales: 0,
+      }
+
+      productStats.set(productKey, {
+        ...currentStats,
+        quantity: currentStats.quantity + item.quantity,
+        sales: currentStats.sales + getPriceNumber(item.price) * item.quantity,
+      })
+    })
+  })
+
+  return [...productStats.values()]
+    .sort((firstProduct, secondProduct) => secondProduct.quantity - firstProduct.quantity)
+    .slice(0, 3)
+}
+
 function getAdminAlerts({ allOrders, canceledOrders, pendingStores }) {
   const alerts = []
   const readyForDeliveryOrders = allOrders.filter((order) => order.status === "جاهز للتوصيل")
@@ -655,6 +898,18 @@ function matchesOrderSearch(order, searchText) {
   return searchableText.toLowerCase().includes(search)
 }
 
+function matchesDateFilter(order, dateFilter) {
+  if (dateFilter === "طلبات اليوم") {
+    return isToday(order.createdAt)
+  }
+
+  if (dateFilter === "طلبات قديمة") {
+    return !isToday(order.createdAt)
+  }
+
+  return true
+}
+
 function sortOrders(firstOrder, secondOrder, sortType) {
   if (sortType === "الأقدم أولًا") {
     return firstOrder.id - secondOrder.id
@@ -700,6 +955,10 @@ function formatOrderDate(createdAt) {
   }).format(new Date(createdAt))
 }
 
+function formatTodayLabel() {
+  return new Intl.DateTimeFormat("ar-IQ", { dateStyle: "medium" }).format(new Date())
+}
+
 function isToday(createdAt) {
   if (!createdAt) {
     return false
@@ -713,6 +972,21 @@ function isToday(createdAt) {
     orderDate.getMonth() === today.getMonth() &&
     orderDate.getDate() === today.getDate()
   )
+}
+
+function isWithinLastDays(createdAt, days) {
+  if (!createdAt) {
+    return false
+  }
+
+  const orderDate = new Date(createdAt)
+  const today = new Date()
+  const startDate = new Date(today)
+
+  startDate.setDate(today.getDate() - (days - 1))
+  startDate.setHours(0, 0, 0, 0)
+
+  return orderDate >= startDate && orderDate <= today
 }
 
 function formatMoney(value) {

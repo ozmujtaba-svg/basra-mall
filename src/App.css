@@ -1700,6 +1700,109 @@ button span {
   margin: 4px 0;
 }
 
+.today-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.today-stats-grid div {
+  padding: 14px;
+  border: 1px solid #ded8cc;
+  border-radius: 12px;
+  background: #fbfaf7;
+}
+
+.today-stats-grid div.warning {
+  border-color: #ead5a2;
+  background: #fff9e8;
+}
+
+.today-stats-grid span {
+  display: block;
+  color: #65706b;
+  line-height: 1.6;
+}
+
+.today-stats-grid strong {
+  display: block;
+  color: #0c6b66;
+  font-size: 22px;
+  margin-top: 4px;
+}
+
+.week-stats-grid div {
+  border-color: #d8e3dc;
+  background: #f7fbf8;
+}
+
+.week-stats-grid div.warning {
+  border-color: #ead5a2;
+  background: #fff9e8;
+}
+
+.top-store-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.top-store-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid #ded8cc;
+  border-radius: 12px;
+  background: #fbfaf7;
+}
+
+.top-store-rank {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: #0c6b66;
+  color: white;
+  font-weight: bold;
+}
+
+.top-store-row strong,
+.top-store-row small {
+  display: block;
+}
+
+.top-store-row small {
+  color: #65706b;
+  line-height: 1.7;
+}
+
+.top-store-row > strong {
+  color: #0c6b66;
+  white-space: nowrap;
+}
+
+.top-product-row {
+  border-color: #ead5a2;
+  background: #fffdf5;
+}
+
+.top-product-row .top-store-rank {
+  background: #d76b50;
+}
+
+.top-store-empty {
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid #ded8cc;
+  border-radius: 12px;
+  background: #fbfaf7;
+  color: #65706b;
+}
+
 .admin-alert-list {
   display: grid;
   gap: 10px;
@@ -1868,6 +1971,11 @@ button span {
   border-color: #0c6b66;
   background: #0c6b66;
   color: white;
+}
+
+.admin-order-filter.date-filter {
+  margin-top: 10px;
+  background: white;
 }
 
 .admin-order-search,
@@ -2178,6 +2286,7 @@ button span {
   .merchant-order-actions,
   .admin-grid,
   .admin-monitor-grid,
+  .today-stats-grid,
   .quick-stats-grid,
   .status-breakdown,
   .admin-table-head,
@@ -2202,6 +2311,7 @@ button span {
   .merchant-order-card-top,
   .merchant-section-top,
   .section-header-actions,
+  .top-store-row,
   .admin-section.danger-zone {
     display: grid;
   }
