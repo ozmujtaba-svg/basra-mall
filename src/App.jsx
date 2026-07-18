@@ -390,6 +390,7 @@ function App() {
     }
 
     const orderGroups = groupCartByStore(cartItems)
+    const createdAt = new Date().toISOString()
     const newOrders = orderGroups.map((items, index) => {
       const subtotal = items.reduce(
         (total, item) => total + getPriceValue(item.price) * item.quantity,
@@ -410,6 +411,7 @@ function App() {
         total,
         status: "طلب جديد",
         internalNote: "",
+        createdAt,
       }
     })
 
@@ -929,12 +931,18 @@ function loadAppData() {
     const appData = {
       cartItems: Array.isArray(savedData.cartItems) ? savedData.cartItems : [],
       customerInfo: savedData.customerInfo ?? defaultAppData.customerInfo,
-      customerOrders: Array.isArray(savedData.customerOrders) ? savedData.customerOrders : [],
-      deliveryOrders: Array.isArray(savedData.deliveryOrders) ? savedData.deliveryOrders : [],
+      customerOrders: Array.isArray(savedData.customerOrders)
+        ? savedData.customerOrders.map(normalizeOrder)
+        : [],
+      deliveryOrders: Array.isArray(savedData.deliveryOrders)
+        ? savedData.deliveryOrders.map(normalizeOrder)
+        : [],
       favoriteStoreNames: Array.isArray(savedData.favoriteStoreNames)
         ? savedData.favoriteStoreNames
         : [],
-      merchantOrders: Array.isArray(savedData.merchantOrders) ? savedData.merchantOrders : [],
+      merchantOrders: Array.isArray(savedData.merchantOrders)
+        ? savedData.merchantOrders.map(normalizeOrder)
+        : [],
       nextOrderId: Number.isFinite(savedData.nextOrderId) ? savedData.nextOrderId : 1,
       savedCustomerAddress: normalizeSavedAddress(
         savedData.savedCustomerAddress,
@@ -963,6 +971,13 @@ function normalizeStore(store) {
   return {
     ...store,
     products: Array.isArray(store.products) ? store.products : [],
+  }
+}
+
+function normalizeOrder(order) {
+  return {
+    ...order,
+    createdAt: typeof order.createdAt === "string" ? order.createdAt : "",
   }
 }
 

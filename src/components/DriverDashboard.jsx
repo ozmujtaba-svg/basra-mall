@@ -159,6 +159,10 @@ export function DriverDashboard({ onUpdateOrderNote, onUpdateStatus, orders, sto
                           <span>المطلوب الآن</span>
                           <strong>{getDriverNextStep(order.status)}</strong>
                         </div>
+                        <div>
+                          <span>وقت الطلب</span>
+                          <strong>{formatOrderDate(order.createdAt)}</strong>
+                        </div>
                       </div>
 
                       <div className="delivery-route-details">
@@ -311,6 +315,17 @@ function formatMoney(value) {
   return `${Number(value).toLocaleString("en-US")} د.ع`
 }
 
+function formatOrderDate(createdAt) {
+  if (!createdAt) {
+    return "طلب قديم"
+  }
+
+  return new Intl.DateTimeFormat("ar-IQ", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(createdAt))
+}
+
 function getDeliveryFees(orders) {
   return orders.reduce((total, order) => total + Number(order.deliveryFee ?? 0), 0)
 }
@@ -354,6 +369,7 @@ function getDriverNextStep(status) {
 function formatDeliveryInfo(order, pickupStore) {
   return [
     `طلب رقم: ${order.id}`,
+    `وقت الطلب: ${formatOrderDate(order.createdAt)}`,
     `استلام من: ${pickupStore?.name ?? order.items[0]?.store ?? ""}`,
     pickupStore?.area ? `منطقة المتجر: ${pickupStore.area}` : "",
     pickupStore?.phone ? `رقم المتجر: ${pickupStore.phone}` : "",
@@ -401,7 +417,7 @@ function matchesOrderSearch(order, searchText) {
   }
 
   const items = order.items.map((item) => `${item.name} ${item.store}`).join(" ")
-  const searchableText = `${order.id} ${order.customer} ${order.phone} ${order.area} ${order.landmark} ${order.notes} ${order.internalNote} ${items}`
+  const searchableText = `${order.id} ${order.customer} ${order.phone} ${order.area} ${order.landmark} ${order.notes} ${order.internalNote} ${formatOrderDate(order.createdAt)} ${items}`
 
   return searchableText.toLowerCase().includes(search)
 }

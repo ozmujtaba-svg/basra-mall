@@ -214,6 +214,7 @@ export function CustomerDashboard({
               <h3>طلب رقم {latestOrder.id}</h3>
               <span>الحالة: {latestOrder.status}</span>
               <span>المنطقة: {latestOrder.area}</span>
+              <span>وقت الطلب: {formatOrderDate(latestOrder.createdAt)}</span>
               {latestOrder.total && <strong>{formatMoney(latestOrder.total)}</strong>}
             </div>
             <button onClick={scrollToTracking}>عرض الطلبات</button>
@@ -353,6 +354,7 @@ export function CustomerDashboard({
           customerOrders.map((order) => (
             <div className="tracking-card" key={`customer-${order.id}`}>
               <h3>طلب رقم {order.id}</h3>
+              <span>وقت الطلب: {formatOrderDate(order.createdAt)}</span>
               <span>الحالة الحالية: {order.status}</span>
               <span>التوصيل إلى: {order.area}</span>
               {order.total && <strong>المبلغ النهائي: {formatMoney(order.total)}</strong>}
@@ -505,4 +507,15 @@ function getPriceValue(price) {
 
 function formatMoney(value) {
   return `${Number(value).toLocaleString("en-US")} د.ع`
+}
+
+function formatOrderDate(createdAt) {
+  if (!createdAt) {
+    return "طلب قديم بدون تاريخ"
+  }
+
+  return new Intl.DateTimeFormat("ar-IQ", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(createdAt))
 }

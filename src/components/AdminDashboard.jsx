@@ -48,7 +48,7 @@ export function AdminDashboard({
   const averageOrderValue = nonCanceledOrders.length > 0 ? totalSales / nonCanceledOrders.length : 0
   const monitoringStats = getMonitoringStats({
     allOrders,
-    estimatedRevenue,
+    commissionRate,
     pendingStores,
   })
   const adminAlerts = getAdminAlerts({
@@ -180,7 +180,7 @@ export function AdminDashboard({
           <div className="profit">
             <span>أرباح اليوم التقريبية</span>
             <strong>{formatMoney(monitoringStats.todayRevenue)}</strong>
-            <small>حاليًا محسوبة من بيانات النسخة التجريبية</small>
+            <small>محسوبة من الطلبات المؤرخة بتاريخ اليوم</small>
           </div>
         </div>
       </section>
@@ -395,6 +395,8 @@ export function AdminDashboard({
                   <span className="status-pill">{order.status}</span>
                 </div>
                 <div className="order-meta">
+                  وقت الطلب: {formatOrderDate(order.createdAt)}
+                  <br />
                   الزبون: {order.customer}
                   <br />
                   الهاتف: {order.phone}
@@ -472,6 +474,7 @@ export function AdminDashboard({
         "الهاتف",
         "المنطقة",
         "الحالة",
+        "وقت الطلب",
         "المنتجات",
         "مجموع المنتجات",
         "أجرة التوصيل",
@@ -483,6 +486,7 @@ export function AdminDashboard({
         order.phone,
         order.area,
         order.status,
+        formatOrderDate(order.createdAt),
         formatOrderItems(order.items),
         order.subtotal,
         order.deliveryFee,
@@ -523,14 +527,21 @@ function getTopStore(orders) {
   return { name, sales }
 }
 
-function getMonitoringStats({ allOrders, estimatedRevenue, pendingStores }) {
+function getMonitoringStats({ allOrders, commissionRate, pendingStores }) {
   const followUpStatuses = ["طلب جديد", "قيد التجهيز", "جاهز للتوصيل"]
+  const todayRevenue = allOrders
+    .filter((order) => isToday(order.createdAt) && order.status !== "ملغي")
+    .reduce((total, order) => {
+      const deliveryIncome = order.status === "تم التسليم" ? Number(order.deliveryFee) : 0
+
+      return total + Number(order.subtotal) * commissionRate + deliveryIncome
+    }, 0)
 
   return {
     followUpOrders: allOrders.filter((order) => followUpStatuses.includes(order.status)).length,
     inDeliveryOrders: allOrders.filter((order) => order.status === "قيد التوصيل").length,
     pendingStores: pendingStores.length,
-    todayRevenue: estimatedRevenue,
+    todayRevenue,
   }
 }
 
@@ -639,7 +650,7 @@ function matchesOrderSearch(order, searchText) {
   }
 
   const items = order.items.map((item) => `${item.name} ${item.store}`).join(" ")
-  const searchableText = `${order.id} ${order.customer} ${order.phone} ${order.area} ${order.landmark} ${order.notes} ${order.status} ${items}`
+  const searchableText = `${order.id} ${order.customer} ${order.phone} ${order.area} ${order.landmark} ${order.notes} ${order.status} ${formatOrderDate(order.createdAt)} ${items}`
 
   return searchableText.toLowerCase().includes(search)
 }
@@ -676,6 +687,32 @@ function getStoreStatusLabel(status) {
   }
 
   return "موافق عليه"
+}
+
+function formatOrderDate(createdAt) {
+  if (!createdAt) {
+    return "طلب قديم"
+  }
+
+  return new Intl.DateTimeFormat("ar-IQ", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(createdAt))
+}
+
+function isToday(createdAt) {
+  if (!createdAt) {
+    return false
+  }
+
+  const orderDate = new Date(createdAt)
+  const today = new Date()
+
+  return (
+    orderDate.getFullYear() === today.getFullYear() &&
+    orderDate.getMonth() === today.getMonth() &&
+    orderDate.getDate() === today.getDate()
+  )
 }
 
 function formatMoney(value) {

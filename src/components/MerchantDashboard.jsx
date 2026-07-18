@@ -545,6 +545,10 @@ export function MerchantDashboard({
                         <span>عدد القطع</span>
                         <strong>{getOrderItemCount(order.items)}</strong>
                       </div>
+                      <div>
+                        <span>وقت الطلب</span>
+                        <strong>{formatOrderDate(order.createdAt)}</strong>
+                      </div>
                     </div>
                     {order.landmark && (
                       <div className="order-meta">الدلالة: {order.landmark}</div>
@@ -750,6 +754,17 @@ function formatMoney(value) {
   return `${Math.round(Number(value)).toLocaleString("en-US")} د.ع`
 }
 
+function formatOrderDate(createdAt) {
+  if (!createdAt) {
+    return "طلب قديم"
+  }
+
+  return new Intl.DateTimeFormat("ar-IQ", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(createdAt))
+}
+
 function formatPercent(value) {
   return `${Math.round(value * 100)}%`
 }
@@ -777,7 +792,7 @@ function matchesOrderSearch(order, searchText) {
   }
 
   const items = order.items.map((item) => `${item.name} ${item.store}`).join(" ")
-  const searchableText = `${order.id} ${order.customer} ${order.phone} ${order.area} ${order.landmark} ${order.notes} ${order.internalNote} ${items}`
+  const searchableText = `${order.id} ${order.customer} ${order.phone} ${order.area} ${order.landmark} ${order.notes} ${order.internalNote} ${formatOrderDate(order.createdAt)} ${items}`
 
   return searchableText.toLowerCase().includes(search)
 }
