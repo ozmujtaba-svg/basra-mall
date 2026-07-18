@@ -1130,6 +1130,41 @@ button span {
   background: #d76b50;
 }
 
+.delivery-button.secondary {
+  border: 1px solid #ded8cc;
+  background: white;
+  color: #18221f;
+}
+
+.delivery-confirm-box {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #c9ddd9;
+  border-radius: 14px;
+  background: #eef7f5;
+}
+
+.delivery-confirm-box > div {
+  display: grid;
+  gap: 4px;
+}
+
+.delivery-confirm-box strong {
+  color: #0c6b66;
+}
+
+.delivery-confirm-box span {
+  color: #65706b;
+  line-height: 1.8;
+}
+
+.delivery-confirm-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
 .danger-action-button {
   margin-top: 12px;
   width: 100%;
@@ -1161,6 +1196,204 @@ button span {
 .delivery-groups {
   display: grid;
   gap: 14px;
+}
+
+.driver-start-card {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  gap: 16px;
+  align-items: center;
+  padding: 18px;
+  border: 1px solid #c9ddd9;
+  border-radius: 16px;
+  background: #eef7f5;
+}
+
+.driver-start-card span,
+.driver-start-card p {
+  color: #65706b;
+  line-height: 1.8;
+}
+
+.driver-start-card h2 {
+  margin: 4px 0 6px;
+}
+
+.driver-start-card p {
+  margin: 0;
+}
+
+.driver-start-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.driver-start-stats div {
+  min-height: 76px;
+  padding: 12px;
+  border: 1px solid #d8e3dc;
+  border-radius: 12px;
+  background: white;
+  box-sizing: border-box;
+}
+
+.driver-start-stats strong,
+.driver-start-stats span {
+  display: block;
+}
+
+.driver-start-stats strong {
+  color: #0c6b66;
+  font-size: 22px;
+}
+
+.driver-priority-card {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 12px;
+  align-items: center;
+  padding: 16px;
+  border: 1px solid #f0d3c2;
+  border-radius: 16px;
+  background: #fff8f2;
+}
+
+.driver-priority-card h3 {
+  margin: 4px 0 6px;
+}
+
+.driver-priority-card p,
+.driver-priority-card span {
+  color: #65706b;
+  line-height: 1.7;
+}
+
+.driver-priority-card p {
+  margin: 0;
+}
+
+.driver-priority-card > strong {
+  min-width: 44px;
+  color: #d76b50;
+  font-size: 28px;
+  text-align: center;
+}
+
+.driver-card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.driver-priority-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #eef7f5;
+  color: #0c6b66;
+  font-weight: bold;
+}
+
+.driver-priority-badge.urgent {
+  background: #fff0e8;
+  color: #b94d35;
+}
+
+.driver-priority-badge.active {
+  background: #eaf0ff;
+  color: #315f9f;
+}
+
+.driver-priority-badge.done {
+  background: #f0f3ef;
+  color: #65706b;
+}
+
+.driver-history-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid #ded8cc;
+  border-radius: 16px;
+  background: white;
+}
+
+.driver-history-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: start;
+}
+
+.driver-history-header span,
+.driver-history-grid span,
+.driver-latest-delivery span,
+.driver-latest-delivery small {
+  color: #65706b;
+  line-height: 1.7;
+}
+
+.driver-history-header h3 {
+  margin: 4px 0 0;
+}
+
+.driver-history-header > strong {
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: #eef7f5;
+  color: #0c6b66;
+}
+
+.driver-history-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.driver-history-grid div,
+.driver-latest-delivery {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid #ded8cc;
+  border-radius: 12px;
+  background: #fbfaf7;
+}
+
+.driver-history-grid strong,
+.driver-latest-delivery strong {
+  color: #18221f;
+}
+
+.driver-delivery-rating {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #c9ddd9;
+  border-radius: 14px;
+  background: #eef7f5;
+}
+
+.driver-delivery-rating div {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  border-radius: 10px;
+  background: white;
+}
+
+.driver-delivery-rating span {
+  color: #65706b;
+  line-height: 1.6;
+}
+
+.driver-delivery-rating strong {
+  color: #0c6b66;
 }
 
 .driver-earnings-card {
@@ -2779,7 +3012,13 @@ button span {
   .status-breakdown,
   .admin-table-head,
   .admin-table-row,
+  .driver-start-card,
+  .driver-start-stats,
+  .driver-priority-card,
+  .driver-history-grid,
+  .driver-delivery-rating,
   .driver-task-summary,
+  .delivery-confirm-actions,
   .delivery-route,
   .delivery-route-details,
   .route-contact-actions,
@@ -2791,6 +3030,8 @@ button span {
 
   .revenue-row,
   .order-card-top,
+  .driver-card-badges,
+  .driver-history-header,
   .order-summary div,
   .cart-item,
   .cart-alert,

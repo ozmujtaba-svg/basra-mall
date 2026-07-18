@@ -2,6 +2,7 @@ import { useState } from "react"
 
 const deliveryStatusFilters = ["الكل", "جاهز للتوصيل", "قيد التوصيل", "تم التسليم"]
 const deliverySortOptions = [
+  "الأولوية أولًا",
   "الأحدث أولًا",
   "الأقدم أولًا",
   "أعلى أجرة توصيل",
@@ -20,6 +21,7 @@ export function DriverDashboard({ onUpdateOrderNote, onUpdateStatus, orders, sto
   const [deliveryStatusFilter, setDeliveryStatusFilter] = useState(deliveryStatusFilters[0])
   const [deliverySort, setDeliverySort] = useState(deliverySortOptions[0])
   const [copyMessage, setCopyMessage] = useState("")
+  const [confirmDeliveryId, setConfirmDeliveryId] = useState(null)
   const filteredOrders = orders
     .filter((order) => deliveryStatusFilter === "الكل" || order.status === deliveryStatusFilter)
     .filter((order) => matchesOrderSearch(order, orderSearch))
@@ -28,9 +30,14 @@ export function DriverDashboard({ onUpdateOrderNote, onUpdateStatus, orders, sto
   const activeDeliveries = orders.filter((order) => order.status === "قيد التوصيل")
   const availableDeliveries = orders.filter((order) => order.status === "جاهز للتوصيل")
   const deliveryEarnings = deliveredOrders.reduce((total, order) => total + order.deliveryFee, 0)
+  const todayDeliveredOrders = deliveredOrders.filter((order) => isToday(order.createdAt))
+  const todayDeliveryEarnings = getDeliveryFees(todayDeliveredOrders)
   const availableDeliveryFees = getDeliveryFees(availableDeliveries)
   const activeDeliveryFees = getDeliveryFees(activeDeliveries)
   const expectedDeliveryFees = getDeliveryFees(orders.filter((order) => order.status !== "ملغي"))
+  const priorityDeliveries = availableDeliveries.filter((order) => getOrderAgeMinutes(order.createdAt) >= 30)
+  const nextPriorityOrder = [...availableDeliveries].sort(sortOrdersByPriority)[0]
+  const latestDeliveredOrder = [...deliveredOrders].sort((firstOrder, secondOrder) => secondOrder.id - firstOrder.id)[0]
   const orderGroups = [
     { title: "جاهزة للاستلام", status: "جاهز للتوصيل" },
     { title: "قيد التوصيل", status: "قيد التوصيل" },
@@ -42,6 +49,79 @@ export function DriverDashboard({ onUpdateOrderNote, onUpdateStatus, orders, sto
 
   return (
     <div className="orders-panel">
+      <section className="driver-start-card">
+        <div>
+          <span>واجهة السائق</span>
+          <h2>ملخص التوصيل اليوم</h2>
+          <p>راجع الطلبات الجاهزة واستلم المهمة، ثم حدّث الحالة بعد التسليم.</p>
+        </div>
+        <div className="driver-start-stats">
+          <div>
+            <strong>{availableDeliveries.length}</strong>
+            <span>جاهزة للاستلام</span>
+          </div>
+          <div>
+            <strong>{activeDeliveries.length}</strong>
+            <span>قيد التوصيل</span>
+          </div>
+          <div>
+            <strong>{formatMoney(todayDeliveryEarnings)}</strong>
+            <span>أرباح اليوم</span>
+          </div>
+        </div>
+      </section>
+
+      <section className="driver-priority-card">
+        <div>
+          <span>أولوية السائق</span>
+          <h3>{nextPriorityOrder ? `ابدأ بطلب رقم ${nextPriorityOrder.id}` : "ماكو طلب جاهز الآن"}</h3>
+          <p>
+            {nextPriorityOrder
+              ? getDriverPriorityDescription(nextPriorityOrder)
+              : "لما صاحب المتجر يجهز طلب، راح يظهر هنا حتى السائق يعرف أول مهمة."}
+          </p>
+        </div>
+        <strong>{priorityDeliveries.length}</strong>
+        <span>طلبات تحتاج انتباه</span>
+      </section>
+
+      <section className="driver-history-card">
+        <div className="driver-history-header">
+          <div>
+            <span>سجل السائق</span>
+            <h3>ملخص الشغل</h3>
+          </div>
+          <strong>{deliveredOrders.length} طلب مكتمل</strong>
+        </div>
+        <div className="driver-history-grid">
+          <div>
+            <span>أرباح اليوم</span>
+            <strong>{formatMoney(todayDeliveryEarnings)}</strong>
+          </div>
+          <div>
+            <span>كل الأرباح المسلّمة</span>
+            <strong>{formatMoney(deliveryEarnings)}</strong>
+          </div>
+          <div>
+            <span>قيد التوصيل الآن</span>
+            <strong>{activeDeliveries.length}</strong>
+          </div>
+        </div>
+        <div className="driver-latest-delivery">
+          <span>آخر طلب تم تسليمه</span>
+          <strong>
+            {latestDeliveredOrder
+              ? `طلب ${latestDeliveredOrder.id} - ${latestDeliveredOrder.customer}`
+              : "بعدك ما مسلّم طلب"}
+          </strong>
+          <small>
+            {latestDeliveredOrder
+              ? `${formatOrderDate(latestDeliveredOrder.createdAt)} - ${formatMoney(latestDeliveredOrder.deliveryFee)}`
+              : "راح يظهر هنا آخر طلب بعد أول عملية تسليم."}
+          </small>
+        </div>
+      </section>
+
       <h2>طلبات التوصيل</h2>
       <p>الطلبات مرتبة حسب مرحلة التوصيل حتى يعرف السائق شنو يستلم وشنو يوصل.</p>
 
@@ -139,7 +219,12 @@ export function DriverDashboard({ onUpdateOrderNote, onUpdateStatus, orders, sto
                     <div className="order-card delivery-order-card" key={order.id}>
                       <div className="order-card-top">
                         <h3>توصيل طلب رقم {order.id}</h3>
-                        <span className="status-pill">{order.status}</span>
+                        <div className="driver-card-badges">
+                          <span className={`driver-priority-badge ${getDriverPriorityClass(order)}`}>
+                            {getDriverPriorityLabel(order)}
+                          </span>
+                          <span className="status-pill">{order.status}</span>
+                        </div>
                       </div>
 
                       <div className="driver-task-summary">
@@ -245,6 +330,23 @@ export function DriverDashboard({ onUpdateOrderNote, onUpdateStatus, orders, sto
                         </div>
                       </div>
 
+                      {order.status === "تم التسليم" && (
+                        <div className="driver-delivery-rating">
+                          <div>
+                            <span>تقييم الطلب</span>
+                            <strong>تم التسليم بنجاح</strong>
+                          </div>
+                          <div>
+                            <span>ملاحظة السائق</span>
+                            <strong>{order.internalNote ? "موجودة" : "لا توجد ملاحظة"}</strong>
+                          </div>
+                          <div>
+                            <span>أجرة التوصيل</span>
+                            <strong>{formatMoney(order.deliveryFee)}</strong>
+                          </div>
+                        </div>
+                      )}
+
                       {order.status === "جاهز للتوصيل" && (
                         <button
                           className="delivery-button"
@@ -254,12 +356,43 @@ export function DriverDashboard({ onUpdateOrderNote, onUpdateStatus, orders, sto
                         </button>
                       )}
                       {order.status === "قيد التوصيل" && (
-                        <button
-                          className="delivery-button done"
-                          onClick={() => onUpdateStatus(order.id, "تم التسليم")}
-                        >
-                          تم التسليم
-                        </button>
+                        <div className="delivery-confirm-box">
+                          {confirmDeliveryId === order.id ? (
+                            <>
+                              <div>
+                                <strong>تأكيد التسليم</strong>
+                                <span>
+                                  تأكد من تسليم طلب {order.id} إلى {order.customer} واستلام{" "}
+                                  {formatMoney(order.total)}.
+                                </span>
+                              </div>
+                              <div className="delivery-confirm-actions">
+                                <button
+                                  className="delivery-button done"
+                                  onClick={() => finishDelivery(order.id)}
+                                  type="button"
+                                >
+                                  تأكيد التسليم
+                                </button>
+                                <button
+                                  className="delivery-button secondary"
+                                  onClick={() => setConfirmDeliveryId(null)}
+                                  type="button"
+                                >
+                                  رجوع
+                                </button>
+                              </div>
+                            </>
+                          ) : (
+                            <button
+                              className="delivery-button done"
+                              onClick={() => setConfirmDeliveryId(order.id)}
+                              type="button"
+                            >
+                              تم التسليم
+                            </button>
+                          )}
+                        </div>
                       )}
                     </div>
                   )
@@ -305,6 +438,11 @@ export function DriverDashboard({ onUpdateOrderNote, onUpdateStatus, orders, sto
 
     onUpdateOrderNote(order.id, currentNote ? `${currentNote}، ${note}` : note)
   }
+
+  function finishDelivery(orderId) {
+    onUpdateStatus(orderId, "تم التسليم")
+    setConfirmDeliveryId(null)
+  }
 }
 
 function formatOrderItems(items) {
@@ -328,6 +466,35 @@ function formatOrderDate(createdAt) {
 
 function getDeliveryFees(orders) {
   return orders.reduce((total, order) => total + Number(order.deliveryFee ?? 0), 0)
+}
+
+function getOrderAgeMinutes(createdAt) {
+  if (!createdAt) {
+    return 0
+  }
+
+  const createdDate = new Date(createdAt)
+
+  if (Number.isNaN(createdDate.getTime())) {
+    return 0
+  }
+
+  return Math.max(0, Math.floor((Date.now() - createdDate.getTime()) / 60000))
+}
+
+function isToday(createdAt) {
+  if (!createdAt) {
+    return false
+  }
+
+  const orderDate = new Date(createdAt)
+  const today = new Date()
+
+  return (
+    orderDate.getFullYear() === today.getFullYear() &&
+    orderDate.getMonth() === today.getMonth() &&
+    orderDate.getDate() === today.getDate()
+  )
 }
 
 function getOrderItemCount(items) {
@@ -364,6 +531,50 @@ function getDriverNextStep(status) {
   }
 
   return "متابعة الطلب"
+}
+
+function getDriverPriorityLabel(order) {
+  if (order.status === "تم التسليم") {
+    return "مكتمل"
+  }
+
+  if (order.status === "قيد التوصيل") {
+    return "أكمل التوصيل"
+  }
+
+  if (getOrderAgeMinutes(order.createdAt) >= 30) {
+    return "مستعجل"
+  }
+
+  if (order.status === "جاهز للتوصيل") {
+    return "ابدأ بهذا"
+  }
+
+  return "متابعة"
+}
+
+function getDriverPriorityClass(order) {
+  if (getDriverPriorityLabel(order) === "مستعجل") {
+    return "urgent"
+  }
+
+  if (order.status === "قيد التوصيل") {
+    return "active"
+  }
+
+  if (order.status === "تم التسليم") {
+    return "done"
+  }
+
+  return "ready"
+}
+
+function getDriverPriorityDescription(order) {
+  const ageMinutes = getOrderAgeMinutes(order.createdAt)
+  const ageText = ageMinutes > 0 ? `صارله ${ageMinutes} دقيقة` : "طلب جديد"
+  const itemCount = getOrderItemCount(order.items)
+
+  return `${ageText}، ${itemCount} قطعة، منطقة الزبون ${order.area}.`
 }
 
 function formatDeliveryInfo(order, pickupStore) {
@@ -423,6 +634,10 @@ function matchesOrderSearch(order, searchText) {
 }
 
 function sortDeliveryOrders(firstOrder, secondOrder, sortType) {
+  if (sortType === "الأولوية أولًا") {
+    return sortOrdersByPriority(firstOrder, secondOrder)
+  }
+
   if (sortType === "الأقدم أولًا") {
     return firstOrder.id - secondOrder.id
   }
@@ -436,4 +651,20 @@ function sortDeliveryOrders(firstOrder, secondOrder, sortType) {
   }
 
   return secondOrder.id - firstOrder.id
+}
+
+function sortOrdersByPriority(firstOrder, secondOrder) {
+  const statusPriority = {
+    "جاهز للتوصيل": 1,
+    "قيد التوصيل": 2,
+    "تم التسليم": 3,
+  }
+  const firstPriority = statusPriority[firstOrder.status] ?? 4
+  const secondPriority = statusPriority[secondOrder.status] ?? 4
+
+  if (firstPriority !== secondPriority) {
+    return firstPriority - secondPriority
+  }
+
+  return firstOrder.id - secondOrder.id
 }
