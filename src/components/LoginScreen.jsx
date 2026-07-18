@@ -1,5 +1,7 @@
 import { accountDetails } from "../data"
 
+const publicAccountTypes = ["زبون", "صاحب متجر", "سائق"]
+
 export function LoginScreen({
   accountType,
   loginInfo,
@@ -21,10 +23,10 @@ export function LoginScreen({
 
       <div className="login">
         <h2>تسجيل الدخول</h2>
-        <p>اختر نوع الحساب حتى نجهز الصفحة المناسبة.</p>
+        <p>اختر نوع حسابك حتى نفتح الواجهة المناسبة لك فقط.</p>
 
         <div className="options">
-          {["زبون", "صاحب متجر", "سائق", "الإدارة"].map((type) => (
+          {publicAccountTypes.map((type) => (
             <button
               key={type}
               className={accountType === type ? "active" : ""}
@@ -34,6 +36,19 @@ export function LoginScreen({
               <span>{accountDetails[type]}</span>
             </button>
           ))}
+        </div>
+
+        <div className="admin-login-shortcut">
+          <div>
+            <strong>دخول الإدارة</strong>
+            <span>هذا الخيار يبقى لصاحب المشروع أو فريق الإدارة فقط.</span>
+          </div>
+          <button
+            className={accountType === "الإدارة" ? "active" : ""}
+            onClick={() => onAccountChange("الإدارة")}
+          >
+            إدارة
+          </button>
         </div>
 
         <div className="result">
@@ -59,6 +74,17 @@ export function LoginScreen({
               placeholder="مثال: 07XXXXXXXXX"
             />
           </label>
+          {accountType === "الإدارة" && (
+            <label>
+              رمز الإدارة
+              <input
+                value={loginInfo.adminCode}
+                onChange={(event) => updateLoginInfo("adminCode", event.target.value)}
+                placeholder="الرمز التجريبي: 1234"
+                type="password"
+              />
+            </label>
+          )}
         </div>
 
         <button className="enter-button" onClick={onEnter}>

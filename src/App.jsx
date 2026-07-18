@@ -12,6 +12,7 @@ const DELIVERY_FEE = 5000
 const ADMIN_COMMISSION_RATE = 0.05
 const SETTINGS_STORAGE_KEY = "basra-mall-settings"
 const APP_DATA_STORAGE_KEY = "basra-mall-data"
+const ACCOUNT_STORAGE_KEY = "basra-mall-account"
 const defaultPlatformSettings = {
   commissionRate: ADMIN_COMMISSION_RATE,
   deliveryFee: DELIVERY_FEE,
@@ -19,7 +20,8 @@ const defaultPlatformSettings = {
 
 function App() {
   const [savedAppData] = useState(loadAppData)
-  const [accountType, setAccountType] = useState("زبون")
+  const [savedAccount] = useState(loadSavedAccount)
+  const [accountType, setAccountType] = useState(savedAccount.accountType)
   const [currentView, setCurrentView] = useState("login")
   const [stores, setStores] = useState(savedAppData.stores)
   const [selectedStore, setSelectedStore] = useState(savedAppData.selectedStore)
@@ -33,8 +35,9 @@ function App() {
   const [orderMessage, setOrderMessage] = useState("")
   const [nextOrderId, setNextOrderId] = useState(savedAppData.nextOrderId)
   const [loginInfo, setLoginInfo] = useState({
-    name: "",
-    phone: "",
+    adminCode: "",
+    name: savedAccount.name,
+    phone: savedAccount.phone,
   })
   const [loginMessage, setLoginMessage] = useState("")
   const [customerInfo, setCustomerInfo] = useState(savedAppData.customerInfo)
@@ -87,6 +90,17 @@ function App() {
   }, [platformSettings])
 
   useEffect(() => {
+    localStorage.setItem(
+      ACCOUNT_STORAGE_KEY,
+      JSON.stringify({
+        accountType,
+        name: loginInfo.name,
+        phone: loginInfo.phone,
+      }),
+    )
+  }, [accountType, loginInfo.name, loginInfo.phone])
+
+  useEffect(() => {
     try {
       localStorage.setItem(
         APP_DATA_STORAGE_KEY,
@@ -125,6 +139,11 @@ function App() {
       return
     }
 
+    if (accountType === "الإدارة" && loginInfo.adminCode.trim() !== "1234") {
+      setLoginMessage("رمز الإدارة غير صحيح.")
+      return
+    }
+
     if (accountType === "زبون") {
       setCustomerInfo((info) => ({
         ...info,
@@ -135,6 +154,27 @@ function App() {
 
     setLoginMessage("")
     setCurrentView("dashboard")
+  }
+
+  function chooseAccountType(type) {
+    setAccountType(type)
+    setLoginMessage("")
+    setLoginInfo((info) => ({
+      ...info,
+      adminCode: type === "الإدارة" ? info.adminCode : "",
+    }))
+  }
+
+  function forgetSavedAccount() {
+    localStorage.removeItem(ACCOUNT_STORAGE_KEY)
+    setAccountType("زبون")
+    setLoginInfo({
+      adminCode: "",
+      name: "",
+      phone: "",
+    })
+    setLoginMessage("تم مسح الحساب المحفوظ. اختار حساب جديد وسجل دخول.")
+    setCurrentView("login")
   }
 
   function resetDemoData() {
@@ -692,7 +732,7 @@ function App() {
       {currentView === "login" ? (
         <LoginScreen
           accountType={accountType}
-          onAccountChange={setAccountType}
+          onAccountChange={chooseAccountType}
           loginInfo={loginInfo}
           loginMessage={loginMessage}
           onEnter={enterDashboard}
@@ -704,6 +744,7 @@ function App() {
           stats={activeStats}
           user={activeUser}
           onBack={() => setCurrentView("login")}
+          onForgetAccount={forgetSavedAccount}
         >
           {accountType === "زبون" && (
             <CustomerDashboard
@@ -895,6 +936,31 @@ function loadPlatformSettings() {
   }
 
   return defaultPlatformSettings
+}
+
+function loadSavedAccount() {
+  const defaultAccount = {
+    accountType: "زبون",
+    name: "",
+    phone: "",
+  }
+
+  try {
+    const savedAccount = JSON.parse(localStorage.getItem(ACCOUNT_STORAGE_KEY))
+    const allowedTypes = ["زبون", "صاحب متجر", "سائق", "الإدارة"]
+
+    if (!savedAccount || !allowedTypes.includes(savedAccount.accountType)) {
+      return defaultAccount
+    }
+
+    return {
+      accountType: savedAccount.accountType,
+      name: typeof savedAccount.name === "string" ? savedAccount.name : "",
+      phone: typeof savedAccount.phone === "string" ? savedAccount.phone : "",
+    }
+  } catch {
+    return defaultAccount
+  }
 }
 
 function loadAppData() {
