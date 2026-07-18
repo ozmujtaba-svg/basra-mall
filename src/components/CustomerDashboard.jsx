@@ -45,7 +45,10 @@ export function CustomerDashboard({
   const categoryStores =
     activeCategory === "الكل" ? stores : stores.filter((store) => store.category === activeCategory)
   const visibleStores = categoryStores.filter((store) => matchesSearch(store, normalizedSearch))
+  const suggestedStores = visibleStores.slice(0, 3)
   const favoriteStores = stores.filter((store) => favoriteStoreNames.includes(store.name))
+  const cartQuantity = cartItems.reduce((total, item) => total + item.quantity, 0)
+  const activeOrders = customerOrders.filter((order) => order.status !== "ملغي" && order.status !== "تم التسليم")
   const subtotal = cartItems.reduce(
     (total, item) => total + getPriceValue(item.price) * item.quantity,
     0,
@@ -58,9 +61,63 @@ export function CustomerDashboard({
     matchesProductFilter(product, activeProductFilter),
   )
   const latestOrder = customerOrders[0]
+  const latestOrderItemsCount = latestOrder ? getOrderItemsCount(latestOrder.items) : 0
 
   return (
     <div className="customer-layout">
+      <section className="customer-start-card">
+        <div>
+          <span>واجهة الزبون</span>
+          <h2>أهلًا {customerInfo.name || "بيك"} داخل مول البصرة</h2>
+          <p>تصفح المتاجر، أضف المنتجات للسلة، وتابع طلبك من نفس المكان.</p>
+        </div>
+        <div className="customer-start-stats">
+          <div>
+            <strong>{favoriteStores.length}</strong>
+            <span>متاجر مفضلة</span>
+          </div>
+          <div>
+            <strong>{cartQuantity}</strong>
+            <span>قطع بالسلة</span>
+          </div>
+          <div>
+            <strong>{activeOrders.length}</strong>
+            <span>طلبات نشطة</span>
+          </div>
+        </div>
+        <div className="customer-start-actions">
+          <button onClick={scrollToCart} type="button">
+            الذهاب للسلة
+          </button>
+          <button onClick={scrollToFavorites} type="button">
+            عرض المفضلة
+          </button>
+        </div>
+      </section>
+
+      <section className="suggested-stores-panel">
+        <div className="suggested-stores-header">
+          <div>
+            <h2>متاجر مقترحة</h2>
+            <p>اقتراحات سريعة حسب التصنيف أو البحث الحالي.</p>
+          </div>
+          <span>{suggestedStores.length} متاجر</span>
+        </div>
+        {suggestedStores.length === 0 ? (
+          <div className="empty-search">ماكو متاجر مقترحة حسب الاختيار الحالي.</div>
+        ) : (
+          <div className="suggested-store-list">
+            {suggestedStores.map((store) => (
+              <button key={`suggested-${store.name}`} onClick={() => onSelectStore(store)} type="button">
+                {store.image && <img src={store.image} alt="" />}
+                <span>{store.category}</span>
+                <strong>{store.name}</strong>
+              </button>
+            ))}
+          </div>
+        )}
+      </section>
+
       <section className="store-directory">
         <h2>متاجر المول</h2>
         <p>اختر متجر حتى تدخل لصفحته وتشوف المنتجات المتوفرة.</p>
@@ -72,7 +129,7 @@ export function CustomerDashboard({
             placeholder="اكتب اسم متجر أو نوع أو منتج"
           />
         </label>
-        <div className="favorite-stores">
+        <div className="favorite-stores" id="customer-favorites">
           <div className="favorite-stores-header">
             <h3>متاجري المفضلة</h3>
             <span>{favoriteStores.length}</span>
@@ -206,22 +263,36 @@ export function CustomerDashboard({
         </div>
       </section>
 
-      <div className="cart-panel">
+      <div className="cart-panel" id="customer-cart">
         {latestOrder && (
           <div className="latest-order-card">
             <div>
               <small>آخر طلب</small>
               <h3>طلب رقم {latestOrder.id}</h3>
-              <span>الحالة: {latestOrder.status}</span>
-              <span>المنطقة: {latestOrder.area}</span>
-              <span>وقت الطلب: {formatOrderDate(latestOrder.createdAt)}</span>
-              {latestOrder.total && <strong>{formatMoney(latestOrder.total)}</strong>}
+              <div className="latest-order-details">
+                <span>الحالة: {latestOrder.status}</span>
+                <span>عدد المنتجات: {latestOrderItemsCount}</span>
+                <span>المنطقة: {latestOrder.area}</span>
+                <span>وقت الطلب: {formatOrderDate(latestOrder.createdAt)}</span>
+              </div>
+              {latestOrder.total && <strong>المبلغ: {formatMoney(latestOrder.total)}</strong>}
             </div>
-            <button onClick={scrollToTracking}>عرض الطلبات</button>
+            <button onClick={scrollToTracking}>تتبع الطلب</button>
           </div>
         )}
         <h2>السلة</h2>
         <p>المنتجات التي يختارها الزبون قبل إرسال الطلب.</p>
+        <div className={cartItems.length > 0 ? "cart-alert ready" : "cart-alert empty"}>
+          <div>
+            <strong>{cartItems.length > 0 ? "السلة جاهزة للمراجعة" : "السلة فارغة حاليًا"}</strong>
+            <span>
+              {cartItems.length > 0
+                ? `عندك ${cartQuantity} قطع بالسلة، والمبلغ المتوقع ${formatMoney(finalTotal)}.`
+                : "اختار متجر وأضف منتجات حتى تبدأ أول طلب داخل مول البصرة."}
+            </span>
+          </div>
+          <small>{cartQuantity}</small>
+        </div>
         <div className="cart-list">
           {cartItems.length === 0 ? (
             <div className="cart-item">
@@ -435,6 +506,14 @@ export function CustomerDashboard({
   function scrollToTracking() {
     document.getElementById("customer-tracking")?.scrollIntoView({ behavior: "smooth" })
   }
+
+  function scrollToCart() {
+    document.getElementById("customer-cart")?.scrollIntoView({ behavior: "smooth" })
+  }
+
+  function scrollToFavorites() {
+    document.getElementById("customer-favorites")?.scrollIntoView({ behavior: "smooth" })
+  }
 }
 
 function matchesSearch(store, search) {
@@ -499,6 +578,10 @@ function getCartQuantity(cartItems, storeName, productName) {
   return (
     cartItems.find((item) => item.store === storeName && item.name === productName)?.quantity ?? 0
   )
+}
+
+function getOrderItemsCount(items) {
+  return items.reduce((total, item) => total + Number(item.quantity), 0)
 }
 
 function getPriceValue(price) {

@@ -279,6 +279,142 @@ button span {
   margin-top: 24px;
 }
 
+.customer-start-card {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1.1fr 1.2fr auto;
+  gap: 16px;
+  align-items: center;
+  padding: 18px;
+  border: 1px solid #c9ddd9;
+  border-radius: 16px;
+  background: #eef7f5;
+}
+
+.customer-start-card span,
+.customer-start-card p {
+  color: #65706b;
+  line-height: 1.8;
+}
+
+.customer-start-card h2 {
+  margin: 4px 0 6px;
+}
+
+.customer-start-card p {
+  margin: 0;
+}
+
+.customer-start-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.customer-start-stats div {
+  padding: 12px;
+  border: 1px solid #d8e3dc;
+  border-radius: 12px;
+  background: white;
+}
+
+.customer-start-stats strong,
+.customer-start-stats span {
+  display: block;
+}
+
+.customer-start-stats strong {
+  color: #0c6b66;
+  font-size: 24px;
+}
+
+.customer-start-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.customer-start-actions button {
+  border: 0;
+  background: #0c6b66;
+  color: white;
+  text-align: center;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.customer-start-actions button:last-child {
+  background: white;
+  color: #0c6b66;
+}
+
+.suggested-stores-panel {
+  grid-column: 1 / -1;
+  padding: 18px;
+  border: 1px solid #ded8cc;
+  border-radius: 16px;
+  background: white;
+}
+
+.suggested-stores-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: start;
+  margin-bottom: 14px;
+}
+
+.suggested-stores-header h2 {
+  margin: 0 0 8px;
+}
+
+.suggested-stores-header p {
+  margin: 0;
+  color: #65706b;
+  line-height: 1.8;
+}
+
+.suggested-stores-header span {
+  border-radius: 999px;
+  background: #eef7f5;
+  color: #0c6b66;
+  padding: 8px 12px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.suggested-store-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.suggested-store-list button {
+  display: grid;
+  grid-template-columns: 58px 1fr;
+  gap: 10px;
+  align-items: center;
+  padding: 12px;
+  text-align: right;
+}
+
+.suggested-store-list img {
+  grid-row: span 2;
+  width: 58px;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.suggested-store-list span,
+.suggested-store-list strong {
+  display: block;
+}
+
+.suggested-store-list span {
+  color: #65706b;
+  font-size: 13px;
+}
+
 .store-list,
 .product-list {
   display: grid;
@@ -529,6 +665,19 @@ button span {
   color: #0c6b66;
 }
 
+.latest-order-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.latest-order-details span {
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: white;
+}
+
 .latest-order-card button {
   border: 0;
   background: #0c6b66;
@@ -727,6 +876,49 @@ button span {
   display: grid;
   gap: 10px;
   margin: 14px 0;
+}
+
+.cart-alert {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+  margin: 14px 0;
+  padding: 16px;
+  border: 1px solid #ded8cc;
+  border-radius: 14px;
+  background: white;
+}
+
+.cart-alert strong,
+.cart-alert span {
+  display: block;
+  line-height: 1.7;
+}
+
+.cart-alert span {
+  color: #65706b;
+}
+
+.cart-alert small {
+  display: grid;
+  place-items: center;
+  min-width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: white;
+  color: #0c6b66;
+  font-weight: bold;
+}
+
+.cart-alert.ready {
+  border-color: #c9ddd9;
+  background: #eef7f5;
+}
+
+.cart-alert.empty {
+  border-color: #ead5a2;
+  background: #fff9e8;
 }
 
 .cart-item {
@@ -2562,6 +2754,11 @@ button span {
 
   .stats,
   .customer-layout,
+  .customer-start-card,
+  .customer-start-stats,
+  .customer-start-actions,
+  .suggested-store-list,
+  .latest-order-details,
   .customer-info-grid,
   .store-detail-hero,
   .store-detail-panel .product-list,
@@ -2596,10 +2793,12 @@ button span {
   .order-card-top,
   .order-summary div,
   .cart-item,
+  .cart-alert,
   .admin-login-shortcut,
   .session-actions,
   .store-toolbar,
   .latest-order-card,
+  .suggested-stores-header,
   .admin-monitor-header,
   .merchant-order-card-top,
   .merchant-section-top,
