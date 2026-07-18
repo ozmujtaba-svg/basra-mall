@@ -16,6 +16,24 @@ const orderSortOptions = [
   "الأقل مبلغًا",
 ]
 const orderDateFilters = ["كل الطلبات", "طلبات اليوم", "طلبات قديمة"]
+const storeStatusFilters = [
+  { label: "كل المتاجر", value: "all" },
+  { label: "بانتظار الموافقة", value: "pending" },
+  { label: "مقبولة", value: "approved" },
+  { label: "مرفوضة", value: "rejected" },
+]
+const storeSortOptions = [
+  "الأحدث أولًا",
+  "الأقدم أولًا",
+  "الأكثر منتجات",
+  "الأقل منتجات",
+]
+const rejectionReasons = [
+  "بيانات المتجر ناقصة",
+  "نوع المتجر غير واضح",
+  "رقم الهاتف غير صحيح",
+  "المنطقة غير محددة",
+]
 
 export function AdminDashboard({
   allOrders,
@@ -24,6 +42,7 @@ export function AdminDashboard({
   estimatedRevenue,
   onApproveStore,
   onRejectStore,
+  onReviewStoreAgain,
   onResetData,
   onSettingsChange,
   settings,
@@ -34,9 +53,18 @@ export function AdminDashboard({
   const [orderDateFilter, setOrderDateFilter] = useState(orderDateFilters[0])
   const [orderSearch, setOrderSearch] = useState("")
   const [orderSort, setOrderSort] = useState(orderSortOptions[0])
+  const [storeSearch, setStoreSearch] = useState("")
+  const [storeSort, setStoreSort] = useState(storeSortOptions[0])
+  const [storeStatusFilter, setStoreStatusFilter] = useState(storeStatusFilters[0].value)
+  const [storeRejectReasons, setStoreRejectReasons] = useState({})
   const pendingStores = stores.filter((store) => store.status === "pending")
   const rejectedStores = stores.filter((store) => store.status === "rejected")
   const approvedStores = stores.filter((store) => store.status !== "pending" && store.status !== "rejected")
+  const filteredStores = stores
+    .map((store, index) => ({ ...store, adminOrder: index }))
+    .filter((store) => matchesStoreStatusFilter(store, storeStatusFilter))
+    .filter((store) => matchesStoreSearch(store, storeSearch))
+    .sort((firstStore, secondStore) => sortStores(firstStore, secondStore, storeSort))
   const canceledOrders = allOrders.filter((order) => order.status === "ملغي")
   const nonCanceledOrders = allOrders.filter((order) => order.status !== "ملغي")
   const productCount = stores.reduce((total, store) => total + store.products.length, 0)
@@ -424,7 +452,67 @@ export function AdminDashboard({
       </section>
 
       <section className="admin-section" id="admin-stores">
-        <h3>المتاجر داخل المول</h3>
+        <div className="admin-monitor-header">
+          <div>
+            <h3>المتاجر داخل المول</h3>
+            <p>تابع المتاجر حسب الحالة حتى تعرف شنو يحتاج موافقة أو مراجعة.</p>
+          </div>
+          <span>{filteredStores.length} متجر ظاهر</span>
+        </div>
+        <div className="admin-store-status-summary">
+          <button
+            className={storeStatusFilter === "pending" ? "active pending" : "pending"}
+            onClick={() => setStoreStatusFilter("pending")}
+            type="button"
+          >
+            <span>بانتظار الموافقة</span>
+            <strong>{pendingStores.length}</strong>
+          </button>
+          <button
+            className={storeStatusFilter === "approved" ? "active approved" : "approved"}
+            onClick={() => setStoreStatusFilter("approved")}
+            type="button"
+          >
+            <span>مقبولة</span>
+            <strong>{approvedStores.length}</strong>
+          </button>
+          <button
+            className={storeStatusFilter === "rejected" ? "active rejected" : "rejected"}
+            onClick={() => setStoreStatusFilter("rejected")}
+            type="button"
+          >
+            <span>مرفوضة</span>
+            <strong>{rejectedStores.length}</strong>
+          </button>
+        </div>
+        <div className="admin-store-filter">
+          {storeStatusFilters.map((filter) => (
+            <button
+              className={storeStatusFilter === filter.value ? "active" : ""}
+              key={filter.value}
+              onClick={() => setStoreStatusFilter(filter.value)}
+              type="button"
+            >
+              {filter.label}
+            </button>
+          ))}
+        </div>
+        <label className="admin-store-search">
+          بحث المتاجر
+          <input
+            value={storeSearch}
+            onChange={(event) => setStoreSearch(event.target.value)}
+            placeholder="اسم المتجر، صاحب المتجر، الهاتف، المنطقة، أو النوع"
+          />
+        </label>
+        <label className="admin-store-sort">
+          ترتيب المتاجر
+          <select value={storeSort} onChange={(event) => setStoreSort(event.target.value)}>
+            {storeSortOptions.map((option) => (
+              <option key={option}>{option}</option>
+            ))}
+          </select>
+        </label>
         <div className="admin-table">
           <div className="admin-table-head">
             <span>اسم المتجر</span>
@@ -432,35 +520,68 @@ export function AdminDashboard({
             <span>الحالة</span>
             <span>إجراء</span>
           </div>
-          {stores.map((store) => (
-            <div className="admin-table-row" key={store.name}>
-              <span>
-                {store.name}
-                {store.ownerName && <small>صاحب المتجر: {store.ownerName}</small>}
-              </span>
-              <span>
-                {store.category}
-                <small>{store.products.length} منتجات</small>
-              </span>
-              <span>{getStoreStatusLabel(store.status)}</span>
-              <span>
-                {store.status === "pending" ? (
-                  <div className="approval-actions">
-                    <button className="approve-button" onClick={() => onApproveStore(store.name)}>
-                      موافقة
-                    </button>
-                    <button className="reject-button" onClick={() => onRejectStore(store.name)}>
-                      رفض
-                    </button>
-                  </div>
-                ) : store.status === "rejected" ? (
-                  "مرفوض"
-                ) : (
-                  "ظاهر للزبائن"
-                )}
-              </span>
-            </div>
-          ))}
+          {filteredStores.length === 0 ? (
+            <div className="admin-table-empty">لا توجد متاجر بهذه الحالة الآن.</div>
+          ) : (
+            filteredStores.map((store) => (
+              <div className={`admin-table-row store-${getStoreStatusClass(store.status)}`} key={store.name}>
+                <span>
+                  {store.name}
+                  {store.ownerName && <small>صاحب المتجر: {store.ownerName}</small>}
+                  {store.phone && <small>الهاتف: {store.phone}</small>}
+                </span>
+                <span>
+                  {store.category}
+                  <small>
+                    {store.area} - {store.products.length} منتجات
+                  </small>
+                </span>
+                <span>
+                  <strong>{getStoreStatusLabel(store.status)}</strong>
+                  <small>{getStoreStatusNote(store.status)}</small>
+                </span>
+                <span>
+                  {store.status === "pending" ? (
+                    <div className="approval-actions store-review-actions">
+                      <label>
+                        سبب الرفض
+                        <select
+                          value={storeRejectReasons[store.name] ?? rejectionReasons[0]}
+                          onChange={(event) => updateRejectReason(store.name, event.target.value)}
+                        >
+                          {rejectionReasons.map((reason) => (
+                            <option key={reason}>{reason}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <input
+                        value={storeRejectReasons[store.name] ?? rejectionReasons[0]}
+                        onChange={(event) => updateRejectReason(store.name, event.target.value)}
+                        placeholder="اكتب أو عدّل سبب الرفض"
+                      />
+                      <button className="approve-button" onClick={() => onApproveStore(store.name)}>
+                        موافقة
+                      </button>
+                      <button className="reject-button" onClick={() => rejectStoreWithReason(store.name)}>
+                        رفض
+                      </button>
+                    </div>
+                  ) : store.status === "rejected" ? (
+                    <div className="rejected-store-actions">
+                      <span className="store-status-action rejected">
+                        {store.rejectionReason || "راجع بيانات المتجر"}
+                      </span>
+                      <button onClick={() => reviewRejectedStore(store.name)} type="button">
+                        إعادة مراجعة
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="store-status-action approved">ظاهر للزبائن</span>
+                  )}
+                </span>
+              </div>
+            ))
+          )}
         </div>
       </section>
 
@@ -595,6 +716,25 @@ export function AdminDashboard({
 
   function scrollToAdminSection(sectionId) {
     document.getElementById(sectionId)?.scrollIntoView({ behavior: "smooth" })
+  }
+
+  function updateRejectReason(storeName, reason) {
+    setStoreRejectReasons((currentReasons) => ({
+      ...currentReasons,
+      [storeName]: reason,
+    }))
+  }
+
+  function rejectStoreWithReason(storeName) {
+    const reason = (storeRejectReasons[storeName] ?? rejectionReasons[0]).trim()
+
+    onRejectStore(storeName, reason || "بيانات المتجر تحتاج توضيح أكثر.")
+    setStoreStatusFilter("rejected")
+  }
+
+  function reviewRejectedStore(storeName) {
+    onReviewStoreAgain(storeName)
+    setStoreStatusFilter("pending")
   }
 
   function exportOrders() {
@@ -898,6 +1038,19 @@ function matchesOrderSearch(order, searchText) {
   return searchableText.toLowerCase().includes(search)
 }
 
+function matchesStoreSearch(store, searchText) {
+  const search = searchText.trim().toLowerCase()
+
+  if (!search) {
+    return true
+  }
+
+  const productNames = store.products.map((product) => product.name).join(" ")
+  const searchableText = `${store.name} ${store.ownerName} ${store.phone} ${store.area} ${store.category} ${store.status} ${store.rejectionReason} ${productNames}`
+
+  return searchableText.toLowerCase().includes(search)
+}
+
 function matchesDateFilter(order, dateFilter) {
   if (dateFilter === "طلبات اليوم") {
     return isToday(order.createdAt)
@@ -926,6 +1079,22 @@ function sortOrders(firstOrder, secondOrder, sortType) {
   return secondOrder.id - firstOrder.id
 }
 
+function sortStores(firstStore, secondStore, sortType) {
+  if (sortType === "الأقدم أولًا") {
+    return secondStore.adminOrder - firstStore.adminOrder
+  }
+
+  if (sortType === "الأكثر منتجات") {
+    return secondStore.products.length - firstStore.products.length
+  }
+
+  if (sortType === "الأقل منتجات") {
+    return firstStore.products.length - secondStore.products.length
+  }
+
+  return firstStore.adminOrder - secondStore.adminOrder
+}
+
 function formatCsvCell(value) {
   const text = String(value ?? "")
 
@@ -942,6 +1111,42 @@ function getStoreStatusLabel(status) {
   }
 
   return "موافق عليه"
+}
+
+function getStoreStatusNote(status) {
+  if (status === "pending") {
+    return "لا يظهر للزبائن قبل قرار الإدارة"
+  }
+
+  if (status === "rejected") {
+    return "يحتاج صاحب المتجر يسجل بيانات أوضح"
+  }
+
+  return "المتجر ظاهر للزبائن داخل المول"
+}
+
+function getStoreStatusClass(status) {
+  if (status === "pending") {
+    return "pending"
+  }
+
+  if (status === "rejected") {
+    return "rejected"
+  }
+
+  return "approved"
+}
+
+function matchesStoreStatusFilter(store, filter) {
+  if (filter === "all") {
+    return true
+  }
+
+  if (filter === "approved") {
+    return store.status !== "pending" && store.status !== "rejected"
+  }
+
+  return store.status === filter
 }
 
 function formatOrderDate(createdAt) {

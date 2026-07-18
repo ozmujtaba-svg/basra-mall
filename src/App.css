@@ -2692,6 +2692,8 @@ button span {
 }
 
 .admin-order-search,
+.admin-store-search,
+.admin-store-sort,
 .admin-order-sort {
   display: grid;
   gap: 8px;
@@ -2700,6 +2702,8 @@ button span {
 }
 
 .admin-order-search input,
+.admin-store-search input,
+.admin-store-sort select,
 .admin-order-sort select {
   width: 100%;
   border: 1px solid #ded8cc;
@@ -2709,6 +2713,82 @@ button span {
   background: #fbfaf7;
   color: #18221f;
   font: inherit;
+}
+
+.admin-store-status-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.admin-store-status-summary button {
+  display: grid;
+  gap: 6px;
+  border: 1px solid #ded8cc;
+  border-radius: 12px;
+  padding: 14px;
+  background: #fbfaf7;
+  text-align: right;
+}
+
+.admin-store-status-summary span {
+  color: #65706b;
+  line-height: 1.6;
+}
+
+.admin-store-status-summary strong {
+  color: #0c6b66;
+  font-size: 26px;
+}
+
+.admin-store-status-summary button.active {
+  border-color: #0c6b66;
+  box-shadow: 0 0 0 2px rgba(12, 107, 102, 0.12);
+}
+
+.admin-store-status-summary button.pending {
+  background: #fff9e8;
+}
+
+.admin-store-status-summary button.approved {
+  background: #eef7f5;
+}
+
+.admin-store-status-summary button.rejected {
+  background: #fff2ec;
+}
+
+.admin-store-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #ded8cc;
+  border-radius: 12px;
+  background: #fbfaf7;
+  margin-top: 12px;
+}
+
+.admin-store-filter button {
+  padding: 10px 12px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.admin-store-filter button.active {
+  border-color: #0c6b66;
+  background: #0c6b66;
+  color: white;
+}
+
+.admin-store-search {
+  margin-top: 12px;
+}
+
+.admin-store-sort {
+  margin-top: 12px;
 }
 
 .quick-stats-grid {
@@ -2853,10 +2933,70 @@ button span {
   color: #18221f;
 }
 
+.admin-table-row.store-pending {
+  border: 1px solid #ead5a2;
+  background: #fff9e8;
+}
+
+.admin-table-row.store-approved {
+  border: 1px solid #c9ddd9;
+  background: #eef7f5;
+}
+
+.admin-table-row.store-rejected {
+  border: 1px solid #f0b3a4;
+  background: #fff2ec;
+}
+
 .admin-table-row small {
   display: block;
   margin-top: 4px;
   color: #65706b;
+}
+
+.admin-table-row strong {
+  display: block;
+}
+
+.admin-table-empty {
+  padding: 14px;
+  border: 1px solid #ded8cc;
+  border-radius: 12px;
+  background: #fbfaf7;
+  color: #65706b;
+  text-align: center;
+}
+
+.store-status-action {
+  display: block;
+  padding: 10px 12px;
+  border-radius: 10px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.store-status-action.approved {
+  background: white;
+  color: #0c6b66;
+}
+
+.store-status-action.rejected {
+  background: white;
+  color: #8b3a2d;
+}
+
+.rejected-store-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.rejected-store-actions button {
+  border: 0;
+  background: #24302d;
+  color: white;
+  text-align: center;
+  font-weight: bold;
+  padding: 10px 12px;
 }
 
 .approve-button {
@@ -2873,6 +3013,34 @@ button span {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
+}
+
+.store-review-actions {
+  grid-template-columns: 1fr 1fr;
+}
+
+.store-review-actions label,
+.store-review-actions input {
+  grid-column: 1 / -1;
+}
+
+.store-review-actions label {
+  display: grid;
+  gap: 6px;
+  color: #65706b;
+  font-weight: bold;
+}
+
+.store-review-actions select,
+.store-review-actions input {
+  width: 100%;
+  border: 1px solid #ded8cc;
+  border-radius: 10px;
+  padding: 10px;
+  box-sizing: border-box;
+  background: white;
+  color: #18221f;
+  font: inherit;
 }
 
 .reject-button {
@@ -3007,6 +3175,7 @@ button span {
   .merchant-order-actions,
   .admin-grid,
   .admin-monitor-grid,
+  .admin-store-status-summary,
   .today-stats-grid,
   .quick-stats-grid,
   .status-breakdown,
@@ -3022,6 +3191,7 @@ button span {
   .delivery-route,
   .delivery-route-details,
   .route-contact-actions,
+  .approval-actions,
   .settings-grid,
   .saved-address-card,
   .tracking-steps {

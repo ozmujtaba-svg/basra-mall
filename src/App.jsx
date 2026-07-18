@@ -616,15 +616,23 @@ function App() {
   function approveStore(storeName) {
     setStores((currentStores) =>
       currentStores.map((store) =>
-        store.name === storeName ? { ...store, status: "approved" } : store,
+        store.name === storeName ? { ...store, rejectionReason: "", status: "approved" } : store,
       ),
     )
   }
 
-  function rejectStore(storeName) {
+  function rejectStore(storeName, reason = "بيانات المتجر تحتاج توضيح أكثر.") {
     setStores((currentStores) =>
       currentStores.map((store) =>
-        store.name === storeName ? { ...store, status: "rejected" } : store,
+        store.name === storeName ? { ...store, rejectionReason: reason, status: "rejected" } : store,
+      ),
+    )
+  }
+
+  function reviewStoreAgain(storeName) {
+    setStores((currentStores) =>
+      currentStores.map((store) =>
+        store.name === storeName ? { ...store, status: "pending" } : store,
       ),
     )
   }
@@ -804,6 +812,7 @@ function App() {
               commissionRate={platformSettings.commissionRate}
               onApproveStore={approveStore}
               onRejectStore={rejectStore}
+              onReviewStoreAgain={reviewStoreAgain}
               onResetData={resetDemoData}
               deliveredOrders={deliveredOrders}
               estimatedRevenue={estimatedRevenue}

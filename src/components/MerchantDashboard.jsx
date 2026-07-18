@@ -249,7 +249,7 @@ export function MerchantDashboard({
           </div>
           <div className="merchant-store-status-list">
             {filteredStoresByStatus.map((store) => {
-              const status = getStoreStatusInfo(store.status)
+              const status = getStoreStatusInfo(store)
 
               return (
                 <div className={`merchant-store-status ${status.className}`} key={store.name}>
@@ -775,8 +775,8 @@ function getStoreStatusLabel(store) {
   return store.name
 }
 
-function getStoreStatusInfo(status) {
-  if (status === "pending") {
+function getStoreStatusInfo(store) {
+  if (store.status === "pending") {
     return {
       className: "pending",
       label: "قيد المراجعة",
@@ -784,11 +784,13 @@ function getStoreStatusInfo(status) {
     }
   }
 
-  if (status === "rejected") {
+  if (store.status === "rejected") {
     return {
       className: "rejected",
       label: "مرفوض",
-      message: "راجع بيانات المتجر وسجله من جديد بمعلومات أوضح.",
+      message: store.rejectionReason
+        ? `سبب الرفض: ${store.rejectionReason}`
+        : "راجع بيانات المتجر وسجله من جديد بمعلومات أوضح.",
     }
   }
 
