@@ -1262,6 +1262,142 @@ button span {
   background: white;
 }
 
+.merchant-account-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 16px;
+  align-items: center;
+  border: 1px solid #ded8cc;
+  border-radius: 16px;
+  padding: 18px;
+  background: #fbfaf7;
+}
+
+.merchant-account-card.empty {
+  border-color: #d76b50;
+  background: #fff2ec;
+}
+
+.merchant-account-card.ready {
+  border-color: #c9ddd9;
+  background: #eef7f5;
+}
+
+.merchant-account-card span,
+.merchant-account-card p {
+  display: block;
+  color: #65706b;
+  line-height: 1.8;
+}
+
+.merchant-account-card h2 {
+  margin: 4px 0 6px;
+}
+
+.merchant-account-card > strong {
+  border-radius: 999px;
+  background: white;
+  color: #0c6b66;
+  padding: 10px 14px;
+  white-space: nowrap;
+}
+
+.merchant-store-status-panel {
+  border: 1px solid #ded8cc;
+  border-radius: 16px;
+  padding: 18px;
+  background: white;
+}
+
+.merchant-store-status-panel h2 {
+  margin: 0 0 8px;
+}
+
+.merchant-store-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 12px;
+  border: 1px solid #ded8cc;
+  border-radius: 12px;
+  background: #fbfaf7;
+}
+
+.merchant-store-filter button {
+  padding: 10px 12px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.merchant-store-filter button.active {
+  border-color: #0c6b66;
+  background: #0c6b66;
+  color: white;
+}
+
+.merchant-store-status-list {
+  display: grid;
+  gap: 10px;
+}
+
+.merchant-store-status {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid #ded8cc;
+  border-radius: 12px;
+  background: #fbfaf7;
+}
+
+.merchant-store-status strong,
+.merchant-store-status span {
+  display: block;
+  line-height: 1.7;
+}
+
+.merchant-store-status span {
+  color: #65706b;
+}
+
+.merchant-store-status small {
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: white;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.merchant-store-status.approved {
+  border-color: #c9ddd9;
+  background: #eef7f5;
+}
+
+.merchant-store-status.approved small {
+  color: #0c6b66;
+}
+
+.merchant-store-status.pending {
+  border-color: #ead5a2;
+  background: #fff9e8;
+}
+
+.merchant-store-status.pending small {
+  color: #8a6200;
+}
+
+.merchant-store-status.rejected {
+  border-color: #f0b3a4;
+  background: #fff2ec;
+}
+
+.merchant-store-status.rejected small {
+  color: #b83f32;
+}
+
 .merchant-form {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1369,6 +1505,53 @@ button span {
   gap: 10px;
 }
 
+.merchant-order-alert {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 16px;
+  border: 1px solid #ded8cc;
+  border-radius: 14px;
+  background: #fbfaf7;
+}
+
+.merchant-order-alert strong,
+.merchant-order-alert span {
+  display: block;
+  line-height: 1.7;
+}
+
+.merchant-order-alert span {
+  color: #65706b;
+}
+
+.merchant-order-alert small {
+  display: grid;
+  place-items: center;
+  min-width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  background: white;
+  color: #0c6b66;
+  font-weight: bold;
+}
+
+.merchant-order-alert.attention {
+  border-color: #d76b50;
+  background: #fff2ec;
+}
+
+.merchant-order-alert.ready {
+  border-color: #ead5a2;
+  background: #fff9e8;
+}
+
+.merchant-order-alert.quiet {
+  border-color: #c9ddd9;
+  background: #eef7f5;
+}
+
 .merchant-product-row {
   display: grid;
   grid-template-columns: 96px 1.2fr 0.6fr auto auto;
@@ -1401,6 +1584,35 @@ button span {
 .merchant-revenue-grid {
   display: grid;
   gap: 10px;
+}
+
+.merchant-top-product-card {
+  margin-top: 12px;
+  padding: 16px;
+  border: 1px solid #c9ddd9;
+  border-radius: 14px;
+  background: #eef7f5;
+}
+
+.merchant-top-product-card span,
+.merchant-top-product-card strong,
+.merchant-top-product-card p {
+  display: block;
+  line-height: 1.8;
+}
+
+.merchant-top-product-card span,
+.merchant-top-product-card p {
+  color: #65706b;
+}
+
+.merchant-top-product-card strong {
+  color: #0c6b66;
+  font-size: 22px;
+}
+
+.merchant-top-product-card p {
+  margin: 0;
 }
 
 .merchant-order-summary {
@@ -2354,6 +2566,9 @@ button span {
   .store-detail-hero,
   .store-detail-panel .product-list,
   .merchant-form,
+  .merchant-account-card,
+  .merchant-store-status,
+  .merchant-order-alert,
   .merchant-product-row,
   .merchant-order-summary,
   .merchant-order-facts,

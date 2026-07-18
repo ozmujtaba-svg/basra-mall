@@ -16,6 +16,12 @@ const orderSortOptions = [
   { label: "الأقدم أولًا", value: "oldest" },
   { label: "الأعلى مبلغًا", value: "highest-total" },
 ]
+const storeStatusFilters = [
+  { label: "الكل", value: "all" },
+  { label: "قيد المراجعة", value: "pending" },
+  { label: "موافق عليه", value: "approved" },
+  { label: "مرفوض", value: "rejected" },
+]
 const MAX_PRODUCT_IMAGE_SIZE = 900
 
 export function MerchantDashboard({
@@ -46,12 +52,17 @@ export function MerchantDashboard({
   const [orderSearch, setOrderSearch] = useState("")
   const [orderStatusFilter, setOrderStatusFilter] = useState("الكل")
   const [orderSort, setOrderSort] = useState(orderSortOptions[0].value)
+  const [storeStatusFilter, setStoreStatusFilter] = useState(storeStatusFilters[0].value)
   const [message, setMessage] = useState("")
   const [productMessage, setProductMessage] = useState("")
   const selectedStore = stores.find((store) => store.name === selectedStoreName) ?? stores[0]
   const hasStores = stores.length > 0
+  const filteredStoresByStatus = stores.filter((store) =>
+    matchesStoreStatusFilter(store, storeStatusFilter),
+  )
   const rejectedStores = stores.filter((store) => store.status === "rejected")
   const merchantRevenue = calculateMerchantRevenue(orders, commissionRate)
+  const topMerchantProduct = getTopMerchantProduct(orders, stores)
   const filteredOrders = orders.filter(
     (order) =>
       matchesOrderSearch(order, orderSearch) &&
@@ -59,6 +70,7 @@ export function MerchantDashboard({
   )
   const sortedOrders = sortOrders(filteredOrders, orderSort)
   const merchantOrderSummary = getMerchantOrderSummary(orders)
+  const merchantOrderAlert = getMerchantOrderAlert(merchantOrderSummary)
   const orderGroups = [
     { title: "طلبات جديدة", status: "طلب جديد" },
     { title: "قيد التجهيز", status: "قيد التجهيز" },
@@ -201,9 +213,65 @@ export function MerchantDashboard({
 
   return (
     <div className="orders-panel">
+      <section className={hasStores ? "merchant-account-card ready" : "merchant-account-card empty"}>
+        <div>
+          <span>حالة حساب صاحب المتجر</span>
+          <h2>{hasStores ? "متجرك مربوط بهذا الحساب" : "سجل متجرك أولًا"}</h2>
+          <p>
+            {hasStores
+              ? `هذا الحساب يشوف ${stores.length} متجر فقط، والطلبات والمنتجات المرتبطة برقم ${merchant.phone}.`
+              : "بعد تسجيل المتجر ينتظر موافقة الإدارة، وبعدها تقدر تضيف المنتجات وتستلم الطلبات."}
+          </p>
+        </div>
+        <strong>{hasStores ? `${stores.length} متجر` : "لا يوجد متجر"}</strong>
+      </section>
+
+      {hasStores && (
+        <section className="merchant-store-status-panel">
+          <div className="merchant-section-top">
+            <div>
+              <h2>حالة المتاجر</h2>
+              <p>فلتر المتاجر حسب موافقة الإدارة حتى تعرف شنو يحتاج متابعة.</p>
+            </div>
+            <span className="status-pill">{filteredStoresByStatus.length} نتيجة</span>
+          </div>
+          <div className="merchant-store-filter">
+            {storeStatusFilters.map((filter) => (
+              <button
+                className={storeStatusFilter === filter.value ? "active" : ""}
+                key={filter.value}
+                onClick={() => setStoreStatusFilter(filter.value)}
+                type="button"
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
+          <div className="merchant-store-status-list">
+            {filteredStoresByStatus.map((store) => {
+              const status = getStoreStatusInfo(store.status)
+
+              return (
+                <div className={`merchant-store-status ${status.className}`} key={store.name}>
+                  <div>
+                    <strong>{store.name}</strong>
+                    <span>{status.message}</span>
+                  </div>
+                  <small>{status.label}</small>
+                </div>
+              )
+            })}
+          </div>
+        </section>
+      )}
+
       <section className="merchant-form-card">
-        <h2>تسجيل متجر</h2>
-        <p>سجل معلومات متجرك حتى يظهر داخل مول البصرة للزبائن باسم حسابك.</p>
+        <h2>{hasStores ? "تسجيل متجر إضافي" : "تسجيل متجر"}</h2>
+        <p>
+          {hasStores
+            ? "إذا عندك فرع أو متجر ثاني، سجله بنفس الحساب حتى يبقى مربوط إلك فقط."
+            : "سجل معلومات متجرك حتى يظهر داخل مول البصرة للزبائن باسم حسابك."}
+        </p>
         {rejectedStores.length > 0 && (
           <div className="rejected-notice">
             عندك متجر مرفوض. راجع الاسم أو النوع أو المنطقة، ثم سجل متجر جديد ببيانات أوضح.
@@ -447,10 +515,26 @@ export function MerchantDashboard({
             <strong>{formatMoney(merchantRevenue.netPayout)}</strong>
           </div>
         </div>
+        <div className="merchant-top-product-card">
+          <span>أفضل منتج عندك</span>
+          <strong>{topMerchantProduct.name}</strong>
+          <p>
+            {topMerchantProduct.quantity > 0
+              ? `${topMerchantProduct.store} - ${topMerchantProduct.quantity} قطعة مباعة بقيمة ${formatMoney(topMerchantProduct.sales)}`
+              : "بعد أول طلب مكتمل أو نشط راح يظهر المنتج الأكثر طلبًا هنا."}
+          </p>
+        </div>
       </section>
 
       <h2>طلبات المتجر</h2>
       <p>الطلبات مرتبة حسب المرحلة حتى تعرف شنو يحتاج تجهيز وشنو صار جاهز للتوصيل.</p>
+      <div className={`merchant-order-alert ${merchantOrderAlert.className}`}>
+        <div>
+          <strong>{merchantOrderAlert.title}</strong>
+          <span>{merchantOrderAlert.message}</span>
+        </div>
+        <small>{merchantOrderAlert.count}</small>
+      </div>
       <div className="merchant-order-summary">
         <div>
           <span>طلبات جديدة</span>
@@ -691,6 +775,42 @@ function getStoreStatusLabel(store) {
   return store.name
 }
 
+function getStoreStatusInfo(status) {
+  if (status === "pending") {
+    return {
+      className: "pending",
+      label: "قيد المراجعة",
+      message: "بانتظار موافقة الإدارة. المتجر لا يظهر للزبائن بعد.",
+    }
+  }
+
+  if (status === "rejected") {
+    return {
+      className: "rejected",
+      label: "مرفوض",
+      message: "راجع بيانات المتجر وسجله من جديد بمعلومات أوضح.",
+    }
+  }
+
+  return {
+    className: "approved",
+    label: "موافق عليه",
+    message: "ظاهر للزبائن ويمكنهم تصفح منتجاته وطلبها.",
+  }
+}
+
+function matchesStoreStatusFilter(store, filter) {
+  if (filter === "all") {
+    return true
+  }
+
+  if (filter === "approved") {
+    return store.status !== "pending" && store.status !== "rejected"
+  }
+
+  return store.status === filter
+}
+
 function getOrderItemCount(items) {
   return items.reduce((total, item) => total + Number(item.quantity), 0)
 }
@@ -701,6 +821,35 @@ function getMerchantOrderSummary(orders) {
     preparingOrders: orders.filter((order) => order.status === "قيد التجهيز").length,
     readyOrders: orders.filter((order) => order.status === "جاهز للتوصيل").length,
     totalOrders: orders.length,
+  }
+}
+
+function getMerchantOrderAlert(summary) {
+  const actionCount = summary.newOrders + summary.preparingOrders
+
+  if (actionCount > 0) {
+    return {
+      className: "attention",
+      count: actionCount,
+      title: "عندك طلبات تحتاج متابعة",
+      message: `${summary.newOrders} طلب جديد و ${summary.preparingOrders} طلب قيد التجهيز يحتاج قبول أو تجهيز.`,
+    }
+  }
+
+  if (summary.readyOrders > 0) {
+    return {
+      className: "ready",
+      count: summary.readyOrders,
+      title: "طلبات جاهزة للتوصيل",
+      message: "أكو طلبات جاهزة وتنتظر السائق حتى يستلمها.",
+    }
+  }
+
+  return {
+    className: "quiet",
+    count: summary.totalOrders,
+    title: "لا توجد طلبات مستعجلة",
+    message: "ماكو طلبات جديدة تحتاج قرار حاليًا.",
   }
 }
 
@@ -782,6 +931,43 @@ function calculateMerchantRevenue(orders, commissionRate) {
     netPayout: totalSales - commission,
     totalSales,
   }
+}
+
+function getTopMerchantProduct(orders, stores) {
+  const merchantStoreNames = stores.map((store) => store.name)
+  const productStats = new Map()
+  const activeOrders = orders.filter((order) => order.status !== "ملغي")
+
+  activeOrders.forEach((order) => {
+    order.items
+      .filter((item) => merchantStoreNames.includes(item.store))
+      .forEach((item) => {
+        const key = `${item.store}-${item.name}`
+        const currentStats = productStats.get(key) ?? {
+          name: item.name,
+          quantity: 0,
+          sales: 0,
+          store: item.store,
+        }
+
+        productStats.set(key, {
+          ...currentStats,
+          quantity: currentStats.quantity + item.quantity,
+          sales: currentStats.sales + getPriceNumber(item.price) * item.quantity,
+        })
+      })
+  })
+
+  return (
+    [...productStats.values()].sort(
+      (firstProduct, secondProduct) => secondProduct.quantity - firstProduct.quantity,
+    )[0] ?? {
+      name: "لا توجد مبيعات بعد",
+      quantity: 0,
+      sales: 0,
+      store: "",
+    }
+  )
 }
 
 function matchesOrderSearch(order, searchText) {
