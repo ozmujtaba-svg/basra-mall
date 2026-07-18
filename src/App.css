@@ -1,3 +1,7 @@
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   margin: 0;
   font-family: Tahoma, Arial, sans-serif;
@@ -1615,6 +1619,170 @@ button span {
   background: #fff2ec;
 }
 
+.admin-quick-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.admin-quick-nav button {
+  border-color: #c9ddd9;
+  border-radius: 999px;
+  background: #eef7f5;
+  color: #0c6b66;
+  padding: 10px 14px;
+  font-weight: bold;
+}
+
+.admin-quick-nav button:first-child {
+  border-color: #0c6b66;
+  background: #0c6b66;
+  color: white;
+}
+
+.admin-monitor-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: start;
+}
+
+.admin-monitor-header span {
+  border-radius: 999px;
+  background: #eef7f5;
+  color: #0c6b66;
+  padding: 8px 12px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.admin-monitor-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.admin-monitor-grid div {
+  padding: 14px;
+  border: 1px solid #ded8cc;
+  border-radius: 12px;
+  background: #fbfaf7;
+}
+
+.admin-monitor-grid div.attention {
+  border-color: #d76b50;
+  background: #fff2ec;
+}
+
+.admin-monitor-grid div.warning {
+  border-color: #ead5a2;
+  background: #fff9e8;
+}
+
+.admin-monitor-grid div.profit {
+  border-color: #c9ddd9;
+  background: #eef7f5;
+}
+
+.admin-monitor-grid span,
+.admin-monitor-grid small {
+  display: block;
+  color: #65706b;
+  line-height: 1.6;
+}
+
+.admin-monitor-grid strong {
+  display: block;
+  color: #0c6b66;
+  font-size: 24px;
+  margin: 4px 0;
+}
+
+.admin-alert-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.admin-alert {
+  padding: 14px;
+  border: 1px solid #ded8cc;
+  border-radius: 12px;
+  background: #fbfaf7;
+}
+
+.admin-alert strong,
+.admin-alert span {
+  display: block;
+  line-height: 1.7;
+}
+
+.admin-alert strong {
+  color: #18221f;
+}
+
+.admin-alert span {
+  color: #65706b;
+}
+
+.admin-alert.attention {
+  border-color: #d76b50;
+  background: #fff2ec;
+}
+
+.admin-alert.warning {
+  border-color: #ead5a2;
+  background: #fff9e8;
+}
+
+.admin-alert.good {
+  border-color: #c9ddd9;
+  background: #eef7f5;
+}
+
+.admin-alert.muted {
+  background: #f3eeee;
+}
+
+.admin-task-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.admin-task {
+  padding: 14px;
+  border: 1px solid #ded8cc;
+  border-radius: 12px;
+  background: #fbfaf7;
+}
+
+.admin-task strong,
+.admin-task span {
+  display: block;
+  line-height: 1.7;
+}
+
+.admin-task strong {
+  color: #18221f;
+}
+
+.admin-task span {
+  color: #65706b;
+}
+
+.admin-task.active {
+  border-color: #d76b50;
+  background: #fff2ec;
+}
+
+.admin-task.done {
+  border-color: #c9ddd9;
+  background: #eef7f5;
+}
+
 .admin-section {
   border: 1px solid #ded8cc;
   border-radius: 16px;
@@ -2009,6 +2177,7 @@ button span {
   .merchant-order-quick-summary,
   .merchant-order-actions,
   .admin-grid,
+  .admin-monitor-grid,
   .quick-stats-grid,
   .status-breakdown,
   .admin-table-head,
@@ -2029,6 +2198,7 @@ button span {
   .cart-item,
   .store-toolbar,
   .latest-order-card,
+  .admin-monitor-header,
   .merchant-order-card-top,
   .merchant-section-top,
   .section-header-actions,

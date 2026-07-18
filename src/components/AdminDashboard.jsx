@@ -46,6 +46,17 @@ export function AdminDashboard({
   )
   const deliveryRevenue = deliveredOrders.reduce((total, order) => total + order.deliveryFee, 0)
   const averageOrderValue = nonCanceledOrders.length > 0 ? totalSales / nonCanceledOrders.length : 0
+  const monitoringStats = getMonitoringStats({
+    allOrders,
+    estimatedRevenue,
+    pendingStores,
+  })
+  const adminAlerts = getAdminAlerts({
+    allOrders,
+    canceledOrders,
+    pendingStores,
+  })
+  const adminTasks = getAdminTasks({ allOrders, canceledOrders, pendingStores })
   const filteredOrders = allOrders
     .filter((order) => orderStatusFilter === "الكل" || order.status === orderStatusFilter)
     .filter((order) => matchesOrderSearch(order, orderSearch))
@@ -57,6 +68,20 @@ export function AdminDashboard({
         <div>
           <h2>لوحة الإدارة</h2>
           <p>هنا تشوف حركة المول: الطلبات، المتاجر، التوصيل، والربح التجريبي.</p>
+        </div>
+        <div className="admin-quick-nav">
+          <button onClick={() => scrollToAdminSection("admin-stores")} type="button">
+            المتاجر
+          </button>
+          <button onClick={() => scrollToAdminSection("admin-orders")} type="button">
+            الطلبات
+          </button>
+          <button onClick={() => scrollToAdminSection("admin-revenue")} type="button">
+            الأرباح
+          </button>
+          <button onClick={() => scrollToAdminSection("admin-settings")} type="button">
+            الإعدادات
+          </button>
         </div>
         <div className="admin-grid">
           <div className="admin-card">
@@ -83,6 +108,79 @@ export function AdminDashboard({
             صافي ربح الإدارة
             <strong>{estimatedRevenue.toLocaleString("en-US")} د.ع</strong>
             <span>عمولة بيع + أجور توصيل مسلّمة</span>
+          </div>
+        </div>
+      </section>
+
+      <section className="admin-section">
+        <div className="admin-monitor-header">
+          <div>
+            <h3>مهام الإدارة</h3>
+            <p>قائمة عملية تساعدك تراجع المول خطوة بخطوة.</p>
+          </div>
+          <span>{adminTasks.filter((task) => task.active).length} مهام نشطة</span>
+        </div>
+        <div className="admin-task-list">
+          {adminTasks.map((task) => (
+            <div className={task.active ? "admin-task active" : "admin-task done"} key={task.title}>
+              <strong>{task.title}</strong>
+              <span>{task.description}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="admin-section">
+        <div className="admin-monitor-header">
+          <div>
+            <h3>تنبيهات الإدارة</h3>
+            <p>رسائل مختصرة عن الأشياء التي تحتاج قرار أو متابعة.</p>
+          </div>
+          <span>{adminAlerts.length} تنبيهات</span>
+        </div>
+        <div className="admin-alert-list">
+          {adminAlerts.map((alert) => (
+            <div className={`admin-alert ${alert.level}`} key={alert.title}>
+              <strong>{alert.title}</strong>
+              <span>{alert.message}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="admin-section">
+        <div className="admin-monitor-header">
+          <div>
+            <h3>مراقبة مباشرة</h3>
+            <p>أهم الأشياء التي تحتاج انتباه الإدارة بسرعة.</p>
+          </div>
+          <span>تحديث مباشر داخل المتصفح</span>
+        </div>
+        <div className="admin-monitor-grid">
+          <div className={monitoringStats.followUpOrders > 0 ? "attention" : ""}>
+            <span>طلبات تحتاج متابعة</span>
+            <strong>{monitoringStats.followUpOrders}</strong>
+            <small>طلبات جديدة أو قيد التجهيز أو جاهزة للتوصيل</small>
+          </div>
+          <div className={pendingStores.length > 0 ? "attention" : ""}>
+            <span>متاجر تنتظر الموافقة</span>
+            <strong>{pendingStores.length}</strong>
+            <small>لا تظهر للزبائن قبل موافقة الإدارة</small>
+          </div>
+          <div>
+            <span>طلبات قيد التوصيل</span>
+            <strong>{monitoringStats.inDeliveryOrders}</strong>
+            <small>طلبات عند السائق حاليًا</small>
+          </div>
+          <div className={canceledOrders.length > 0 ? "warning" : ""}>
+            <span>طلبات ملغية</span>
+            <strong>{canceledOrders.length}</strong>
+            <small>مستبعدة من الأرباح</small>
+          </div>
+          <div className="profit">
+            <span>أرباح اليوم التقريبية</span>
+            <strong>{formatMoney(monitoringStats.todayRevenue)}</strong>
+            <small>حاليًا محسوبة من بيانات النسخة التجريبية</small>
           </div>
         </div>
       </section>
@@ -123,7 +221,7 @@ export function AdminDashboard({
         </div>
       </section>
 
-      <section className="admin-section">
+      <section className="admin-section" id="admin-settings">
         <h3>إعدادات العمولة والتوصيل</h3>
         <p>هذه الإعدادات محفوظة داخل المتصفح وتبقى بعد تحديث الصفحة.</p>
         <div className="settings-grid">
@@ -170,7 +268,7 @@ export function AdminDashboard({
         {dataMessage && <div className="admin-success-message">{dataMessage}</div>}
       </section>
 
-      <section className="admin-section">
+      <section className="admin-section" id="admin-revenue">
         <h3>تفصيل الأرباح</h3>
         <div className="revenue-grid">
           <div className="revenue-row">
@@ -200,7 +298,7 @@ export function AdminDashboard({
         </div>
       </section>
 
-      <section className="admin-section">
+      <section className="admin-section" id="admin-stores">
         <h3>المتاجر داخل المول</h3>
         <div className="admin-table">
           <div className="admin-table-head">
@@ -241,7 +339,7 @@ export function AdminDashboard({
         </div>
       </section>
 
-      <section className="admin-section">
+      <section className="admin-section" id="admin-orders">
         <div className="section-header-actions">
           <div>
             <h3>متابعة الطلبات</h3>
@@ -357,6 +455,10 @@ export function AdminDashboard({
     }
   }
 
+  function scrollToAdminSection(sectionId) {
+    document.getElementById(sectionId)?.scrollIntoView({ behavior: "smooth" })
+  }
+
   function exportOrders() {
     if (filteredOrders.length === 0) {
       setDataMessage("ماكو طلبات مطابقة حتى نصدرها.")
@@ -419,6 +521,114 @@ function getTopStore(orders) {
     [...storeSales.entries()].sort((firstStore, secondStore) => secondStore[1] - firstStore[1])[0] ?? []
 
   return { name, sales }
+}
+
+function getMonitoringStats({ allOrders, estimatedRevenue, pendingStores }) {
+  const followUpStatuses = ["طلب جديد", "قيد التجهيز", "جاهز للتوصيل"]
+
+  return {
+    followUpOrders: allOrders.filter((order) => followUpStatuses.includes(order.status)).length,
+    inDeliveryOrders: allOrders.filter((order) => order.status === "قيد التوصيل").length,
+    pendingStores: pendingStores.length,
+    todayRevenue: estimatedRevenue,
+  }
+}
+
+function getAdminAlerts({ allOrders, canceledOrders, pendingStores }) {
+  const alerts = []
+  const readyForDeliveryOrders = allOrders.filter((order) => order.status === "جاهز للتوصيل")
+  const newOrders = allOrders.filter((order) => order.status === "طلب جديد")
+
+  if (pendingStores.length > 0) {
+    alerts.push({
+      level: "attention",
+      title: "يوجد متجر ينتظر الموافقة",
+      message: `${pendingStores.length} متجر يحتاج قرار من الإدارة قبل أن يظهر للزبائن.`,
+    })
+  }
+
+  if (newOrders.length > 0) {
+    alerts.push({
+      level: "attention",
+      title: "يوجد طلب جديد يحتاج متابعة",
+      message: `${newOrders.length} طلب جديد يحتاج قبول وتجهيز من صاحب المتجر.`,
+    })
+  }
+
+  if (readyForDeliveryOrders.length > 0) {
+    alerts.push({
+      level: "warning",
+      title: "يوجد طلب جاهز للتوصيل",
+      message: `${readyForDeliveryOrders.length} طلب جاهز وينتظر السائق حتى يستلمه.`,
+    })
+  }
+
+  if (canceledOrders.length > 0) {
+    alerts.push({
+      level: "muted",
+      title: "يوجد طلب ملغي",
+      message: `${canceledOrders.length} طلب ملغي مستبعد من حساب الأرباح.`,
+    })
+  }
+
+  if (alerts.length === 0) {
+    alerts.push({
+      level: "good",
+      title: "لا توجد مشاكل حاليًا",
+      message: "المتاجر والطلبات بحالة مستقرة ضمن البيانات الحالية.",
+    })
+  }
+
+  return alerts
+}
+
+function getAdminTasks({ allOrders, canceledOrders, pendingStores }) {
+  const newOrders = allOrders.filter((order) => order.status === "طلب جديد")
+  const readyForDeliveryOrders = allOrders.filter((order) => order.status === "جاهز للتوصيل")
+  const inDeliveryOrders = allOrders.filter((order) => order.status === "قيد التوصيل")
+
+  return [
+    {
+      active: pendingStores.length > 0,
+      title: "راجع المتاجر المعلقة",
+      description:
+        pendingStores.length > 0
+          ? `${pendingStores.length} متجر ينتظر الموافقة أو الرفض.`
+          : "لا توجد متاجر معلقة حاليًا.",
+    },
+    {
+      active: newOrders.length > 0,
+      title: "تابع الطلبات الجديدة",
+      description:
+        newOrders.length > 0
+          ? `${newOrders.length} طلب جديد يحتاج متابعة مع صاحب المتجر.`
+          : "لا توجد طلبات جديدة تحتاج متابعة.",
+    },
+    {
+      active: readyForDeliveryOrders.length > 0,
+      title: "تأكد من الطلبات الجاهزة للتوصيل",
+      description:
+        readyForDeliveryOrders.length > 0
+          ? `${readyForDeliveryOrders.length} طلب جاهز وينتظر السائق.`
+          : "لا توجد طلبات جاهزة تنتظر الاستلام.",
+    },
+    {
+      active: inDeliveryOrders.length > 0,
+      title: "راقب الطلبات قيد التوصيل",
+      description:
+        inDeliveryOrders.length > 0
+          ? `${inDeliveryOrders.length} طلب عند السائق حاليًا.`
+          : "لا توجد طلبات قيد التوصيل الآن.",
+    },
+    {
+      active: canceledOrders.length > 0,
+      title: "راجع الطلبات الملغية",
+      description:
+        canceledOrders.length > 0
+          ? `${canceledOrders.length} طلب ملغي يحتاج مراجعة السبب لاحقًا.`
+          : "لا توجد طلبات ملغية تحتاج مراجعة.",
+    },
+  ]
 }
 
 function matchesOrderSearch(order, searchText) {
