@@ -88,6 +88,7 @@ function App() {
     estimatedRevenue,
     merchantOrders: visibleMerchantOrders,
   })
+  const dashboardNavItems = getDashboardNavItems(accountType)
 
   useEffect(() => {
     const saved = saveToStorage(SETTINGS_STORAGE_KEY, platformSettings)
@@ -839,6 +840,7 @@ function App() {
       ) : (
         <Shell
           dashboard={dashboard}
+          navItems={dashboardNavItems}
           storageMessage={storageMessage}
           stats={activeStats}
           user={activeUser}
@@ -997,6 +999,44 @@ function getActiveStats({
   }
 
   return dashboard.stats
+}
+
+function getDashboardNavItems(accountType) {
+  if (accountType === "صاحب متجر") {
+    return [
+      { label: "حالة المتجر", targetId: "merchant-status" },
+      { label: "تسجيل المتجر", targetId: "merchant-register" },
+      { label: "المنتجات", targetId: "merchant-products" },
+      { label: "الأرباح", targetId: "merchant-earnings" },
+      { label: "الطلبات", targetId: "merchant-orders" },
+    ]
+  }
+
+  if (accountType === "سائق") {
+    return [
+      { label: "الملخص", targetId: "driver-summary" },
+      { label: "الأولوية", targetId: "driver-priority" },
+      { label: "السجل", targetId: "driver-history" },
+      { label: "الطلبات", targetId: "driver-orders" },
+    ]
+  }
+
+  if (accountType === "الإدارة") {
+    return [
+      { label: "المراقبة", targetId: "admin-monitor" },
+      { label: "الإعدادات", targetId: "admin-settings" },
+      { label: "البيانات", targetId: "admin-data" },
+      { label: "المتاجر", targetId: "admin-stores" },
+      { label: "الطلبات", targetId: "admin-orders" },
+    ]
+  }
+
+  return [
+    { label: "المقترحة", targetId: "customer-suggested" },
+    { label: "المتاجر", targetId: "customer-stores" },
+    { label: "السلة", targetId: "customer-cart" },
+    { label: "التتبع", targetId: "customer-tracking" },
+  ]
 }
 
 function getPriceValue(price) {

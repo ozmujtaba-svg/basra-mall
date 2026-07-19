@@ -213,7 +213,10 @@ export function MerchantDashboard({
 
   return (
     <div className="orders-panel">
-      <section className={hasStores ? "merchant-account-card ready" : "merchant-account-card empty"}>
+      <section
+        className={hasStores ? "merchant-account-card ready" : "merchant-account-card empty"}
+        id="merchant-status"
+      >
         <div>
           <span>حالة حساب صاحب المتجر</span>
           <h2>{hasStores ? "متجرك مربوط بهذا الحساب" : "سجل متجرك أولًا"}</h2>
@@ -265,7 +268,7 @@ export function MerchantDashboard({
         </section>
       )}
 
-      <section className="merchant-form-card">
+      <section className="merchant-form-card" id="merchant-register">
         <h2>{hasStores ? "تسجيل متجر إضافي" : "تسجيل متجر"}</h2>
         <p>
           {hasStores
@@ -321,7 +324,7 @@ export function MerchantDashboard({
         {message && <div className="order-message">{message}</div>}
       </section>
 
-      <section className="merchant-form-card">
+      <section className="merchant-form-card" id="merchant-products">
         <h2>{editingProductName ? "تعديل منتج" : "إضافة منتج"}</h2>
         <p>
           {editingProductName
@@ -430,7 +433,7 @@ export function MerchantDashboard({
         {productMessage && <div className="order-message">{productMessage}</div>}
       </section>
 
-      <section className="merchant-form-card">
+      <section className="merchant-form-card" id="merchant-products-list">
         <div className="merchant-section-top">
           <div>
             <h2>منتجات المتجر</h2>
@@ -485,7 +488,7 @@ export function MerchantDashboard({
         )}
       </section>
 
-      <section className="merchant-form-card">
+      <section className="merchant-form-card" id="merchant-earnings">
         <div className="merchant-section-top">
           <div>
             <h2>أرباح المتجر</h2>
@@ -526,7 +529,7 @@ export function MerchantDashboard({
         </div>
       </section>
 
-      <h2>طلبات المتجر</h2>
+      <h2 id="merchant-orders">طلبات المتجر</h2>
       <p>الطلبات مرتبة حسب المرحلة حتى تعرف شنو يحتاج تجهيز وشنو صار جاهز للتوصيل.</p>
       <div className={`merchant-order-alert ${merchantOrderAlert.className}`}>
         <div>

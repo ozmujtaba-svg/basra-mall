@@ -49,7 +49,7 @@ export function DriverDashboard({ onUpdateOrderNote, onUpdateStatus, orders, sto
 
   return (
     <div className="orders-panel">
-      <section className="driver-start-card">
+      <section className="driver-start-card" id="driver-summary">
         <div>
           <span>واجهة السائق</span>
           <h2>ملخص التوصيل اليوم</h2>
@@ -71,7 +71,7 @@ export function DriverDashboard({ onUpdateOrderNote, onUpdateStatus, orders, sto
         </div>
       </section>
 
-      <section className="driver-priority-card">
+      <section className="driver-priority-card" id="driver-priority">
         <div>
           <span>أولوية السائق</span>
           <h3>{nextPriorityOrder ? `ابدأ بطلب رقم ${nextPriorityOrder.id}` : "ماكو طلب جاهز الآن"}</h3>
@@ -85,7 +85,7 @@ export function DriverDashboard({ onUpdateOrderNote, onUpdateStatus, orders, sto
         <span>طلبات تحتاج انتباه</span>
       </section>
 
-      <section className="driver-history-card">
+      <section className="driver-history-card" id="driver-history">
         <div className="driver-history-header">
           <div>
             <span>سجل السائق</span>
@@ -122,7 +122,7 @@ export function DriverDashboard({ onUpdateOrderNote, onUpdateStatus, orders, sto
         </div>
       </section>
 
-      <h2>طلبات التوصيل</h2>
+      <h2 id="driver-orders">طلبات التوصيل</h2>
       <p>الطلبات مرتبة حسب مرحلة التوصيل حتى يعرف السائق شنو يستلم وشنو يوصل.</p>
 
       <section className="driver-earnings-card">

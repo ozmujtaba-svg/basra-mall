@@ -1,5 +1,24 @@
-export function Shell({ children, dashboard, onBack, onForgetAccount, stats, storageMessage, user }) {
+import { useState } from "react"
+
+export function Shell({
+  children,
+  dashboard,
+  navItems = [],
+  onBack,
+  onForgetAccount,
+  stats,
+  storageMessage,
+  user,
+}) {
   const welcomeMessage = getWelcomeMessage(user.accountType, user.name)
+  const [activeSectionLabel, setActiveSectionLabel] = useState(
+    navItems[0]?.label ?? "لوحة البداية",
+  )
+
+  function goToSection(item) {
+    setActiveSectionLabel(item.label)
+    scrollToDashboardSection(item.targetId)
+  }
 
   return (
     <section className="dashboard">
@@ -34,6 +53,32 @@ export function Shell({ children, dashboard, onBack, onForgetAccount, stats, sto
           <span>{welcomeMessage.description}</span>
         </div>
 
+        {navItems.length > 0 && (
+          <div className="dashboard-nav-panel">
+            <div className="dashboard-nav-title">
+              <span>اختصارات الصفحة</span>
+              <strong>انتقل بسرعة للقسم المطلوب</strong>
+            </div>
+
+            <nav className="dashboard-nav" aria-label="تنقل لوحة الحساب">
+              {navItems.map((item) => (
+                <button
+                  key={item.targetId}
+                  className={activeSectionLabel === item.label ? "active" : ""}
+                  onClick={() => goToSection(item)}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </nav>
+
+            <div className="current-section-bar">
+              <span>أنت الآن في</span>
+              <strong>{activeSectionLabel}</strong>
+            </div>
+          </div>
+        )}
+
         {storageMessage && (
           <div className="storage-warning">
             <strong>تنبيه حفظ البيانات</strong>
@@ -54,8 +99,20 @@ export function Shell({ children, dashboard, onBack, onForgetAccount, stats, sto
 
         <div className="note">{dashboard.note}</div>
       </div>
+
+      <button className="scroll-top-button" onClick={scrollToDashboardTop}>
+        رجوع للأعلى
+      </button>
     </section>
   )
+}
+
+function scrollToDashboardSection(sectionId) {
+  document.getElementById(sectionId)?.scrollIntoView({ behavior: "smooth", block: "start" })
+}
+
+function scrollToDashboardTop() {
+  window.scrollTo({ top: 0, behavior: "smooth" })
 }
 
 function getWelcomeMessage(accountType, name) {

@@ -95,7 +95,7 @@ export function CustomerDashboard({
         </div>
       </section>
 
-      <section className="suggested-stores-panel">
+      <section className="suggested-stores-panel" id="customer-suggested">
         <div className="suggested-stores-header">
           <div>
             <h2>متاجر مقترحة</h2>
@@ -118,7 +118,7 @@ export function CustomerDashboard({
         )}
       </section>
 
-      <section className="store-directory">
+      <section className="store-directory" id="customer-stores">
         <h2>متاجر المول</h2>
         <p>اختر متجر حتى تدخل لصفحته وتشوف المنتجات المتوفرة.</p>
         <label className="store-search">

@@ -103,7 +103,7 @@ export function AdminDashboard({
 
   return (
     <div className="orders-panel">
-      <section className="admin-section">
+      <section className="admin-section" id="admin-monitor">
         <div>
           <h2>لوحة الإدارة</h2>
           <p>هنا تشوف حركة المول: الطلبات، المتاجر، التوصيل، والربح التجريبي.</p>
@@ -414,7 +414,7 @@ export function AdminDashboard({
         </div>
       </section>
 
-      <section className="admin-section danger-zone">
+      <section className="admin-section danger-zone" id="admin-data">
         <div>
           <h3>إدارة البيانات التجريبية</h3>
           <p>نزّل نسخة احتياطية قبل المسح حتى تحتفظ ببيانات المتاجر والطلبات الحالية.</p>

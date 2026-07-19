@@ -244,6 +244,175 @@ button span {
   color: #42504b;
 }
 
+.dashboard-nav-panel {
+  position: sticky;
+  top: 0;
+  z-index: 15;
+  margin-bottom: 18px;
+  padding: 12px;
+  border: 1px solid #ded8cc;
+  border-radius: 12px;
+  background: #fbfaf7;
+  box-shadow: 0 10px 26px rgba(24, 34, 31, 0.08);
+}
+
+.dashboard-nav-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.dashboard-nav-title span,
+.dashboard-nav-title strong {
+  display: block;
+  line-height: 1.5;
+}
+
+.dashboard-nav-title span {
+  color: #0c6b66;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.dashboard-nav-title strong {
+  color: #18221f;
+  font-size: 14px;
+}
+
+.dashboard-nav {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+}
+
+.dashboard-nav button {
+  flex: 0 0 auto;
+  border-color: #c9ddd9;
+  border-radius: 999px;
+  background: white;
+  color: #0c6b66;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.dashboard-nav button.active {
+  border-color: #0c6b66;
+  background: #0c6b66;
+  color: white;
+}
+
+.current-section-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+  padding: 12px 14px;
+  border: 1px solid #d8e7e4;
+  border-radius: 12px;
+  background: #eef7f5;
+}
+
+.current-section-bar span,
+.current-section-bar strong {
+  display: block;
+  line-height: 1.5;
+}
+
+.current-section-bar span {
+  color: #65706b;
+  font-size: 13px;
+}
+
+.current-section-bar strong {
+  color: #0c6b66;
+  font-size: 16px;
+}
+
+.scroll-top-button {
+  position: fixed;
+  left: 18px;
+  bottom: 18px;
+  z-index: 20;
+  border: 1px solid #0c6b66;
+  border-radius: 999px;
+  background: #0c6b66;
+  color: white;
+  padding: 12px 16px;
+  box-shadow: 0 12px 30px rgba(12, 107, 102, 0.24);
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.scroll-top-button:hover {
+  background: #094f4c;
+}
+
+.customer-layout > section > h2,
+.suggested-stores-header h2,
+.store-detail-hero h2,
+.cart-panel > h2,
+.tracking-panel > h2,
+.merchant-form-card > h2,
+.merchant-section-top h2,
+.orders-panel > h2,
+.admin-section > h3,
+.section-header-actions h3,
+.driver-start-card h2,
+.driver-priority-card h3,
+.driver-history-card h3,
+.driver-earnings-card h3,
+.delivery-group-title h3 {
+  position: relative;
+  margin-bottom: 10px;
+  padding-right: 14px;
+  color: #18221f;
+  line-height: 1.4;
+}
+
+.customer-layout > section > h2::before,
+.suggested-stores-header h2::before,
+.store-detail-hero h2::before,
+.cart-panel > h2::before,
+.tracking-panel > h2::before,
+.merchant-form-card > h2::before,
+.merchant-section-top h2::before,
+.orders-panel > h2::before,
+.admin-section > h3::before,
+.section-header-actions h3::before,
+.driver-start-card h2::before,
+.driver-priority-card h3::before,
+.driver-history-card h3::before,
+.driver-earnings-card h3::before,
+.delivery-group-title h3::before {
+  position: absolute;
+  top: 7px;
+  right: 0;
+  width: 5px;
+  height: 24px;
+  border-radius: 999px;
+  background: #d76b50;
+  content: "";
+}
+
+.suggested-stores-header h2,
+.merchant-section-top h2,
+.section-header-actions h3 {
+  margin-top: 0;
+}
+
+[id^="customer-"],
+[id^="merchant-"],
+[id^="driver-"],
+[id^="admin-"] {
+  scroll-margin-top: 18px;
+}
+
 .storage-warning {
   display: grid;
   gap: 6px;
@@ -3289,6 +3458,23 @@ button span {
     display: grid;
   }
 
+  .dashboard-nav-panel {
+    top: 0;
+    margin-left: -8px;
+    margin-right: -8px;
+    border-radius: 10px;
+  }
+
+  .dashboard-nav-title,
+  .current-section-bar {
+    align-items: flex-start;
+    display: grid;
+  }
+
+  .dashboard-nav button {
+    min-width: max-content;
+  }
+
   .stats,
   .customer-layout,
   .customer-start-card,
@@ -3363,5 +3549,12 @@ button span {
 
   .saved-address-actions {
     display: grid;
+  }
+
+  .scroll-top-button {
+    left: 12px;
+    bottom: 12px;
+    padding: 10px 13px;
+    font-size: 13px;
   }
 }
