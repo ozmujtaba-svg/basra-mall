@@ -21,6 +21,7 @@ export function DriverDashboard({ onUpdateOrderNote, onUpdateStatus, orders, sto
   const [deliveryStatusFilter, setDeliveryStatusFilter] = useState(deliveryStatusFilters[0])
   const [deliverySort, setDeliverySort] = useState(deliverySortOptions[0])
   const [copyMessage, setCopyMessage] = useState("")
+  const [confirmPickupId, setConfirmPickupId] = useState(null)
   const [confirmDeliveryId, setConfirmDeliveryId] = useState(null)
   const filteredOrders = orders
     .filter((order) => deliveryStatusFilter === "الكل" || order.status === deliveryStatusFilter)
@@ -125,6 +126,26 @@ export function DriverDashboard({ onUpdateOrderNote, onUpdateStatus, orders, sto
       <h2 id="driver-orders">طلبات التوصيل</h2>
       <p>الطلبات مرتبة حسب مرحلة التوصيل حتى يعرف السائق شنو يستلم وشنو يوصل.</p>
 
+      <section className="driver-status-counter">
+        <div>
+          <span>جاهزة للاستلام</span>
+          <strong>{availableDeliveries.length}</strong>
+        </div>
+        <div>
+          <span>قيد التوصيل</span>
+          <strong>{activeDeliveries.length}</strong>
+        </div>
+        <div>
+          <span>تم التسليم اليوم</span>
+          <strong>{todayDeliveredOrders.length}</strong>
+        </div>
+        <p>
+          {availableDeliveries.length > 0
+            ? "ابدأ بالطلبات الجاهزة للاستلام، وبعدها حدّث الحالة بعد التسليم."
+            : "ماكو طلب جاهز للاستلام حاليًا."}
+        </p>
+      </section>
+
       <section className="driver-earnings-card">
         <div>
           <h3>أرباح السائق</h3>
@@ -226,6 +247,11 @@ export function DriverDashboard({ onUpdateOrderNote, onUpdateStatus, orders, sto
                           <span className="status-pill">{order.status}</span>
                         </div>
                       </div>
+                      {isLatePickupOrder(order) && (
+                        <div className="driver-late-alert">
+                          متأخر - يحتاج استلام سريع
+                        </div>
+                      )}
 
                       <div className="driver-task-summary">
                         <div>
@@ -247,6 +273,32 @@ export function DriverDashboard({ onUpdateOrderNote, onUpdateStatus, orders, sto
                         <div>
                           <span>وقت الطلب</span>
                           <strong>{formatOrderDate(order.createdAt)}</strong>
+                        </div>
+                      </div>
+
+                      <div className="driver-simple-route">
+                        <div>
+                          <span>استلام من</span>
+                          <strong>{pickupStore?.name ?? order.items[0]?.store}</strong>
+                          <small>{pickupStore?.area ?? "منطقة المتجر غير محددة"}</small>
+                        </div>
+                        <div>
+                          <span>تسليم إلى</span>
+                          <strong>{order.customer}</strong>
+                          <small>
+                            {order.area}
+                            {order.landmark ? ` - ${order.landmark}` : ""}
+                          </small>
+                        </div>
+                        <div>
+                          <span>رقم الهاتف</span>
+                          <strong>{order.phone}</strong>
+                          <small>اتصل إذا احتجت توضيح العنوان</small>
+                        </div>
+                        <div>
+                          <span>المبلغ المطلوب</span>
+                          <strong>{formatMoney(order.total)}</strong>
+                          <small>{order.paymentMethod ?? "الدفع عند الاستلام"}</small>
                         </div>
                       </div>
 
@@ -308,6 +360,13 @@ export function DriverDashboard({ onUpdateOrderNote, onUpdateStatus, orders, sto
                         >
                           نسخ بيانات الطريق
                         </button>
+                        <button
+                          className="copy-route-summary-button"
+                          onClick={() => copyRouteSummary(order, pickupStore)}
+                          type="button"
+                        >
+                          نسخ ملخص الطريق
+                        </button>
                       </div>
 
                       <label className="order-note-box">
@@ -351,12 +410,43 @@ export function DriverDashboard({ onUpdateOrderNote, onUpdateStatus, orders, sto
                       )}
 
                       {order.status === "جاهز للتوصيل" && (
-                        <button
-                          className="delivery-button"
-                          onClick={() => onUpdateStatus(order.id, "قيد التوصيل")}
-                        >
-                          استلام التوصيل
-                        </button>
+                        <div className="delivery-confirm-box">
+                          {confirmPickupId === order.id ? (
+                            <>
+                              <div>
+                                <strong>تأكيد استلام الطلب</strong>
+                                <span>
+                                  هل استلمت طلب {order.id} من{" "}
+                                  {pickupStore?.name ?? order.items[0]?.store}؟
+                                </span>
+                              </div>
+                              <div className="delivery-confirm-actions">
+                                <button
+                                  className="delivery-button"
+                                  onClick={() => confirmPickup(order.id)}
+                                  type="button"
+                                >
+                                  نعم، استلمت الطلب
+                                </button>
+                                <button
+                                  className="delivery-button secondary"
+                                  onClick={() => setConfirmPickupId(null)}
+                                  type="button"
+                                >
+                                  رجوع
+                                </button>
+                              </div>
+                            </>
+                          ) : (
+                            <button
+                              className="delivery-button"
+                              onClick={() => setConfirmPickupId(order.id)}
+                              type="button"
+                            >
+                              استلام التوصيل
+                            </button>
+                          )}
+                        </div>
                       )}
                       {order.status === "قيد التوصيل" && (
                         <div className="delivery-confirm-box">
@@ -420,6 +510,18 @@ export function DriverDashboard({ onUpdateOrderNote, onUpdateStatus, orders, sto
     setCopyMessage(`تم نسخ بيانات طلب رقم ${order.id}.`)
   }
 
+  async function copyRouteSummary(order, pickupStore) {
+    const routeSummary = formatRouteSummary(order, pickupStore)
+
+    try {
+      await navigator.clipboard.writeText(routeSummary)
+    } catch {
+      copyTextFallback(routeSummary)
+    }
+
+    setCopyMessage(`تم نسخ ملخص طريق طلب رقم ${order.id}.`)
+  }
+
   async function copyPhoneNumber(phone, ownerLabel) {
     const phoneNumber = String(phone)
 
@@ -430,6 +532,11 @@ export function DriverDashboard({ onUpdateOrderNote, onUpdateStatus, orders, sto
     }
 
     setCopyMessage(`تم نسخ رقم ${ownerLabel}: ${phoneNumber}`)
+  }
+
+  function confirmPickup(orderId) {
+    onUpdateStatus(orderId, "قيد التوصيل")
+    setConfirmPickupId(null)
   }
 
   function addQuickDriverNote(order, note) {
@@ -556,6 +663,10 @@ function getDriverPriorityLabel(order) {
   return "متابعة"
 }
 
+function isLatePickupOrder(order) {
+  return order.status === "جاهز للتوصيل" && getOrderAgeMinutes(order.createdAt) >= 30
+}
+
 function getDriverPriorityClass(order) {
   if (getDriverPriorityLabel(order) === "مستعجل") {
     return "urgent"
@@ -595,6 +706,20 @@ function formatDeliveryInfo(order, pickupStore) {
     `المنتجات: ${formatOrderItems(order.items)}`,
     `أجرة التوصيل: ${formatMoney(order.deliveryFee)}`,
     order.total ? `المبلغ النهائي: ${formatMoney(order.total)}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n")
+}
+
+function formatRouteSummary(order, pickupStore) {
+  return [
+    `طلب رقم: ${order.id}`,
+    `استلام من: ${pickupStore?.name ?? order.items[0]?.store ?? ""}`,
+    `تسليم إلى: ${order.customer}`,
+    `رقم الزبون: ${order.phone}`,
+    `المنطقة: ${order.area}`,
+    order.landmark ? `الدلالة: ${order.landmark}` : "",
+    order.total ? `المبلغ: ${formatMoney(order.total)}` : "",
   ]
     .filter(Boolean)
     .join("\n")

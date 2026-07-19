@@ -1686,6 +1686,16 @@ button span {
   color: #65706b;
 }
 
+.driver-late-alert {
+  padding: 12px 14px;
+  border: 1px solid #d76b50;
+  border-radius: 12px;
+  background: #fff2ec;
+  color: #8b3a2d;
+  font-weight: bold;
+  line-height: 1.7;
+}
+
 .driver-history-card {
   display: grid;
   gap: 14px;
@@ -1868,11 +1878,12 @@ button span {
 
 .driver-contact-actions {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 
 .copy-delivery-button,
+.copy-route-summary-button,
 .call-customer-button {
   border: 0;
   background: #24302d;
@@ -1885,6 +1896,46 @@ button span {
 
 .call-customer-button {
   background: #0c6b66;
+}
+
+.copy-route-summary-button {
+  background: #d76b50;
+}
+
+.driver-status-counter {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #c9ddd9;
+  border-radius: 14px;
+  background: #eef7f5;
+}
+
+.driver-status-counter div {
+  padding: 14px;
+  border-radius: 12px;
+  background: white;
+}
+
+.driver-status-counter span {
+  display: block;
+  color: #65706b;
+  line-height: 1.6;
+}
+
+.driver-status-counter strong {
+  display: block;
+  color: #0c6b66;
+  font-size: 28px;
+}
+
+.driver-status-counter p {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #0c6b66;
+  font-weight: bold;
+  line-height: 1.8;
 }
 
 .driver-task-summary {
@@ -1967,6 +2018,40 @@ button span {
 
 .delivery-route strong {
   color: #18221f;
+}
+
+.driver-simple-route {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #c9ddd9;
+  border-radius: 14px;
+  background: #eef7f5;
+}
+
+.driver-simple-route div {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border-radius: 12px;
+  background: white;
+}
+
+.driver-simple-route span,
+.driver-simple-route small {
+  color: #65706b;
+  line-height: 1.6;
+}
+
+.driver-simple-route span {
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.driver-simple-route strong {
+  color: #0c6b66;
+  line-height: 1.6;
 }
 
 .delivery-route-details {
@@ -3891,7 +3976,9 @@ button span {
   .driver-priority-card,
   .driver-history-grid,
   .driver-delivery-rating,
+  .driver-status-counter,
   .driver-task-summary,
+  .driver-simple-route,
   .delivery-confirm-actions,
   .delivery-route,
   .delivery-route-details,
