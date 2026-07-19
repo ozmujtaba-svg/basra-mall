@@ -490,7 +490,7 @@ function App() {
     )
   }
 
-  function sendOrder() {
+  function sendOrder(paymentMethod = "الدفع عند الاستلام") {
     if (cartItems.length === 0) {
       setOrderMessage("السلة فارغة. أضف منتج أولًا حتى ترسل طلب.")
       return
@@ -536,6 +536,7 @@ function App() {
         area: customerInfo.area.trim(),
         landmark: customerInfo.landmark.trim(),
         notes: customerInfo.notes.trim(),
+        paymentMethod,
         items,
         subtotal,
         deliveryFee: platformSettings.deliveryFee,
@@ -580,7 +581,12 @@ function App() {
     setCustomerOrders((orders) => [...newOrders, ...orders])
     setMerchantOrders((orders) => [...newOrders, ...orders])
     setCartItems([])
-    setOrderMessage("تم إرسال الطلب، وانخفضت الكمية من مخزون المتجر.")
+    const orderNumbers = newOrders.map((order) => order.id).join("، ")
+    const orderLabel = newOrders.length > 1 ? "أرقام الطلبات" : "رقم الطلب"
+
+    setOrderMessage(
+      `تم إرسال طلبك بنجاح. ${orderLabel}: ${orderNumbers}. احفظ الرقم حتى تتابع الطلب.`,
+    )
   }
 
   function updateMerchantOrderStatus(orderId, status) {

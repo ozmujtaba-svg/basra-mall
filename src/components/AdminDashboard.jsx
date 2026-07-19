@@ -705,6 +705,8 @@ export function AdminDashboard({
                       ملاحظات: {order.notes}
                     </>
                   )}
+                  <br />
+                  طريقة الدفع: {order.paymentMethod ?? "الدفع عند الاستلام"}
                 </div>
                 <div className="order-products">
                   المنتجات: {formatOrderItems(order.items)}
@@ -848,6 +850,7 @@ export function AdminDashboard({
         "المنطقة",
         "الحالة",
         "وقت الطلب",
+        "طريقة الدفع",
         "المنتجات",
         "مجموع المنتجات",
         "أجرة التوصيل",
@@ -860,6 +863,7 @@ export function AdminDashboard({
         order.area,
         order.status,
         formatOrderDate(order.createdAt),
+        order.paymentMethod ?? "الدفع عند الاستلام",
         formatOrderItems(order.items),
         order.subtotal,
         order.deliveryFee,

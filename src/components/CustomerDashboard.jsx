@@ -8,6 +8,7 @@ const quickOrderNotes = [
   "لا تدق الباب، اتصل",
   "احتاج تبديل إذا المقاس ما يناسب",
 ]
+const paymentMethods = ["الدفع عند الاستلام", "دفع إلكتروني لاحقًا"]
 
 export function CustomerDashboard({
   cartItems,
@@ -35,6 +36,10 @@ export function CustomerDashboard({
   const [activeCategory, setActiveCategory] = useState("الكل")
   const [activeProductFilter, setActiveProductFilter] = useState("الكل")
   const [searchText, setSearchText] = useState("")
+  const [showOrderReview, setShowOrderReview] = useState(false)
+  const [paymentMethod, setPaymentMethod] = useState(paymentMethods[0])
+  const [trackingSearch, setTrackingSearch] = useState("")
+  const [copiedOrderId, setCopiedOrderId] = useState("")
   const safeSelectedStore = selectedStore ?? stores[0] ?? {
     category: "",
     description: "لا يوجد متجر متاح حاليًا.",
@@ -62,6 +67,10 @@ export function CustomerDashboard({
   )
   const latestOrder = customerOrders[0]
   const latestOrderItemsCount = latestOrder ? getOrderItemsCount(latestOrder.items) : 0
+  const normalizedTrackingSearch = trackingSearch.trim()
+  const visibleCustomerOrders = normalizedTrackingSearch
+    ? customerOrders.filter((order) => String(order.id).includes(normalizedTrackingSearch))
+    : customerOrders
 
   return (
     <div className="customer-layout">
@@ -407,27 +416,130 @@ export function CustomerDashboard({
             <strong>{formatMoney(finalTotal)}</strong>
           </div>
         </div>
-        <button className="send-order-button" onClick={onSendOrder}>
-          تأكيد الطلب
+        <button className="send-order-button" onClick={openOrderReview}>
+          مراجعة الطلب قبل الإرسال
         </button>
+        {showOrderReview && (
+          <div className="order-review-panel">
+            <div className="order-review-header">
+              <div>
+                <span>مراجعة أخيرة</span>
+                <h3>تأكيد الطلب قبل الإرسال</h3>
+              </div>
+              <button type="button" onClick={() => setShowOrderReview(false)}>
+                تعديل الطلب
+              </button>
+            </div>
+
+            <div className="order-review-list">
+              {cartItems.map((item, index) => (
+                <div className="order-review-item" key={`review-${item.store}-${item.name}-${index}`}>
+                  <div>
+                    <strong>{item.name}</strong>
+                    <span>{item.store}</span>
+                  </div>
+                  <div>
+                    <span>الكمية: {item.quantity}</span>
+                    <strong>{formatMoney(getPriceValue(item.price) * item.quantity)}</strong>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="order-review-info">
+              <div>
+                <span>اسم الزبون</span>
+                <strong>{customerInfo.name || "غير مكتوب"}</strong>
+              </div>
+              <div>
+                <span>رقم الهاتف</span>
+                <strong>{customerInfo.phone || "غير مكتوب"}</strong>
+              </div>
+              <div>
+                <span>العنوان</span>
+                <strong>
+                  {customerInfo.area || "غير مكتوب"}
+                  {customerInfo.landmark ? ` - ${customerInfo.landmark}` : ""}
+                </strong>
+              </div>
+              <div>
+                <span>ملاحظات</span>
+                <strong>{customerInfo.notes || "بدون ملاحظات"}</strong>
+              </div>
+            </div>
+
+            <div className="payment-method-panel">
+              <span>طريقة الدفع</span>
+              <div className="payment-method-options">
+                {paymentMethods.map((method) => (
+                  <button
+                    className={paymentMethod === method ? "active" : ""}
+                    key={method}
+                    onClick={() => setPaymentMethod(method)}
+                    type="button"
+                  >
+                    {method}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="order-review-total">
+              <span>المجموع النهائي مع التوصيل</span>
+              <strong>{formatMoney(finalTotal)}</strong>
+            </div>
+
+            <button className="confirm-send-button" onClick={confirmSendOrder}>
+              تأكيد إرسال الطلب
+            </button>
+          </div>
+        )}
         {orderMessage && <div className="order-message">{orderMessage}</div>}
       </div>
 
       <div className="tracking-panel" id="customer-tracking">
         <h2>تتبع الطلب</h2>
         <p>هنا يشوف الزبون حالة طلباته من الإرسال إلى التسليم.</p>
+        {customerOrders.length > 0 && (
+          <div className="tracking-search-box">
+            <label>
+              بحث برقم الطلب
+              <input
+                inputMode="numeric"
+                onChange={(event) => setTrackingSearch(event.target.value)}
+                placeholder="مثال: 25"
+                value={trackingSearch}
+              />
+            </label>
+            <span>{visibleCustomerOrders.length} طلب ظاهر</span>
+          </div>
+        )}
         {customerOrders.length === 0 ? (
           <div className="tracking-card">
             <h3>لا توجد طلبات للمتابعة</h3>
             <span>أرسل طلب من السلة حتى يبدأ التتبع.</span>
           </div>
+        ) : visibleCustomerOrders.length === 0 ? (
+          <div className="tracking-card">
+            <h3>لا يوجد طلب بهذا الرقم</h3>
+            <span>تأكد من رقم الطلب أو امسح البحث حتى تظهر كل الطلبات.</span>
+          </div>
         ) : (
-          customerOrders.map((order) => (
+          visibleCustomerOrders.map((order) => (
             <div className="tracking-card" key={`customer-${order.id}`}>
-              <h3>طلب رقم {order.id}</h3>
+              <div className="tracking-card-header">
+                <h3>طلب رقم {order.id}</h3>
+                <button onClick={() => copyOrderNumber(order.id)} type="button">
+                  نسخ رقم الطلب
+                </button>
+              </div>
+              {copiedOrderId === String(order.id) && (
+                <div className="copy-order-message">تم نسخ رقم الطلب {order.id}</div>
+              )}
               <span>وقت الطلب: {formatOrderDate(order.createdAt)}</span>
               <span>الحالة الحالية: {order.status}</span>
               <span>التوصيل إلى: {order.area}</span>
+              <span>طريقة الدفع: {order.paymentMethod ?? "الدفع عند الاستلام"}</span>
               {order.total && <strong>المبلغ النهائي: {formatMoney(order.total)}</strong>}
               {order.internalNote && (
                 <div className="tracking-note">
@@ -478,6 +590,32 @@ export function CustomerDashboard({
         notes: currentNotes ? `${currentNotes}، ${note}` : note,
       }
     })
+  }
+
+  function openOrderReview() {
+    if (cartItems.length === 0) {
+      onSendOrder()
+      return
+    }
+
+    setShowOrderReview(true)
+  }
+
+  function confirmSendOrder() {
+    onSendOrder(paymentMethod)
+    setShowOrderReview(false)
+  }
+
+  async function copyOrderNumber(orderId) {
+    const orderNumber = String(orderId)
+
+    try {
+      await navigator.clipboard.writeText(orderNumber)
+    } catch {
+      copyTextFallback(orderNumber)
+    }
+
+    setCopiedOrderId(orderNumber)
   }
 
   function selectCategory(category) {
@@ -582,6 +720,19 @@ function getCartQuantity(cartItems, storeName, productName) {
 
 function getOrderItemsCount(items) {
   return items.reduce((total, item) => total + Number(item.quantity), 0)
+}
+
+function copyTextFallback(text) {
+  const textarea = document.createElement("textarea")
+
+  textarea.value = text
+  textarea.setAttribute("readonly", "")
+  textarea.style.position = "fixed"
+  textarea.style.opacity = "0"
+  document.body.appendChild(textarea)
+  textarea.select()
+  document.execCommand("copy")
+  document.body.removeChild(textarea)
 }
 
 function getPriceValue(price) {

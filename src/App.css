@@ -1022,6 +1022,69 @@ button span {
   color: #65706b;
 }
 
+.tracking-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.tracking-card-header button {
+  border-color: #c9ddd9;
+  border-radius: 999px;
+  background: #eef7f5;
+  color: #0c6b66;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.copy-order-message {
+  width: fit-content;
+  border-radius: 999px;
+  background: #eef7f5;
+  color: #0c6b66;
+  padding: 8px 12px;
+  font-weight: bold;
+}
+
+.tracking-search-box {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid #c9ddd9;
+  border-radius: 12px;
+  background: white;
+}
+
+.tracking-search-box label {
+  display: grid;
+  gap: 8px;
+  width: min(360px, 100%);
+  color: #18221f;
+  font-weight: bold;
+}
+
+.tracking-search-box input {
+  border: 1px solid #ded8cc;
+  border-radius: 10px;
+  padding: 12px;
+  background: #fbfaf7;
+  color: #18221f;
+  font: inherit;
+}
+
+.tracking-search-box > span {
+  border-radius: 999px;
+  background: #eef7f5;
+  color: #0c6b66;
+  padding: 10px 12px;
+  font-weight: bold;
+}
+
 .tracking-steps {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -1303,6 +1366,123 @@ button span {
   width: 100%;
   border: 0;
   background: #d76b50;
+  color: white;
+  text-align: center;
+  font-weight: bold;
+}
+
+.order-review-panel {
+  display: grid;
+  gap: 14px;
+  margin-top: 14px;
+  padding: 16px;
+  border: 1px solid #ead5a2;
+  border-radius: 12px;
+  background: #fff9e8;
+}
+
+.order-review-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.order-review-header span,
+.order-review-info span,
+.order-review-total span {
+  display: block;
+  color: #65706b;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.order-review-header h3 {
+  margin: 2px 0 0;
+  color: #18221f;
+}
+
+.order-review-header button {
+  border-color: #ded8cc;
+  background: white;
+  color: #65706b;
+  font-weight: bold;
+}
+
+.order-review-list,
+.order-review-info {
+  display: grid;
+  gap: 10px;
+}
+
+.order-review-item,
+.order-review-info div,
+.order-review-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 10px;
+  background: white;
+}
+
+.order-review-item strong,
+.order-review-info strong,
+.order-review-total strong {
+  color: #0c6b66;
+  line-height: 1.6;
+}
+
+.order-review-item span {
+  display: block;
+  color: #65706b;
+  line-height: 1.6;
+}
+
+.order-review-total {
+  border: 1px solid #d8e7e4;
+  background: #eef7f5;
+}
+
+.payment-method-panel {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 10px;
+  background: white;
+}
+
+.payment-method-panel > span {
+  color: #65706b;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.payment-method-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.payment-method-options button {
+  border-color: #c9ddd9;
+  border-radius: 999px;
+  background: #eef7f5;
+  color: #0c6b66;
+  font-weight: bold;
+}
+
+.payment-method-options button.active {
+  border-color: #0c6b66;
+  background: #0c6b66;
+  color: white;
+}
+
+.confirm-send-button {
+  width: 100%;
+  border: 0;
+  background: #0c6b66;
   color: white;
   text-align: center;
   font-weight: bold;
@@ -1862,9 +2042,14 @@ button span {
 }
 
 .order-message {
+  padding: 14px;
+  border: 1px solid #c9ddd9;
+  border-radius: 12px;
+  background: #eef7f5;
   margin-top: 12px;
   color: #0c6b66;
   font-weight: bold;
+  line-height: 1.8;
 }
 
 .orders-panel {
@@ -3548,6 +3733,16 @@ button span {
   }
 
   .saved-address-actions {
+    display: grid;
+  }
+
+  .tracking-search-box {
+    align-items: stretch;
+    display: grid;
+  }
+
+  .tracking-card-header {
+    align-items: stretch;
     display: grid;
   }
 

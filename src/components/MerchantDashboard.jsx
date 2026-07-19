@@ -636,6 +636,10 @@ export function MerchantDashboard({
                         <span>وقت الطلب</span>
                         <strong>{formatOrderDate(order.createdAt)}</strong>
                       </div>
+                      <div>
+                        <span>طريقة الدفع</span>
+                        <strong>{order.paymentMethod ?? "الدفع عند الاستلام"}</strong>
+                      </div>
                     </div>
                     {order.landmark && (
                       <div className="order-meta">الدلالة: {order.landmark}</div>

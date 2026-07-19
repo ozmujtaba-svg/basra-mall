@@ -288,6 +288,9 @@ export function DriverDashboard({ onUpdateOrderNote, onUpdateStatus, orders, sto
                       <div className="order-products">
                         المنتجات: {formatOrderItems(order.items)}
                       </div>
+                      <div className="order-meta">
+                        طريقة الدفع: {order.paymentMethod ?? "الدفع عند الاستلام"}
+                      </div>
                       {order.total && (
                         <div className="order-total">المبلغ النهائي: {formatMoney(order.total)}</div>
                       )}
