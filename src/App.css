@@ -3012,6 +3012,317 @@ button span {
   color: white;
 }
 
+.admin-fast-summary {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid #c9ddd9;
+  border-radius: 14px;
+  background: #eef7f5;
+}
+
+.admin-fast-summary div {
+  padding: 14px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: white;
+}
+
+.admin-fast-summary div.attention {
+  border-color: #d76b50;
+  background: #fff2ec;
+}
+
+.admin-fast-summary div.profit {
+  border-color: #c9ddd9;
+  background: #eef7f5;
+}
+
+.admin-fast-summary span {
+  display: block;
+  color: #65706b;
+  line-height: 1.6;
+}
+
+.admin-fast-summary strong {
+  display: block;
+  color: #0c6b66;
+  font-size: 24px;
+  line-height: 1.5;
+}
+
+.admin-fast-summary div.attention strong {
+  color: #d76b50;
+}
+
+.admin-fast-summary .wide strong {
+  font-size: 16px;
+}
+
+.admin-decision-table {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.admin-decision-head,
+.admin-decision-row {
+  display: grid;
+  grid-template-columns: 1.4fr 0.45fr 0.55fr 0.9fr;
+  gap: 10px;
+  align-items: center;
+  padding: 12px;
+  border-radius: 12px;
+}
+
+.admin-decision-head {
+  background: #24302d;
+  color: white;
+  font-weight: bold;
+}
+
+.admin-decision-row {
+  border: 1px solid #ded8cc;
+  background: #fbfaf7;
+}
+
+.admin-decision-row.needs-action {
+  border-color: #ead5a2;
+  background: #fff9e8;
+}
+
+.admin-decision-row.calm {
+  border-color: #c9ddd9;
+  background: #eef7f5;
+}
+
+.admin-decision-row strong,
+.admin-decision-row small {
+  display: block;
+}
+
+.admin-decision-row small {
+  margin-top: 4px;
+  color: #65706b;
+  line-height: 1.6;
+}
+
+.decision-count {
+  color: #0c6b66;
+  font-size: 22px;
+  font-weight: bold;
+}
+
+.decision-priority {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 7px 10px;
+  font-weight: bold;
+}
+
+.decision-priority.high {
+  background: #fff2ec;
+  color: #d76b50;
+}
+
+.decision-priority.medium {
+  background: #fff9e8;
+  color: #7a5a10;
+}
+
+.decision-priority.calm {
+  background: white;
+  color: #0c6b66;
+}
+
+.admin-decision-row button {
+  width: 100%;
+  border-color: #c9ddd9;
+  background: white;
+  color: #0c6b66;
+  font-weight: bold;
+}
+
+.admin-decision-row.needs-action button {
+  border-color: #0c6b66;
+  background: #0c6b66;
+  color: white;
+}
+
+.admin-health-summary {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr auto;
+  gap: 12px;
+  align-items: center;
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid #c9ddd9;
+  border-radius: 14px;
+  background: #eef7f5;
+}
+
+.admin-health-summary.warning {
+  border-color: #ead5a2;
+  background: #fff9e8;
+}
+
+.admin-health-main span,
+.admin-health-main small {
+  display: block;
+  color: #65706b;
+  line-height: 1.7;
+}
+
+.admin-health-main strong {
+  display: block;
+  color: #0c6b66;
+  font-size: 24px;
+}
+
+.admin-health-summary.warning .admin-health-main strong {
+  color: #8a5d11;
+}
+
+.admin-health-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.admin-health-grid div {
+  padding: 10px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: white;
+}
+
+.admin-health-grid div.warning {
+  border-color: #d76b50;
+  background: #fff2ec;
+}
+
+.admin-health-grid div.good {
+  border-color: #c9ddd9;
+}
+
+.admin-health-grid span {
+  display: block;
+  color: #65706b;
+  line-height: 1.6;
+}
+
+.admin-health-grid strong {
+  display: block;
+  color: #18221f;
+  line-height: 1.5;
+}
+
+.admin-health-actions {
+  display: grid;
+  gap: 8px;
+  min-width: 135px;
+}
+
+.admin-health-actions button {
+  border-color: #0c6b66;
+  background: white;
+  color: #0c6b66;
+  font-weight: bold;
+}
+
+.admin-health-actions button:first-child {
+  background: #0c6b66;
+  color: white;
+}
+
+.admin-activity-log {
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid #ded8cc;
+  border-radius: 14px;
+  background: #fbfaf7;
+}
+
+.admin-activity-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: start;
+}
+
+.admin-activity-header h3 {
+  margin: 0;
+}
+
+.admin-activity-header p {
+  margin: 6px 0 0;
+  color: #65706b;
+  line-height: 1.7;
+}
+
+.admin-activity-header span {
+  border-radius: 999px;
+  background: #eef7f5;
+  color: #0c6b66;
+  padding: 8px 12px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.admin-activity-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.admin-activity-item {
+  border: 1px solid #ded8cc;
+  background: white;
+  text-align: right;
+}
+
+.admin-activity-item.attention {
+  border-color: #d76b50;
+  background: #fff2ec;
+}
+
+.admin-activity-item.warning {
+  border-color: #ead5a2;
+  background: #fff9e8;
+}
+
+.admin-activity-item.good {
+  border-color: #c9ddd9;
+  background: #eef7f5;
+}
+
+.admin-activity-item.muted {
+  background: #f3eeee;
+}
+
+.admin-activity-item span,
+.admin-activity-item strong,
+.admin-activity-item small {
+  display: block;
+  line-height: 1.7;
+}
+
+.admin-activity-item span {
+  color: #0c6b66;
+  font-weight: bold;
+}
+
+.admin-activity-item strong {
+  color: #18221f;
+}
+
+.admin-activity-item small {
+  color: #65706b;
+}
+
 .admin-monitor-header {
   display: flex;
   justify-content: space-between;
@@ -3218,6 +3529,67 @@ button span {
 
 .admin-alert.muted {
   background: #f3eeee;
+}
+
+.admin-late-panel {
+  border-color: #c9ddd9;
+}
+
+.admin-late-panel.attention {
+  border-color: #d76b50;
+  background: #fff9f5;
+}
+
+.admin-late-empty {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid #c9ddd9;
+  border-radius: 12px;
+  background: #eef7f5;
+  color: #0c6b66;
+  font-weight: bold;
+}
+
+.admin-late-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.admin-late-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid #ead5a2;
+  border-radius: 12px;
+  background: #fff9e8;
+}
+
+.admin-late-card strong,
+.admin-late-card span,
+.admin-late-card small {
+  display: block;
+}
+
+.admin-late-card span {
+  margin-top: 4px;
+  color: #d76b50;
+  font-weight: bold;
+}
+
+.admin-late-card small {
+  margin-top: 4px;
+  color: #65706b;
+  line-height: 1.6;
+}
+
+.admin-late-card button {
+  border-color: #0c6b66;
+  background: #0c6b66;
+  color: white;
+  font-weight: bold;
 }
 
 .admin-task-list {
@@ -3963,7 +4335,14 @@ button span {
   .merchant-action-counter,
   .merchant-order-actions,
   .admin-grid,
+  .admin-fast-summary,
+  .admin-decision-head,
+  .admin-decision-row,
+  .admin-health-summary,
+  .admin-health-grid,
+  .admin-activity-list,
   .admin-monitor-grid,
+  .admin-late-card,
   .data-check-grid,
   .admin-store-status-summary,
   .today-stats-grid,

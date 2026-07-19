@@ -95,6 +95,63 @@ export function AdminDashboard({
     pendingStores,
   })
   const adminTasks = getAdminTasks({ allOrders, canceledOrders, pendingStores })
+  const newOrdersCount = allOrders.filter((order) => order.status === "طلب جديد").length
+  const inDeliveryOrdersCount = allOrders.filter((order) => order.status === "قيد التوصيل").length
+  const activeAlertTitle = adminAlerts[0]?.title ?? "الوضع مستقر"
+  const delayedAdminOrders = getDelayedAdminOrders(allOrders)
+  const topDelayedAdminOrders = delayedAdminOrders.slice(0, 3)
+  const systemHealth = getSystemHealthSummary({ allOrders, lastSaveTime, productCount, stores })
+  const adminActivityLog = getAdminActivityLog({
+    allOrders,
+    delayedAdminOrders,
+    focusOrder,
+    pendingStores,
+    rejectedStores,
+    scrollToAdminSection,
+    goToStoreReview,
+  })
+  const quickDecisionRows = [
+    {
+      title: "مراجعة متاجر جديدة",
+      count: pendingStores.length,
+      priority: pendingStores.length > 0 ? "عالية" : "هادئة",
+      note: "متاجر ما تظهر للزبائن قبل قرار الإدارة.",
+      actionLabel: "افتح مراجعة المتاجر",
+      onClick: () => goToStoreReview("pending"),
+    },
+    {
+      title: "متابعة طلبات جديدة",
+      count: newOrdersCount,
+      priority: newOrdersCount > 0 ? "عالية" : "هادئة",
+      note: "طلبات تحتاج متابعة حتى تبدي مرحلة التجهيز.",
+      actionLabel: "افتح الطلبات الجديدة",
+      onClick: () => goToOrderReview("طلب جديد"),
+    },
+    {
+      title: "تجهيز التوصيل",
+      count: allOrders.filter((order) => order.status === "جاهز للتوصيل").length,
+      priority: allOrders.some((order) => order.status === "جاهز للتوصيل") ? "متوسطة" : "هادئة",
+      note: "طلبات جاهزة وتحتاج سائق يستلمها.",
+      actionLabel: "افتح الجاهزة للتوصيل",
+      onClick: () => goToOrderReview("جاهز للتوصيل"),
+    },
+    {
+      title: "مراجعة الملغي",
+      count: canceledOrders.length,
+      priority: canceledOrders.length > 0 ? "متوسطة" : "هادئة",
+      note: "طلبات ملغية تحتاج تعرف سببها حتى تقلل التكرار.",
+      actionLabel: "افتح الطلبات الملغية",
+      onClick: () => goToOrderReview("ملغي"),
+    },
+    {
+      title: "طلبات متأخرة",
+      count: delayedAdminOrders.length,
+      priority: delayedAdminOrders.length > 0 ? "عالية" : "هادئة",
+      note: "طلبات واقفة أكثر من الوقت المتوقع وتحتاج متابعة.",
+      actionLabel: "افتح المتأخرة",
+      onClick: () => goToOrderReview("الكل"),
+    },
+  ]
   const filteredOrders = allOrders
     .filter((order) => orderStatusFilter === "الكل" || order.status === orderStatusFilter)
     .filter((order) => matchesDateFilter(order, orderDateFilter))
@@ -121,6 +178,102 @@ export function AdminDashboard({
           <button onClick={() => scrollToAdminSection("admin-settings")} type="button">
             الإعدادات
           </button>
+        </div>
+        <div className="admin-fast-summary">
+          <div className={pendingStores.length > 0 ? "attention" : ""}>
+            <span>متاجر قيد المراجعة</span>
+            <strong>{pendingStores.length}</strong>
+          </div>
+          <div className={newOrdersCount > 0 ? "attention" : ""}>
+            <span>طلبات جديدة</span>
+            <strong>{newOrdersCount}</strong>
+          </div>
+          <div>
+            <span>قيد التوصيل</span>
+            <strong>{inDeliveryOrdersCount}</strong>
+          </div>
+          <div className="profit">
+            <span>أرباح اليوم</span>
+            <strong>{formatMoney(monitoringStats.todayRevenue)}</strong>
+          </div>
+          <div className="wide">
+            <span>أهم تنبيه</span>
+            <strong>{activeAlertTitle}</strong>
+          </div>
+        </div>
+        <div className="admin-decision-table" aria-label="قرارات الإدارة السريعة">
+          <div className="admin-decision-head">
+            <span>القرار المطلوب</span>
+            <span>العدد</span>
+            <span>الأولوية</span>
+            <span>الإجراء</span>
+          </div>
+          {quickDecisionRows.map((decision) => (
+            <div
+              className={`admin-decision-row ${decision.count > 0 ? "needs-action" : "calm"}`}
+              key={decision.title}
+            >
+              <span>
+                <strong>{decision.title}</strong>
+                <small>{decision.note}</small>
+              </span>
+              <span className="decision-count">{decision.count}</span>
+              <span className={`decision-priority ${getPriorityClass(decision.priority)}`}>
+                {decision.priority}
+              </span>
+              <span>
+                <button onClick={decision.onClick} type="button">
+                  {decision.actionLabel}
+                </button>
+              </span>
+            </div>
+          ))}
+        </div>
+        <div className={`admin-health-summary ${systemHealth.level}`}>
+          <div className="admin-health-main">
+            <span>صحة النظام</span>
+            <strong>{systemHealth.title}</strong>
+            <small>{systemHealth.note}</small>
+          </div>
+          <div className="admin-health-grid">
+            {systemHealth.items.map((item) => (
+              <div className={item.level ?? ""} key={item.label}>
+                <span>{item.label}</span>
+                <strong>{item.value}</strong>
+              </div>
+            ))}
+          </div>
+          <div className="admin-health-actions">
+            <button onClick={checkDataHealth} type="button">
+              فحص البيانات
+            </button>
+            <button onClick={() => scrollToAdminSection("admin-data")} type="button">
+              إدارة النسخ
+            </button>
+          </div>
+        </div>
+        <div className="admin-activity-log">
+          <div className="admin-activity-header">
+            <div>
+              <h3>سجل نشاط الإدارة</h3>
+              <p>آخر الأحداث المهمة التي تساعدك تعرف شنو يحتاج متابعة.</p>
+            </div>
+            <span>{adminActivityLog.length} أحداث</span>
+          </div>
+          <div className="admin-activity-list">
+            {adminActivityLog.map((activity) => (
+              <button
+                className={`admin-activity-item ${activity.level}`}
+                key={activity.id}
+                onClick={activity.onClick}
+                type="button"
+              >
+                <span>{activity.type}</span>
+                <strong>{activity.title}</strong>
+                <small>{activity.note}</small>
+              </button>
+            ))}
+          </div>
         </div>
         <div className="admin-grid">
           <div className="admin-card">
@@ -185,6 +338,40 @@ export function AdminDashboard({
             </div>
           ))}
         </div>
+      </section>
+
+      <section className={`admin-section admin-late-panel ${delayedAdminOrders.length > 0 ? "attention" : ""}`}>
+        <div className="admin-monitor-header">
+          <div>
+            <h3>تنبيه الطلبات المتأخرة</h3>
+            <p>يعرض الطلبات التي بقيت بنفس الحالة أكثر من الوقت المتوقع.</p>
+          </div>
+          <span>{delayedAdminOrders.length} طلب متأخر</span>
+        </div>
+        {delayedAdminOrders.length === 0 ? (
+          <div className="admin-late-empty">
+            الوضع جيد، ماكو طلبات متأخرة حاليًا.
+          </div>
+        ) : (
+          <div className="admin-late-list">
+            {topDelayedAdminOrders.map((order) => (
+              <div className="admin-late-card" key={`late-${order.id}`}>
+                <div>
+                  <strong>طلب رقم {order.id}</strong>
+                  <span>
+                    {order.status} - متأخر {formatDelayMinutes(order.delayMinutes)}
+                  </span>
+                  <small>
+                    {order.customer} / {order.area} / {formatOrderItems(order.items)}
+                  </small>
+                </div>
+                <button onClick={() => focusOrder(order)} type="button">
+                  افتح الطلب
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="admin-section">
@@ -817,6 +1004,25 @@ export function AdminDashboard({
     document.getElementById(sectionId)?.scrollIntoView({ behavior: "smooth" })
   }
 
+  function goToStoreReview(statusFilter) {
+    setStoreStatusFilter(statusFilter)
+    scrollToAdminSection("admin-stores")
+  }
+
+  function goToOrderReview(statusFilter) {
+    setOrderStatusFilter(statusFilter)
+    setOrderDateFilter("كل الطلبات")
+    setOrderSearch("")
+    scrollToAdminSection("admin-orders")
+  }
+
+  function focusOrder(order) {
+    setOrderStatusFilter(order.status)
+    setOrderDateFilter("كل الطلبات")
+    setOrderSearch(String(order.id))
+    scrollToAdminSection("admin-orders")
+  }
+
   function updateRejectReason(storeName, reason) {
     setStoreRejectReasons((currentReasons) => ({
       ...currentReasons,
@@ -1164,6 +1370,163 @@ function matchesDateFilter(order, dateFilter) {
   return true
 }
 
+function getDelayedAdminOrders(orders) {
+  const delayLimits = {
+    "طلب جديد": 15,
+    "قيد التجهيز": 30,
+    "جاهز للتوصيل": 20,
+    "قيد التوصيل": 45,
+  }
+
+  return orders
+    .map((order) => ({
+      ...order,
+      delayLimit: delayLimits[order.status],
+      delayMinutes: getOrderDelayMinutes(order.createdAt),
+    }))
+    .filter((order) => order.delayLimit && order.delayMinutes >= order.delayLimit)
+    .sort((firstOrder, secondOrder) => secondOrder.delayMinutes - firstOrder.delayMinutes)
+}
+
+function getSystemHealthSummary({ allOrders, lastSaveTime, productCount, stores }) {
+  const missingStores = stores.filter(
+    (store) => !store.name || !store.category || !store.area || !store.phone,
+  )
+  const storesWithoutProducts = stores.filter((store) => store.products.length === 0)
+  const ordersWithoutItems = allOrders.filter(
+    (order) => !Array.isArray(order.items) || order.items.length === 0,
+  )
+  const missingOrderCustomers = allOrders.filter(
+    (order) => !order.customer || !order.phone || !order.area,
+  )
+  const issueCount =
+    missingStores.length +
+    storesWithoutProducts.length +
+    ordersWithoutItems.length +
+    missingOrderCustomers.length
+  const saveLevel = lastSaveTime ? "good" : "warning"
+
+  return {
+    level: issueCount > 0 || !lastSaveTime ? "warning" : "good",
+    title: issueCount > 0 || !lastSaveTime ? "يحتاج متابعة" : "مستقر",
+    note:
+      issueCount > 0
+        ? "أكو بيانات تحتاج مراجعة قبل الاعتماد عليها."
+        : "البيانات الأساسية والحفظ ظاهرين بشكل جيد.",
+    items: [
+      { label: "آخر حفظ", value: formatLastSaveTime(lastSaveTime), level: saveLevel },
+      { label: "المتاجر", value: stores.length },
+      { label: "المنتجات", value: productCount },
+      { label: "الطلبات", value: allOrders.length },
+      { label: "نواقص البيانات", value: issueCount, level: issueCount > 0 ? "warning" : "good" },
+    ],
+  }
+}
+
+function getAdminActivityLog({
+  allOrders,
+  delayedAdminOrders,
+  focusOrder,
+  goToStoreReview,
+  pendingStores,
+  rejectedStores,
+  scrollToAdminSection,
+}) {
+  const pendingStoreActivities = pendingStores.slice(0, 2).map((store) => ({
+    id: `store-pending-${store.name}`,
+    level: "attention",
+    type: "متجر",
+    title: `${store.name} ينتظر قرار الإدارة`,
+    note: `${store.ownerName || "صاحب متجر"} / ${store.area || "منطقة غير محددة"}`,
+    onClick: () => goToStoreReview("pending"),
+  }))
+  const delayedOrderActivities = delayedAdminOrders.slice(0, 2).map((order) => ({
+    id: `order-delayed-${order.id}`,
+    level: "warning",
+    type: "طلب متأخر",
+    title: `طلب رقم ${order.id} متأخر`,
+    note: `${order.status} منذ ${formatDelayMinutes(order.delayMinutes)} / ${order.customer}`,
+    onClick: () => focusOrder(order),
+  }))
+  const newOrderActivities = allOrders
+    .filter((order) => order.status === "طلب جديد")
+    .slice(0, 2)
+    .map((order) => ({
+      id: `order-new-${order.id}`,
+      level: "attention",
+      type: "طلب جديد",
+      title: `طلب رقم ${order.id} يحتاج متابعة`,
+      note: `${order.customer} / ${order.area} / ${formatOrderItems(order.items)}`,
+      onClick: () => focusOrder(order),
+    }))
+  const canceledOrderActivities = allOrders
+    .filter((order) => order.status === "ملغي")
+    .slice(0, 1)
+    .map((order) => ({
+      id: `order-canceled-${order.id}`,
+      level: "muted",
+      type: "ملغي",
+      title: `طلب رقم ${order.id} ملغي`,
+      note: `${order.customer} / مستبعد من الأرباح`,
+      onClick: () => focusOrder(order),
+    }))
+  const rejectedStoreActivities = rejectedStores.slice(0, 1).map((store) => ({
+    id: `store-rejected-${store.name}`,
+    level: "muted",
+    type: "متجر مرفوض",
+    title: `${store.name} يحتاج إعادة مراجعة`,
+    note: store.rejectionReason || "راجع سبب الرفض قبل إعادة المراجعة.",
+    onClick: () => goToStoreReview("rejected"),
+  }))
+  const activities = [
+    ...pendingStoreActivities,
+    ...delayedOrderActivities,
+    ...newOrderActivities,
+    ...canceledOrderActivities,
+    ...rejectedStoreActivities,
+  ].slice(0, 6)
+
+  if (activities.length === 0) {
+    return [
+      {
+        id: "admin-stable",
+        level: "good",
+        type: "استقرار",
+        title: "ماكو أحداث تحتاج متابعة الآن",
+        note: "لوحة الإدارة مستقرة حسب البيانات الحالية.",
+        onClick: () => scrollToAdminSection("admin-monitor"),
+      },
+    ]
+  }
+
+  return activities
+}
+
+function getOrderDelayMinutes(createdAt) {
+  if (!createdAt) {
+    return 24 * 60
+  }
+
+  const createdTime = new Date(createdAt).getTime()
+
+  if (Number.isNaN(createdTime)) {
+    return 24 * 60
+  }
+
+  return Math.max(0, Math.floor((Date.now() - createdTime) / 60000))
+}
+
+function formatDelayMinutes(minutes) {
+  if (minutes >= 60) {
+    const hours = Math.floor(minutes / 60)
+    const remainingMinutes = minutes % 60
+
+    return remainingMinutes > 0 ? `${hours} ساعة و ${remainingMinutes} دقيقة` : `${hours} ساعة`
+  }
+
+  return `${minutes} دقيقة`
+}
+
 function sortOrders(firstOrder, secondOrder, sortType) {
   if (sortType === "الأقدم أولًا") {
     return firstOrder.id - secondOrder.id
@@ -1236,6 +1599,18 @@ function getStoreStatusClass(status) {
   }
 
   return "approved"
+}
+
+function getPriorityClass(priority) {
+  if (priority === "عالية") {
+    return "high"
+  }
+
+  if (priority === "متوسطة") {
+    return "medium"
+  }
+
+  return "calm"
 }
 
 function matchesStoreStatusFilter(store, filter) {
