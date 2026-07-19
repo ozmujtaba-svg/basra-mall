@@ -244,6 +244,30 @@ button span {
   color: #42504b;
 }
 
+.storage-warning {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 18px;
+  padding: 14px;
+  border: 1px solid #ead5a2;
+  border-radius: 12px;
+  background: #fff9e8;
+}
+
+.storage-warning strong,
+.storage-warning span {
+  display: block;
+  line-height: 1.7;
+}
+
+.storage-warning strong {
+  color: #8a5d11;
+}
+
+.storage-warning span {
+  color: #65706b;
+}
+
 .stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -2626,6 +2650,68 @@ button span {
   background: #fff8f5;
 }
 
+.data-management-actions {
+  display: grid;
+  gap: 10px;
+  min-width: 210px;
+}
+
+.check-data-button {
+  border: 0;
+  background: #ead5a2;
+  color: #4f3a12;
+  padding: 12px 16px;
+  text-align: center;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.backup-data-button {
+  border: 0;
+  background: #0c6b66;
+  color: white;
+  padding: 12px 16px;
+  text-align: center;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.import-data-button {
+  display: block;
+  border-radius: 8px;
+  background: #24302d;
+  color: white;
+  padding: 12px 16px;
+  text-align: center;
+  font-weight: bold;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.import-data-button input {
+  display: none;
+}
+
+.last-save-card {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid #ded8cc;
+  border-radius: 12px;
+  background: white;
+}
+
+.last-save-card span,
+.last-save-card small {
+  color: #65706b;
+  line-height: 1.7;
+}
+
+.last-save-card strong {
+  color: #0c6b66;
+}
+
 .reset-data-button {
   border: 0;
   background: #b83f32;
@@ -2643,6 +2729,56 @@ button span {
   background: #eef7f5;
   color: #0c6b66;
   font-weight: bold;
+}
+
+.data-check-result {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #c9ddd9;
+  border-radius: 12px;
+  background: #eef7f5;
+}
+
+.data-check-result.warning {
+  border-color: #ead5a2;
+  background: #fff9e8;
+}
+
+.data-check-result strong,
+.data-check-result small {
+  display: block;
+  line-height: 1.7;
+}
+
+.data-check-result strong {
+  color: #0c6b66;
+}
+
+.data-check-result.warning strong {
+  color: #8a5d11;
+}
+
+.data-check-result small {
+  color: #65706b;
+}
+
+.data-check-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.data-check-grid span {
+  padding: 10px;
+  border-radius: 10px;
+  background: white;
+  color: #65706b;
+}
+
+.data-check-grid b {
+  color: #18221f;
 }
 
 .section-header-actions {
@@ -3175,6 +3311,7 @@ button span {
   .merchant-order-actions,
   .admin-grid,
   .admin-monitor-grid,
+  .data-check-grid,
   .admin-store-status-summary,
   .today-stats-grid,
   .quick-stats-grid,

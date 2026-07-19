@@ -1,4 +1,4 @@
-export function Shell({ children, dashboard, onBack, onForgetAccount, stats, user }) {
+export function Shell({ children, dashboard, onBack, onForgetAccount, stats, storageMessage, user }) {
   const welcomeMessage = getWelcomeMessage(user.accountType, user.name)
 
   return (
@@ -33,6 +33,13 @@ export function Shell({ children, dashboard, onBack, onForgetAccount, stats, use
           <strong>{welcomeMessage.title}</strong>
           <span>{welcomeMessage.description}</span>
         </div>
+
+        {storageMessage && (
+          <div className="storage-warning">
+            <strong>تنبيه حفظ البيانات</strong>
+            <span>{storageMessage}</span>
+          </div>
+        )}
 
         <div className="stats">
           {stats.map((item) => (

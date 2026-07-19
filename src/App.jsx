@@ -13,6 +13,8 @@ const ADMIN_COMMISSION_RATE = 0.05
 const SETTINGS_STORAGE_KEY = "basra-mall-settings"
 const APP_DATA_STORAGE_KEY = "basra-mall-data"
 const ACCOUNT_STORAGE_KEY = "basra-mall-account"
+const APP_DATA_BACKUP_STORAGE_KEY = "basra-mall-data-backup"
+const LAST_SAVE_STORAGE_KEY = "basra-mall-last-save"
 const defaultPlatformSettings = {
   commissionRate: ADMIN_COMMISSION_RATE,
   deliveryFee: DELIVERY_FEE,
@@ -33,6 +35,8 @@ function App() {
   const [savedCustomerAddress, setSavedCustomerAddress] = useState(savedAppData.savedCustomerAddress)
   const [platformSettings, setPlatformSettings] = useState(loadPlatformSettings)
   const [orderMessage, setOrderMessage] = useState("")
+  const [storageMessage, setStorageMessage] = useState("")
+  const [lastSaveTime, setLastSaveTime] = useState(loadLastSaveTime)
   const [nextOrderId, setNextOrderId] = useState(savedAppData.nextOrderId)
   const [loginInfo, setLoginInfo] = useState({
     adminCode: "",
@@ -86,40 +90,52 @@ function App() {
   })
 
   useEffect(() => {
-    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(platformSettings))
+    const saved = saveToStorage(SETTINGS_STORAGE_KEY, platformSettings)
+
+    if (!saved) {
+      setStorageMessage("تعذر حفظ إعدادات العمولة والتوصيل داخل المتصفح.")
+    }
   }, [platformSettings])
 
   useEffect(() => {
-    localStorage.setItem(
-      ACCOUNT_STORAGE_KEY,
-      JSON.stringify({
+    const saved = saveToStorage(ACCOUNT_STORAGE_KEY, {
         accountType,
         name: loginInfo.name,
         phone: loginInfo.phone,
-      }),
-    )
+      })
+
+    if (!saved) {
+      setStorageMessage("تعذر حفظ الحساب داخل المتصفح. تقدر تكمل، بس قد تحتاج تسجل دخول مرة ثانية.")
+    }
   }, [accountType, loginInfo.name, loginInfo.phone])
 
   useEffect(() => {
-    try {
-      localStorage.setItem(
-        APP_DATA_STORAGE_KEY,
-        JSON.stringify({
-          cartItems,
-          customerInfo,
-          customerOrders,
-          deliveryOrders,
-          favoriteStoreNames,
-          merchantOrders,
-          nextOrderId,
-          savedCustomerAddress,
-          selectedStoreName: selectedStore.name,
-          stores,
-        }),
-      )
-    } catch (error) {
-      console.warn("Could not save Basra Mall data.", error)
+    const appDataSnapshot = {
+      cartItems,
+      customerInfo,
+      customerOrders,
+      deliveryOrders,
+      favoriteStoreNames,
+      merchantOrders,
+      nextOrderId,
+      savedCustomerAddress,
+      selectedStoreName: selectedStore.name,
+      stores,
     }
+    const saved = saveToStorage(APP_DATA_STORAGE_KEY, appDataSnapshot)
+
+    if (saved) {
+      saveToStorage(APP_DATA_BACKUP_STORAGE_KEY, appDataSnapshot)
+      const savedAt = new Date().toISOString()
+      saveToStorage(LAST_SAVE_STORAGE_KEY, savedAt)
+      setLastSaveTime(savedAt)
+      setStorageMessage("")
+      return
+    }
+
+    setStorageMessage(
+      "تعذر حفظ البيانات داخل المتصفح. إذا استمرت المشكلة، احفظ شغلك بـ Git ثم امسح البيانات التجريبية.",
+    )
   }, [
     cartItems,
     customerInfo,
@@ -178,7 +194,9 @@ function App() {
   }
 
   function resetDemoData() {
-    localStorage.removeItem(APP_DATA_STORAGE_KEY)
+    removeFromStorage(APP_DATA_STORAGE_KEY)
+    removeFromStorage(APP_DATA_BACKUP_STORAGE_KEY)
+    removeFromStorage(LAST_SAVE_STORAGE_KEY)
     setStores(customerStores)
     setSelectedStore(customerStores[0])
     setCartItems([])
@@ -200,6 +218,78 @@ function App() {
       notes: "",
     })
     setOrderMessage("")
+    setLastSaveTime("")
+  }
+
+  function exportDataBackup() {
+    const backupData = {
+      exportedAt: new Date().toISOString(),
+      platformSettings,
+      savedAccount: {
+        accountType,
+        name: loginInfo.name,
+        phone: loginInfo.phone,
+      },
+      appData: {
+        cartItems,
+        customerInfo,
+        customerOrders,
+        deliveryOrders,
+        favoriteStoreNames,
+        merchantOrders,
+        nextOrderId,
+        savedCustomerAddress,
+        selectedStoreName: selectedStore.name,
+        stores,
+      },
+    }
+    const backupText = JSON.stringify(backupData, null, 2)
+    const blob = new Blob([backupText], { type: "application/json;charset=utf-8" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+
+    link.href = url
+    link.download = `basra-mall-backup-${formatBackupDate(new Date())}.json`
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
+  function importDataBackup(backupData) {
+    const importedAppData = normalizeImportedAppData(backupData)
+
+    if (!importedAppData) {
+      return false
+    }
+
+    setStores(importedAppData.stores)
+    setSelectedStore(importedAppData.selectedStore)
+    setCartItems(importedAppData.cartItems)
+    setCustomerOrders(importedAppData.customerOrders)
+    setMerchantOrders(importedAppData.merchantOrders)
+    setDeliveryOrders(importedAppData.deliveryOrders)
+    setFavoriteStoreNames(importedAppData.favoriteStoreNames)
+    setSavedCustomerAddress(importedAppData.savedCustomerAddress)
+    setNextOrderId(importedAppData.nextOrderId)
+    setCustomerInfo(importedAppData.customerInfo)
+
+    if (backupData?.platformSettings) {
+      const importedSettings = normalizePlatformSettings(backupData.platformSettings)
+      setPlatformSettings(importedSettings)
+    }
+
+    if (backupData?.savedAccount) {
+      const importedAccount = normalizeSavedAccount(backupData.savedAccount)
+      setAccountType(importedAccount.accountType)
+      setLoginInfo((info) => ({
+        ...info,
+        name: importedAccount.name,
+        phone: importedAccount.phone,
+      }))
+    }
+
+    setStorageMessage("")
+    setLastSaveTime(new Date().toISOString())
+    return true
   }
 
   function addToCart(product, store) {
@@ -749,6 +839,7 @@ function App() {
       ) : (
         <Shell
           dashboard={dashboard}
+          storageMessage={storageMessage}
           stats={activeStats}
           user={activeUser}
           onBack={() => setCurrentView("login")}
@@ -811,6 +902,9 @@ function App() {
               allOrders={allOrders}
               commissionRate={platformSettings.commissionRate}
               onApproveStore={approveStore}
+              onExportBackup={exportDataBackup}
+              onImportBackup={importDataBackup}
+              lastSaveTime={lastSaveTime}
               onRejectStore={rejectStore}
               onReviewStoreAgain={reviewStoreAgain}
               onResetData={resetDemoData}
@@ -909,6 +1003,16 @@ function getPriceValue(price) {
   return Number(String(price).replace(/[^\d]/g, ""))
 }
 
+function formatBackupDate(date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+  const hour = String(date.getHours()).padStart(2, "0")
+  const minute = String(date.getMinutes()).padStart(2, "0")
+
+  return `${year}-${month}-${day}-${hour}-${minute}`
+}
+
 function groupCartByStore(cartItems) {
   const groups = []
 
@@ -947,6 +1051,21 @@ function loadPlatformSettings() {
   return defaultPlatformSettings
 }
 
+function normalizePlatformSettings(settings) {
+  if (
+    settings &&
+    Number.isFinite(settings.commissionRate) &&
+    Number.isFinite(settings.deliveryFee)
+  ) {
+    return {
+      commissionRate: settings.commissionRate,
+      deliveryFee: settings.deliveryFee,
+    }
+  }
+
+  return defaultPlatformSettings
+}
+
 function loadSavedAccount() {
   const defaultAccount = {
     accountType: "زبون",
@@ -969,6 +1088,67 @@ function loadSavedAccount() {
     }
   } catch {
     return defaultAccount
+  }
+}
+
+function loadLastSaveTime() {
+  try {
+    return localStorage.getItem(LAST_SAVE_STORAGE_KEY) ?? ""
+  } catch {
+    return ""
+  }
+}
+
+function normalizeSavedAccount(account) {
+  const defaultAccount = {
+    accountType: "زبون",
+    name: "",
+    phone: "",
+  }
+  const allowedTypes = ["زبون", "صاحب متجر", "سائق", "الإدارة"]
+
+  if (!account || !allowedTypes.includes(account.accountType)) {
+    return defaultAccount
+  }
+
+  return {
+    accountType: account.accountType,
+    name: typeof account.name === "string" ? account.name : "",
+    phone: typeof account.phone === "string" ? account.phone : "",
+  }
+}
+
+function saveToStorage(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value))
+    return true
+  } catch (error) {
+    console.warn(`Could not save ${key}.`, error)
+    return false
+  }
+}
+
+function readStoredData(key) {
+  try {
+    const storedValue = localStorage.getItem(key)
+
+    if (!storedValue) {
+      return null
+    }
+
+    return JSON.parse(storedValue)
+  } catch (error) {
+    console.warn(`Could not read ${key}.`, error)
+    removeFromStorage(key)
+    return null
+  }
+}
+
+function removeFromStorage(key) {
+  try {
+    localStorage.removeItem(key)
+  } catch (error) {
+    console.warn(`Could not remove ${key}.`, error)
   }
 }
 
@@ -996,40 +1176,42 @@ function loadAppData() {
     stores: customerStores,
   }
 
+  const savedData = readStoredData(APP_DATA_STORAGE_KEY)
+  const backupData = savedData ? null : readStoredData(APP_DATA_BACKUP_STORAGE_KEY)
+  const storedData = savedData ?? backupData
+
+  if (!storedData) {
+    return defaultAppData
+  }
+
   try {
-    const savedData = JSON.parse(localStorage.getItem(APP_DATA_STORAGE_KEY))
-
-    if (!savedData) {
-      return defaultAppData
-    }
-
     const appData = {
-      cartItems: Array.isArray(savedData.cartItems) ? savedData.cartItems : [],
-      customerInfo: savedData.customerInfo ?? defaultAppData.customerInfo,
-      customerOrders: Array.isArray(savedData.customerOrders)
-        ? savedData.customerOrders.map(normalizeOrder)
+      cartItems: Array.isArray(storedData.cartItems) ? storedData.cartItems : [],
+      customerInfo: normalizeCustomerInfo(storedData.customerInfo, defaultAppData.customerInfo),
+      customerOrders: Array.isArray(storedData.customerOrders)
+        ? storedData.customerOrders.map(normalizeOrder)
         : [],
-      deliveryOrders: Array.isArray(savedData.deliveryOrders)
-        ? savedData.deliveryOrders.map(normalizeOrder)
+      deliveryOrders: Array.isArray(storedData.deliveryOrders)
+        ? storedData.deliveryOrders.map(normalizeOrder)
         : [],
-      favoriteStoreNames: Array.isArray(savedData.favoriteStoreNames)
-        ? savedData.favoriteStoreNames
+      favoriteStoreNames: Array.isArray(storedData.favoriteStoreNames)
+        ? storedData.favoriteStoreNames
         : [],
-      merchantOrders: Array.isArray(savedData.merchantOrders)
-        ? savedData.merchantOrders.map(normalizeOrder)
+      merchantOrders: Array.isArray(storedData.merchantOrders)
+        ? storedData.merchantOrders.map(normalizeOrder)
         : [],
-      nextOrderId: Number.isFinite(savedData.nextOrderId) ? savedData.nextOrderId : 1,
+      nextOrderId: Number.isFinite(storedData.nextOrderId) ? storedData.nextOrderId : 1,
       savedCustomerAddress: normalizeSavedAddress(
-        savedData.savedCustomerAddress,
+        storedData.savedCustomerAddress,
         defaultAppData.savedCustomerAddress,
       ),
       stores:
-        Array.isArray(savedData.stores) && savedData.stores.length > 0
-          ? savedData.stores.map(normalizeStore)
+        Array.isArray(storedData.stores) && storedData.stores.length > 0
+          ? storedData.stores.map(normalizeStore)
           : customerStores,
     }
 
-    const selectedStoreName = savedData.selectedStoreName ?? savedData.selectedStore?.name
+    const selectedStoreName = storedData.selectedStoreName ?? storedData.selectedStore?.name
     const selectedStore =
       appData.stores.find((store) => store.name === selectedStoreName) ?? appData.stores[0]
 
@@ -1038,7 +1220,51 @@ function loadAppData() {
       selectedStore,
     }
   } catch {
+    removeFromStorage(APP_DATA_STORAGE_KEY)
     return defaultAppData
+  }
+}
+
+function normalizeImportedAppData(backupData) {
+  const storedData = backupData?.appData ?? backupData
+
+  if (!storedData || !Array.isArray(storedData.stores) || storedData.stores.length === 0) {
+    return null
+  }
+
+  const stores = storedData.stores.map(normalizeStore)
+  const selectedStoreName = storedData.selectedStoreName ?? storedData.selectedStore?.name
+  const selectedStore = stores.find((store) => store.name === selectedStoreName) ?? stores[0]
+
+  return {
+    cartItems: Array.isArray(storedData.cartItems) ? storedData.cartItems : [],
+    customerInfo: normalizeCustomerInfo(storedData.customerInfo, {
+      name: "",
+      phone: "",
+      area: "",
+      landmark: "",
+      notes: "",
+    }),
+    customerOrders: Array.isArray(storedData.customerOrders)
+      ? storedData.customerOrders.map(normalizeOrder)
+      : [],
+    deliveryOrders: Array.isArray(storedData.deliveryOrders)
+      ? storedData.deliveryOrders.map(normalizeOrder)
+      : [],
+    favoriteStoreNames: Array.isArray(storedData.favoriteStoreNames)
+      ? storedData.favoriteStoreNames
+      : [],
+    merchantOrders: Array.isArray(storedData.merchantOrders)
+      ? storedData.merchantOrders.map(normalizeOrder)
+      : [],
+    nextOrderId: Number.isFinite(storedData.nextOrderId) ? storedData.nextOrderId : 1,
+    savedCustomerAddress: normalizeSavedAddress(storedData.savedCustomerAddress, {
+      area: "",
+      landmark: "",
+      notes: "",
+    }),
+    selectedStore,
+    stores,
   }
 }
 
@@ -1053,6 +1279,20 @@ function normalizeOrder(order) {
   return {
     ...order,
     createdAt: typeof order.createdAt === "string" ? order.createdAt : "",
+  }
+}
+
+function normalizeCustomerInfo(info, fallback) {
+  if (!info || typeof info !== "object") {
+    return fallback
+  }
+
+  return {
+    name: typeof info.name === "string" ? info.name : "",
+    phone: typeof info.phone === "string" ? info.phone : "",
+    area: typeof info.area === "string" ? info.area : "",
+    landmark: typeof info.landmark === "string" ? info.landmark : "",
+    notes: typeof info.notes === "string" ? info.notes : "",
   }
 }
 

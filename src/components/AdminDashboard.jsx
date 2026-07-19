@@ -40,7 +40,10 @@ export function AdminDashboard({
   commissionRate,
   deliveredOrders,
   estimatedRevenue,
+  lastSaveTime,
   onApproveStore,
+  onExportBackup,
+  onImportBackup,
   onRejectStore,
   onReviewStoreAgain,
   onResetData,
@@ -57,6 +60,7 @@ export function AdminDashboard({
   const [storeSort, setStoreSort] = useState(storeSortOptions[0])
   const [storeStatusFilter, setStoreStatusFilter] = useState(storeStatusFilters[0].value)
   const [storeRejectReasons, setStoreRejectReasons] = useState({})
+  const [dataCheck, setDataCheck] = useState(null)
   const pendingStores = stores.filter((store) => store.status === "pending")
   const rejectedStores = stores.filter((store) => store.status === "rejected")
   const approvedStores = stores.filter((store) => store.status !== "pending" && store.status !== "rejected")
@@ -413,12 +417,42 @@ export function AdminDashboard({
       <section className="admin-section danger-zone">
         <div>
           <h3>إدارة البيانات التجريبية</h3>
-          <p>استخدم هذا الزر فقط إذا تريد ترجع المتاجر والطلبات والسلة للوضع الأول.</p>
+          <p>نزّل نسخة احتياطية قبل المسح حتى تحتفظ ببيانات المتاجر والطلبات الحالية.</p>
         </div>
-        <button className="reset-data-button" onClick={confirmResetData}>
-          مسح البيانات التجريبية
-        </button>
+        <div className="data-management-actions">
+          <button className="check-data-button" onClick={checkDataHealth}>
+            فحص البيانات
+          </button>
+          <button className="backup-data-button" onClick={downloadBackup}>
+            تنزيل نسخة احتياطية
+          </button>
+          <label className="import-data-button">
+            استيراد نسخة احتياطية
+            <input accept=".json,application/json" onChange={importBackup} type="file" />
+          </label>
+          <button className="reset-data-button" onClick={confirmResetData}>
+            مسح البيانات التجريبية
+          </button>
+        </div>
+        <div className="last-save-card">
+          <span>آخر حفظ ناجح</span>
+          <strong>{formatLastSaveTime(lastSaveTime)}</strong>
+          <small>إذا تغيرت البيانات، المفروض يتحدث هذا الوقت تلقائيًا.</small>
+        </div>
         {dataMessage && <div className="admin-success-message">{dataMessage}</div>}
+        {dataCheck && (
+          <div className={`data-check-result ${dataCheck.level}`}>
+            <strong>{dataCheck.title}</strong>
+            <div className="data-check-grid">
+              {dataCheck.items.map((item) => (
+                <span key={item.label}>
+                  {item.label}: <b>{item.value}</b>
+                </span>
+              ))}
+            </div>
+            <small>{dataCheck.note}</small>
+          </div>
+        )}
       </section>
 
       <section className="admin-section" id="admin-revenue">
@@ -711,6 +745,69 @@ export function AdminDashboard({
     if (accepted) {
       onResetData()
       setDataMessage("تم مسح البيانات التجريبية ورجع التطبيق للبداية.")
+    }
+  }
+
+  function downloadBackup() {
+    onExportBackup()
+    setDataMessage("تم تجهيز ملف النسخة الاحتياطية.")
+  }
+
+  function checkDataHealth() {
+    const missingStores = stores.filter(
+      (store) => !store.name || !store.category || !store.area || !store.phone,
+    )
+    const storesWithoutProducts = stores.filter((store) => store.products.length === 0)
+    const ordersWithoutItems = allOrders.filter(
+      (order) => !Array.isArray(order.items) || order.items.length === 0,
+    )
+    const missingOrderCustomers = allOrders.filter(
+      (order) => !order.customer || !order.phone || !order.area,
+    )
+    const issueCount =
+      missingStores.length +
+      ordersWithoutItems.length +
+      missingOrderCustomers.length
+
+    setDataCheck({
+      level: issueCount > 0 ? "warning" : "good",
+      title: issueCount > 0 ? "البيانات تحتاج مراجعة" : "البيانات سليمة",
+      items: [
+        { label: "المتاجر", value: stores.length },
+        { label: "المنتجات", value: productCount },
+        { label: "الطلبات", value: allOrders.length },
+        { label: "متاجر بدون منتجات", value: storesWithoutProducts.length },
+        { label: "بيانات ناقصة", value: issueCount },
+        { label: "آخر حفظ", value: formatLastSaveTime(lastSaveTime) },
+      ],
+      note:
+        issueCount > 0
+          ? "راجع المتاجر أو الطلبات التي ناقصة بيانات قبل الاعتماد على النسخة."
+          : "الحفظ والبيانات الحالية ظاهرين بشكل جيد داخل التطبيق.",
+    })
+    setDataMessage("تم فحص البيانات الحالية.")
+  }
+
+  async function importBackup(event) {
+    const backupFile = event.target.files?.[0]
+    event.target.value = ""
+
+    if (!backupFile) {
+      return
+    }
+
+    try {
+      const backupText = await backupFile.text()
+      const backupData = JSON.parse(backupText)
+      const imported = onImportBackup(backupData)
+
+      setDataMessage(
+        imported
+          ? "تم استيراد النسخة الاحتياطية بنجاح."
+          : "هذا الملف لا يحتوي بيانات مول البصرة الصحيحة.",
+      )
+    } catch {
+      setDataMessage("تعذر قراءة ملف النسخة الاحتياطية. تأكد أنه ملف JSON صحيح.")
     }
   }
 
@@ -1158,6 +1255,17 @@ function formatOrderDate(createdAt) {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(createdAt))
+}
+
+function formatLastSaveTime(savedAt) {
+  if (!savedAt) {
+    return "لا يوجد حفظ بعد"
+  }
+
+  return new Intl.DateTimeFormat("ar-IQ", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(savedAt))
 }
 
 function formatTodayLabel() {
