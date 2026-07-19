@@ -880,6 +880,191 @@ button span {
   color: #65706b;
 }
 
+.recent-activity-card {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding: 14px;
+  border: 1px solid #c9ddd9;
+  border-radius: 14px;
+  background: #eef7f5;
+}
+
+.recent-activity-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.recent-activity-header span,
+.recent-activity-header strong,
+.recent-activity-header small {
+  display: block;
+  line-height: 1.7;
+}
+
+.recent-activity-header span,
+.recent-activity-header small,
+.recent-activity-empty {
+  color: #65706b;
+}
+
+.recent-activity-header strong {
+  color: #0c6b66;
+  font-size: 18px;
+}
+
+.recent-activity-header small {
+  border-radius: 999px;
+  background: white;
+  padding: 5px 9px;
+  font-weight: bold;
+}
+
+.recent-activity-list {
+  display: grid;
+  gap: 8px;
+}
+
+.recent-activity-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: start;
+  padding: 12px;
+  border: 1px solid #c9ddd9;
+  border-radius: 12px;
+  background: white;
+}
+
+.recent-activity-item.warning {
+  border-color: #ead5a2;
+  background: #fff9e8;
+}
+
+.recent-activity-item.info {
+  border-color: #ded8cc;
+  background: #fbfaf7;
+}
+
+.recent-activity-item strong,
+.recent-activity-item span,
+.recent-activity-item small {
+  display: block;
+  line-height: 1.7;
+}
+
+.recent-activity-item strong {
+  color: #18221f;
+}
+
+.recent-activity-item.warning strong {
+  color: #8a5d11;
+}
+
+.recent-activity-item span,
+.recent-activity-item small {
+  color: #65706b;
+}
+
+.recent-activity-empty {
+  padding: 12px;
+  border: 1px dashed #c9ddd9;
+  border-radius: 12px;
+  background: white;
+  line-height: 1.8;
+}
+
+.quick-check-card {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding: 14px;
+  border: 1px solid #ded8cc;
+  border-radius: 14px;
+  background: #fbfaf7;
+}
+
+.quick-check-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.quick-check-header span,
+.quick-check-header strong {
+  display: block;
+  line-height: 1.7;
+}
+
+.quick-check-header span {
+  color: #65706b;
+}
+
+.quick-check-header strong {
+  color: #18221f;
+  font-size: 18px;
+}
+
+.quick-check-header button {
+  min-width: 128px;
+  border-color: #0c6b66;
+  background: #0c6b66;
+  color: white;
+  text-align: center;
+  font-weight: bold;
+}
+
+.quick-check-list {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.quick-check-item {
+  padding: 12px;
+  border: 1px solid #c9ddd9;
+  border-radius: 12px;
+  background: white;
+}
+
+.quick-check-item.warning {
+  border-color: #ead5a2;
+  background: #fff9e8;
+}
+
+.quick-check-item.muted {
+  border-color: #ded8cc;
+  background: #f6f1e8;
+}
+
+.quick-check-item span,
+.quick-check-item strong,
+.quick-check-item small {
+  display: block;
+  line-height: 1.7;
+}
+
+.quick-check-item span,
+.quick-check-item small {
+  color: #65706b;
+}
+
+.quick-check-item strong {
+  color: #0c6b66;
+  font-size: 18px;
+}
+
+.quick-check-item.warning strong {
+  color: #8a5d11;
+}
+
+.quick-check-item.muted strong {
+  color: #65706b;
+}
+
 .stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -3359,6 +3544,55 @@ button span {
   font-weight: bold;
 }
 
+.sensitive-confirm-card {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 12px;
+  margin-top: 10px;
+  padding: 14px;
+  border: 1px solid #efc3b8;
+  border-radius: 14px;
+  background: #fff2ec;
+}
+
+.sensitive-confirm-card strong,
+.sensitive-confirm-card span {
+  display: block;
+  line-height: 1.8;
+}
+
+.sensitive-confirm-card strong {
+  color: #8b3a2d;
+}
+
+.sensitive-confirm-card span {
+  color: #65706b;
+}
+
+.sensitive-confirm-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.sensitive-confirm-actions button:first-child {
+  border-color: #d76b50;
+  background: #d76b50;
+  color: white;
+  font-weight: bold;
+}
+
+.sensitive-confirm-actions button:last-child {
+  border-color: #ded8cc;
+  background: white;
+  color: #65706b;
+  font-weight: bold;
+}
+
+.admin-confirm-card {
+  grid-column: 1 / -1;
+}
+
 .danger-button {
   border-color: #d76b50;
   background: #fff2ec;
@@ -4746,6 +4980,8 @@ button span {
   }
 
   .dashboard-nav-title,
+  .quick-check-header,
+  .recent-activity-header,
   .current-section-bar {
     align-items: flex-start;
     display: grid;
@@ -4773,7 +5009,12 @@ button span {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .recent-activity-item {
+    grid-template-columns: 1fr;
+  }
+
   .stats,
+  .quick-check-list,
   .customer-layout,
   .customer-start-card,
   .customer-start-stats,
@@ -4820,6 +5061,7 @@ button span {
   .driver-task-summary,
   .driver-simple-route,
   .delivery-confirm-actions,
+  .sensitive-confirm-actions,
   .delivery-route,
   .delivery-route-details,
   .route-contact-actions,

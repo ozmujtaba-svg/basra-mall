@@ -57,6 +57,7 @@ export function MerchantDashboard({
   const [productMessage, setProductMessage] = useState("")
   const [copiedOrderId, setCopiedOrderId] = useState("")
   const [rejectConfirmOrderId, setRejectConfirmOrderId] = useState("")
+  const [pendingDeleteProductName, setPendingDeleteProductName] = useState("")
   const selectedStore = stores.find((store) => store.name === selectedStoreName) ?? stores[0]
   const hasStores = stores.length > 0
   const filteredStoresByStatus = stores.filter((store) =>
@@ -96,7 +97,7 @@ export function MerchantDashboard({
     event.preventDefault()
 
     if (!storeName.trim() || !area.trim()) {
-      setMessage("اكتب اسم المتجر والمنطقة حتى نسجل المتجر.")
+      setMessage("ما نكدر نسجل المتجر بعد. اكتب اسم المتجر والمنطقة، وبعدها جرّب التسجيل.")
       return
     }
 
@@ -113,14 +114,18 @@ export function MerchantDashboard({
     setArea("")
     setCategory(storeCategories[0])
     setSelectedStoreName(storeName.trim())
-    setMessage("تم تسجيل المتجر وهو الآن قيد مراجعة الإدارة. يظهر للزبائن بعد الموافقة.")
+    setMessage(
+      "تم تسجيل المتجر وهو الآن قيد مراجعة الإدارة. بعد الموافقة يظهر للزبائن وتكدر تستقبل طلبات.",
+    )
   }
 
   function submitProduct(event) {
     event.preventDefault()
 
     if (!selectedStoreName || !productName.trim() || !productPrice.trim() || !productQuantity.trim()) {
-      setProductMessage("اختر متجر واكتب اسم المنتج والسعر والكمية.")
+      setProductMessage(
+        "بيانات المنتج ناقصة. اختار المتجر واكتب اسم المنتج والسعر والكمية حتى نكدر نحفظه.",
+      )
       return
     }
 
@@ -128,12 +133,12 @@ export function MerchantDashboard({
     const numericQuantity = Number(productQuantity)
 
     if (!Number.isFinite(numericPrice) || numericPrice <= 0) {
-      setProductMessage("اكتب السعر كرقم صحيح، مثال: 25000")
+      setProductMessage("السعر غير صحيح. اكتب رقم فقط بدون حروف، مثال: 25000")
       return
     }
 
     if (!Number.isFinite(numericQuantity) || numericQuantity < 0) {
-      setProductMessage("اكتب الكمية كرقم صحيح، مثال: 10")
+      setProductMessage("الكمية غير صحيحة. اكتب رقم صفر أو أكثر، مثال: 10")
       return
     }
 
@@ -148,13 +153,17 @@ export function MerchantDashboard({
     if (editingProductName) {
       onUpdateProduct(selectedStoreName, editingProductName, productData)
       resetProductForm()
-      setProductMessage("تم تعديل المنتج، والتغيير ظهر عند الزبون.")
+      setProductMessage(
+        "تم تعديل المنتج بنجاح. السعر والكمية والحالة تحدّثت داخل متجر الزبون.",
+      )
       return
     }
 
     onAddProduct(selectedStoreName, productData)
     resetProductForm()
-    setProductMessage("تمت إضافة المنتج، وظهر الآن داخل المتجر عند الزبون.")
+    setProductMessage(
+      "تمت إضافة المنتج بنجاح. إذا المتجر مقبول، المنتج يظهر للزبون ويكدر يضيفه للسلة.",
+    )
   }
 
   function chooseProductImage(event) {
@@ -165,7 +174,7 @@ export function MerchantDashboard({
     }
 
     if (!file.type.startsWith("image/")) {
-      setProductMessage("اختار ملف صورة فقط.")
+      setProductMessage("هذا الملف مو صورة. اختار صورة بصيغة PNG أو JPG حتى تنحفظ للمنتج.")
       return
     }
 
@@ -175,9 +184,11 @@ export function MerchantDashboard({
       try {
         const image = await resizeImage(String(reader.result))
         setProductImage(image)
-        setProductMessage("تم اختيار الصورة وتصغيرها. اضغط حفظ المنتج حتى تنحفظ.")
+        setProductMessage(
+          "تم اختيار الصورة وتصغيرها. اضغط حفظ المنتج حتى تنحفظ وتظهر ببطاقة المنتج.",
+        )
       } catch {
-        setProductMessage("ما قدرنا نجهز الصورة. جرّب صورة ثانية أو استخدم رابط صورة.")
+        setProductMessage("ما قدرنا نجهز الصورة. جرّب صورة أصغر أو استخدم رابط صورة بدل الملف.")
       }
     }
 
@@ -202,7 +213,8 @@ export function MerchantDashboard({
       resetProductForm()
     }
 
-    setProductMessage("تم حذف المنتج من المتجر.")
+    setPendingDeleteProductName("")
+    setProductMessage("تم حذف المنتج من المتجر. انشال من العرض ومن أي سلة مرتبطة بيه.")
   }
 
   function resetProductForm() {
@@ -235,7 +247,7 @@ export function MerchantDashboard({
       copyTextFallback(cleanPhone)
     }
 
-    setProductMessage(`تم نسخ رقم الزبون: ${cleanPhone}`)
+    setProductMessage(`تم نسخ رقم الزبون: ${cleanPhone}. تقدر تلصقه بالاتصال أو الرسائل.`)
   }
 
   function confirmRejectOrder(orderId) {
@@ -507,12 +519,30 @@ export function MerchantDashboard({
                     </button>
                     <button
                       className="danger-button"
-                      onClick={() => deleteProduct(product.name)}
+                      onClick={() => setPendingDeleteProductName(product.name)}
                       type="button"
                     >
                       حذف
                     </button>
                   </div>
+                  {pendingDeleteProductName === product.name && (
+                    <div className="sensitive-confirm-card">
+                      <div>
+                        <strong>تأكيد حذف {product.name}</strong>
+                        <span>
+                          إذا حذفت المنتج راح ينشال من المتجر ومن السلال المرتبطة بيه.
+                        </span>
+                      </div>
+                      <div className="sensitive-confirm-actions">
+                        <button onClick={() => deleteProduct(product.name)} type="button">
+                          نعم، احذف المنتج
+                        </button>
+                        <button onClick={() => setPendingDeleteProductName("")} type="button">
+                          تراجع
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )
             })}

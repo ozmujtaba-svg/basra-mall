@@ -61,6 +61,9 @@ export function AdminDashboard({
   const [storeStatusFilter, setStoreStatusFilter] = useState(storeStatusFilters[0].value)
   const [storeRejectReasons, setStoreRejectReasons] = useState({})
   const [dataCheck, setDataCheck] = useState(null)
+  const [pendingResetData, setPendingResetData] = useState(false)
+  const [pendingImportFile, setPendingImportFile] = useState(null)
+  const [pendingRejectStoreName, setPendingRejectStoreName] = useState("")
   const pendingStores = stores.filter((store) => store.status === "pending")
   const rejectedStores = stores.filter((store) => store.status === "rejected")
   const approvedStores = stores.filter((store) => store.status !== "pending" && store.status !== "rejected")
@@ -617,10 +620,47 @@ export function AdminDashboard({
             استيراد نسخة احتياطية
             <input accept=".json,application/json" onChange={importBackup} type="file" />
           </label>
-          <button className="reset-data-button" onClick={confirmResetData}>
+          <button className="reset-data-button" onClick={() => setPendingResetData(true)}>
             مسح البيانات التجريبية
           </button>
         </div>
+        {pendingImportFile && (
+          <div className="sensitive-confirm-card admin-confirm-card">
+            <div>
+              <strong>تأكيد استيراد النسخة الاحتياطية</strong>
+              <span>
+                الملف المختار: {pendingImportFile.name}. الاستيراد راح يستبدل البيانات الحالية
+                ببيانات الملف.
+              </span>
+            </div>
+            <div className="sensitive-confirm-actions">
+              <button onClick={confirmImportBackup} type="button">
+                نعم، استورد الملف
+              </button>
+              <button onClick={() => setPendingImportFile(null)} type="button">
+                تراجع
+              </button>
+            </div>
+          </div>
+        )}
+        {pendingResetData && (
+          <div className="sensitive-confirm-card admin-confirm-card">
+            <div>
+              <strong>تأكيد مسح البيانات التجريبية</strong>
+              <span>
+                راح ترجع المتاجر والطلبات والسلة للبداية. نزّل نسخة احتياطية إذا تحتاجها.
+              </span>
+            </div>
+            <div className="sensitive-confirm-actions">
+              <button onClick={confirmResetData} type="button">
+                نعم، امسح البيانات
+              </button>
+              <button onClick={() => setPendingResetData(false)} type="button">
+                تراجع
+              </button>
+            </div>
+          </div>
+        )}
         <div className="last-save-card">
           <span>آخر حفظ ناجح</span>
           <strong>{formatLastSaveTime(lastSaveTime)}</strong>
@@ -783,9 +823,30 @@ export function AdminDashboard({
                       <button className="approve-button" onClick={() => onApproveStore(store.name)}>
                         موافقة
                       </button>
-                      <button className="reject-button" onClick={() => rejectStoreWithReason(store.name)}>
+                      <button
+                        className="reject-button"
+                        onClick={() => setPendingRejectStoreName(store.name)}
+                      >
                         رفض
                       </button>
+                      {pendingRejectStoreName === store.name && (
+                        <div className="sensitive-confirm-card">
+                          <div>
+                            <strong>تأكيد رفض متجر {store.name}</strong>
+                            <span>
+                              راح ينحفظ سبب الرفض وينشال المتجر من واجهة الزبائن.
+                            </span>
+                          </div>
+                          <div className="sensitive-confirm-actions">
+                            <button onClick={() => rejectStoreWithReason(store.name)} type="button">
+                              نعم، ارفض المتجر
+                            </button>
+                            <button onClick={() => setPendingRejectStoreName("")} type="button">
+                              تراجع
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ) : store.status === "rejected" ? (
                     <div className="rejected-store-actions">
@@ -927,19 +988,16 @@ export function AdminDashboard({
   }
 
   function confirmResetData() {
-    const accepted = window.confirm(
-      "متأكد تريد تمسح البيانات التجريبية؟ راح ترجع المتاجر والطلبات والسلة للبداية.",
+    onResetData()
+    setPendingResetData(false)
+    setDataMessage(
+      "تم مسح البيانات التجريبية ورجع التطبيق للبداية. تقدر تبدأ اختبار جديد ببيانات نظيفة.",
     )
-
-    if (accepted) {
-      onResetData()
-      setDataMessage("تم مسح البيانات التجريبية ورجع التطبيق للبداية.")
-    }
   }
 
   function downloadBackup() {
     onExportBackup()
-    setDataMessage("تم تجهيز ملف النسخة الاحتياطية.")
+    setDataMessage("تم تجهيز ملف النسخة الاحتياطية. احتفظ بيه حتى ترجع البيانات لاحقًا.")
   }
 
   function checkDataHealth() {
@@ -974,7 +1032,7 @@ export function AdminDashboard({
           ? "راجع المتاجر أو الطلبات التي ناقصة بيانات قبل الاعتماد على النسخة."
           : "الحفظ والبيانات الحالية ظاهرين بشكل جيد داخل التطبيق.",
     })
-    setDataMessage("تم فحص البيانات الحالية.")
+    setDataMessage("تم فحص البيانات الحالية. راجع نتيجة الفحص حتى تعرف إذا أكو نقص.")
   }
 
   async function importBackup(event) {
@@ -985,18 +1043,28 @@ export function AdminDashboard({
       return
     }
 
+    setPendingImportFile(backupFile)
+  }
+
+  async function confirmImportBackup() {
+    if (!pendingImportFile) {
+      return
+    }
+
     try {
-      const backupText = await backupFile.text()
+      const backupText = await pendingImportFile.text()
       const backupData = JSON.parse(backupText)
       const imported = onImportBackup(backupData)
 
       setDataMessage(
         imported
-          ? "تم استيراد النسخة الاحتياطية بنجاح."
-          : "هذا الملف لا يحتوي بيانات مول البصرة الصحيحة.",
+          ? "تم استيراد النسخة الاحتياطية بنجاح. راجع المتاجر والطلبات قبل تكمل الشغل."
+          : "ما قدرنا نستورد هذا الملف. اختار ملف نسخة احتياطية صادر من نفس التطبيق.",
       )
     } catch {
-      setDataMessage("تعذر قراءة ملف النسخة الاحتياطية. تأكد أنه ملف JSON صحيح.")
+      setDataMessage("تعذر قراءة ملف النسخة الاحتياطية. تأكد أن الملف بصيغة JSON وما متغيّر يدويًا.")
+    } finally {
+      setPendingImportFile(null)
     }
   }
 
@@ -1034,6 +1102,7 @@ export function AdminDashboard({
     const reason = (storeRejectReasons[storeName] ?? rejectionReasons[0]).trim()
 
     onRejectStore(storeName, reason || "بيانات المتجر تحتاج توضيح أكثر.")
+    setPendingRejectStoreName("")
     setStoreStatusFilter("rejected")
   }
 
@@ -1044,7 +1113,7 @@ export function AdminDashboard({
 
   function exportOrders() {
     if (filteredOrders.length === 0) {
-      setDataMessage("ماكو طلبات مطابقة حتى نصدرها.")
+      setDataMessage("ماكو طلبات مطابقة حتى نصدرها. غيّر البحث أو الفلتر وبعدها جرّب التصدير.")
       return
     }
 
@@ -1085,7 +1154,7 @@ export function AdminDashboard({
     link.download = "basra-mall-visible-orders.csv"
     link.click()
     URL.revokeObjectURL(url)
-    setDataMessage("تم تجهيز ملف النتائج الظاهرة.")
+    setDataMessage("تم تجهيز ملف النتائج الظاهرة حسب البحث والفلتر الحالي.")
   }
 }
 

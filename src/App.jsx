@@ -182,25 +182,37 @@ function App() {
     setNotificationHistory((history) => [notification, ...history].slice(0, 6))
     notificationTimer.current = setTimeout(() => {
       setAppNotification(null)
-    }, 3600)
+    }, 5200)
   }
 
   function enterDashboard() {
     if (!loginInfo.name.trim() || !loginInfo.phone.trim()) {
-      setLoginMessage("اكتب الاسم ورقم الهاتف حتى تدخل للتطبيق.")
-      showNotification("اكتب الاسم ورقم الهاتف حتى تدخل للتطبيق.", "warning", accountType)
+      setLoginMessage("ما نكدر ندخلك بعد. اكتب الاسم ورقم الهاتف، وبعدها اضغط دخول.")
+      showNotification(
+        "ما نكدر ندخلك بعد. اكتب الاسم ورقم الهاتف، وبعدها اضغط دخول.",
+        "warning",
+        accountType,
+      )
       return
     }
 
     if (!isValidIraqiPhone(loginInfo.phone)) {
-      setLoginMessage("رقم الهاتف لازم يبدأ بـ 07 ويتكون من 11 رقم.")
-      showNotification("رقم الهاتف لازم يبدأ بـ 07 ويتكون من 11 رقم.", "warning", accountType)
+      setLoginMessage("رقم الهاتف غير صحيح. لازم يبدأ بـ 07 ويكون 11 رقم، مثل 07XXXXXXXXX.")
+      showNotification(
+        "رقم الهاتف غير صحيح. لازم يبدأ بـ 07 ويكون 11 رقم، مثل 07XXXXXXXXX.",
+        "warning",
+        accountType,
+      )
       return
     }
 
     if (accountType === "الإدارة" && loginInfo.adminCode.trim() !== "1234") {
-      setLoginMessage("رمز الإدارة غير صحيح.")
-      showNotification("رمز الإدارة غير صحيح.", "warning", "الإدارة")
+      setLoginMessage("رمز الإدارة غير صحيح. تأكد من الرمز التجريبي ثم حاول مرة ثانية.")
+      showNotification(
+        "رمز الإدارة غير صحيح. تأكد من الرمز التجريبي ثم حاول مرة ثانية.",
+        "warning",
+        "الإدارة",
+      )
       return
     }
 
@@ -225,7 +237,9 @@ function App() {
     })
     setLoginMessage("")
     setCurrentView("dashboard")
-    showNotification(`أهلًا ${loginInfo.name.trim()}، تم تسجيل الدخول كـ ${accountType}.`)
+    showNotification(
+      `تم تسجيل الدخول بنجاح كـ ${accountType}. هسه تقدر تستخدم واجهتك الخاصة بدون خلط حسابات.`,
+    )
   }
 
   function chooseAccountType(type) {
@@ -257,7 +271,11 @@ function App() {
     })
     setLoginMessage("تم مسح الحساب المحفوظ. اختار حساب جديد وسجل دخول.")
     setCurrentView("login")
-    showNotification("تم مسح الحساب المحفوظ.", "info", "النظام")
+    showNotification(
+      "تم مسح الحساب المحفوظ. اختار نوع الحساب واكتب الاسم والرقم حتى تبدأ جلسة جديدة.",
+      "info",
+      "النظام",
+    )
   }
 
   function resetDemoData() {
@@ -286,7 +304,11 @@ function App() {
     })
     setOrderMessage("")
     setLastSaveTime("")
-    showNotification("تم مسح البيانات التجريبية ورجع التطبيق للبداية.", "warning", "الإدارة")
+    showNotification(
+      "تم مسح البيانات التجريبية ورجع التطبيق للبداية. تقدر تدخل بيانات جديدة للاختبار.",
+      "warning",
+      "الإدارة",
+    )
   }
 
   function exportDataBackup() {
@@ -320,7 +342,11 @@ function App() {
     link.download = `basra-mall-backup-${formatBackupDate(new Date())}.json`
     link.click()
     URL.revokeObjectURL(url)
-    showNotification("تم تجهيز نسخة احتياطية للبيانات.", "success", "الإدارة")
+    showNotification(
+      "تم تجهيز نسخة احتياطية للبيانات. احتفظ بالملف حتى تقدر ترجع البيانات لاحقًا.",
+      "success",
+      "الإدارة",
+    )
   }
 
   function importDataBackup(backupData) {
@@ -359,7 +385,11 @@ function App() {
 
     setStorageMessage("")
     setLastSaveTime(new Date().toISOString())
-    showNotification("تم استيراد النسخة الاحتياطية بنجاح.", "success", "الإدارة")
+    showNotification(
+      "تم استيراد النسخة الاحتياطية بنجاح. راجع المتاجر والطلبات حتى تتأكد من البيانات.",
+      "success",
+      "الإدارة",
+    )
     return true
   }
 
@@ -376,26 +406,44 @@ function App() {
     const cartQuantity = currentCartItem?.quantity ?? 0
 
     if (productStatus === "مخفي مؤقتًا") {
-      setOrderMessage("هذا المنتج مخفي مؤقتًا من صاحب المتجر.")
-      showNotification("هذا المنتج مخفي مؤقتًا من صاحب المتجر.", "warning", "زبون")
+      setOrderMessage("ما نكدر نضيف هذا المنتج. صاحب المتجر مخفيه مؤقتًا، اختار منتج ثاني.")
+      showNotification(
+        "ما نكدر نضيف هذا المنتج. صاحب المتجر مخفيه مؤقتًا، اختار منتج ثاني.",
+        "warning",
+        "زبون",
+      )
       return
     }
 
     if (productStatus === "نفد") {
-      setOrderMessage("هذا المنتج حالته نفد وما يكدر الزبون يطلبه.")
-      showNotification("هذا المنتج نافد حاليًا.", "warning", "زبون")
+      setOrderMessage("هذا المنتج نافد حاليًا. اختار منتج ثاني أو ارجع له بعد تحديث الكمية.")
+      showNotification(
+        "هذا المنتج نافد حاليًا. اختار منتج ثاني أو ارجع له بعد تحديث الكمية.",
+        "warning",
+        "زبون",
+      )
       return
     }
 
     if (Number.isFinite(availableQuantity) && availableQuantity <= 0) {
-      setOrderMessage("هذا المنتج نفد من المخزون وما يكدر الزبون يطلبه.")
-      showNotification("هذا المنتج نفد من المخزون.", "warning", "زبون")
+      setOrderMessage("ماكو كمية متوفرة من هذا المنتج. اختار منتج ثاني من نفس المتجر.")
+      showNotification(
+        "ماكو كمية متوفرة من هذا المنتج. اختار منتج ثاني من نفس المتجر.",
+        "warning",
+        "زبون",
+      )
       return
     }
 
     if (Number.isFinite(availableQuantity) && cartQuantity >= availableQuantity) {
-      setOrderMessage(`المتوفر من ${product.name} هو ${availableQuantity} فقط.`)
-      showNotification(`المتوفر من ${product.name} هو ${availableQuantity} فقط.`, "warning", "زبون")
+      setOrderMessage(
+        `ما نكدر نزيد الكمية. المتوفر من ${product.name} هو ${availableQuantity} فقط.`,
+      )
+      showNotification(
+        `ما نكدر نزيد الكمية. المتوفر من ${product.name} هو ${availableQuantity} فقط.`,
+        "warning",
+        "زبون",
+      )
       return
     }
 
@@ -415,7 +463,11 @@ function App() {
       return [...items, { ...product, store: storeName, quantity: 1 }]
     })
     setOrderMessage("")
-    showNotification(`تمت إضافة ${product.name} إلى السلة.`, "success", "زبون")
+    showNotification(
+      `تمت إضافة ${product.name} إلى السلة. كمل تسوق أو افتح السلة حتى تؤكد الطلب.`,
+      "success",
+      "زبون",
+    )
   }
 
   function toggleFavoriteStore(storeName) {
@@ -428,7 +480,7 @@ function App() {
 
   function saveCustomerAddress() {
     if (!customerInfo.area.trim() || !customerInfo.landmark.trim()) {
-      setOrderMessage("اكتب المنطقة وأقرب نقطة دلالة حتى نحفظ العنوان.")
+      setOrderMessage("العنوان ناقص. اكتب المنطقة وأقرب نقطة دلالة حتى نكدر نحفظه.")
       return
     }
 
@@ -438,12 +490,16 @@ function App() {
       notes: customerInfo.notes.trim(),
     })
     setOrderMessage("تم حفظ العنوان. تكدر تستخدمه بالطلبات الجاية.")
-    showNotification("تم حفظ عنوان الزبون.", "success", "زبون")
+    showNotification(
+      "تم حفظ عنوان الزبون. تقدر تستخدمه بسرعة بالطلبات الجاية بدون إعادة كتابة.",
+      "success",
+      "زبون",
+    )
   }
 
   function useSavedCustomerAddress() {
     if (!savedCustomerAddress.area.trim()) {
-      setOrderMessage("ماكو عنوان محفوظ بعد.")
+      setOrderMessage("ماكو عنوان محفوظ بعد. اكتب العنوان أول مرة واضغط حفظ العنوان.")
       return
     }
 
@@ -454,7 +510,11 @@ function App() {
       notes: savedCustomerAddress.notes || info.notes,
     }))
     setOrderMessage("تم استخدام العنوان المحفوظ.")
-    showNotification("تم استخدام العنوان المحفوظ.", "success", "زبون")
+    showNotification(
+      "تم استخدام العنوان المحفوظ. راجع تفاصيل الطلب وبعدها اضغط إرسال الطلب.",
+      "success",
+      "زبون",
+    )
   }
 
   function increaseCartItem(itemToUpdate) {
@@ -465,12 +525,14 @@ function App() {
     const productStatus = stockItem?.status ?? "متوفر"
 
     if (productStatus === "مخفي مؤقتًا" || productStatus === "نفد") {
-      setOrderMessage("هذا المنتج غير متاح للزيادة حاليًا.")
+      setOrderMessage("ما نكدر نزيد هذا المنتج لأنه غير متاح حاليًا. قلل الكمية أو احذفه.")
       return
     }
 
     if (Number.isFinite(availableQuantity) && itemToUpdate.quantity >= availableQuantity) {
-      setOrderMessage(`المتوفر من ${itemToUpdate.name} هو ${availableQuantity} فقط.`)
+      setOrderMessage(
+        `وصلت للحد المتوفر. كمية ${itemToUpdate.name} المتاحة هي ${availableQuantity} فقط.`,
+      )
       return
     }
 
@@ -534,7 +596,9 @@ function App() {
     })
 
     if (itemsToAdd.length === 0) {
-      setOrderMessage("ما قدرنا نعيد الطلب لأن المنتجات غير متوفرة حاليًا.")
+      setOrderMessage(
+        "ما قدرنا نعيد الطلب. كل المنتجات المطلوبة غير متوفرة أو كميتها ناقصة حاليًا.",
+      )
       return
     }
 
@@ -569,14 +633,24 @@ function App() {
 
   function sendOrder(paymentMethod = "الدفع عند الاستلام") {
     if (cartItems.length === 0) {
-      setOrderMessage("السلة فارغة. أضف منتج أولًا حتى ترسل طلب.")
-      showNotification("السلة فارغة. أضف منتج أولًا.", "warning", "زبون")
+      setOrderMessage("السلة فارغة. أضف منتج واحد على الأقل، وبعدها ارجع لتأكيد الطلب.")
+      showNotification(
+        "السلة فارغة. أضف منتج واحد على الأقل، وبعدها ارجع لتأكيد الطلب.",
+        "warning",
+        "زبون",
+      )
       return
     }
 
     if (!customerInfo.name.trim() || !customerInfo.phone.trim() || !customerInfo.area.trim()) {
-      setOrderMessage("اكتب اسم الزبون ورقم الهاتف والمنطقة قبل تأكيد الطلب.")
-      showNotification("اكتب اسم الزبون ورقم الهاتف والمنطقة.", "warning", "زبون")
+      setOrderMessage(
+        "بيانات الطلب ناقصة. اكتب اسم الزبون ورقم الهاتف والمنطقة حتى نكدر نرسل الطلب.",
+      )
+      showNotification(
+        "بيانات الطلب ناقصة. اكتب اسم الزبون ورقم الهاتف والمنطقة حتى نكدر نرسل الطلب.",
+        "warning",
+        "زبون",
+      )
       return
     }
 
@@ -595,8 +669,14 @@ function App() {
     })
 
     if (invalidItem) {
-      setOrderMessage(`المنتج ${invalidItem.name} غير متاح أو كميته بالسلة أكبر من المخزون.`)
-      showNotification(`المنتج ${invalidItem.name} غير متاح أو كميته أكبر من المخزون.`, "warning", "زبون")
+      setOrderMessage(
+        `ما نكدر نرسل الطلب. المنتج ${invalidItem.name} غير متاح أو كميته بالسلة أكبر من المخزون.`,
+      )
+      showNotification(
+        `ما نكدر نرسل الطلب. عدّل كمية ${invalidItem.name} أو احذفه من السلة.`,
+        "warning",
+        "زبون",
+      )
       return
     }
 
@@ -667,7 +747,11 @@ function App() {
     setOrderMessage(
       `تم إرسال طلبك بنجاح. ${orderLabel}: ${orderNumbers}. احفظ الرقم حتى تتابع الطلب.`,
     )
-    showNotification(`تم إرسال الطلب بنجاح. ${orderLabel}: ${orderNumbers}.`, "success", "زبون")
+    showNotification(
+      `تم إرسال الطلب بنجاح. ${orderLabel}: ${orderNumbers}. راح يظهر لصاحب المتجر حتى يبدأ التجهيز.`,
+      "success",
+      "زبون",
+    )
   }
 
   function updateMerchantOrderStatus(orderId, status) {
@@ -677,7 +761,11 @@ function App() {
     setMerchantOrders((orders) =>
       orders.map((order) => (order.id === orderId ? { ...order, status } : order)),
     )
-    showNotification(`تم تحديث طلب رقم ${orderId} إلى: ${status}.`, "success", "صاحب متجر")
+    showNotification(
+      `تم تحديث طلب رقم ${orderId} إلى: ${status}. الزبون راح يشوف الحالة الجديدة مباشرة.`,
+      "success",
+      "صاحب متجر",
+    )
   }
 
   function prepareOrder(orderId) {
@@ -703,7 +791,11 @@ function App() {
 
       return [preparedOrder, ...orders]
     })
-    showNotification(`طلب رقم ${orderId} صار جاهز للتوصيل.`, "success", "صاحب متجر")
+    showNotification(
+      `طلب رقم ${orderId} صار جاهز للتوصيل. هسه راح ينتقل لقائمة مهام السائق.`,
+      "success",
+      "صاحب متجر",
+    )
   }
 
   function updateDeliveryStatus(orderId, status) {
@@ -716,7 +808,11 @@ function App() {
     setDeliveryOrders((orders) =>
       orders.map((order) => (order.id === orderId ? { ...order, status } : order)),
     )
-    showNotification(`تم تحديث توصيل طلب رقم ${orderId} إلى: ${status}.`, "success", "سائق")
+    showNotification(
+      `تم تحديث توصيل طلب رقم ${orderId} إلى: ${status}. الإدارة والزبون يشوفون التحديث بنفس الوقت.`,
+      "success",
+      "سائق",
+    )
   }
 
   function updateOrderNote(orderId, internalNote) {
@@ -778,7 +874,11 @@ function App() {
       orders.map((order) => (order.id === orderId ? canceledOrder : order)),
     )
     setDeliveryOrders((orders) => orders.filter((order) => order.id !== orderId))
-    showNotification(`تم إلغاء طلب رقم ${orderId}.`, "warning", accountType)
+    showNotification(
+      `تم إلغاء طلب رقم ${orderId}. رجعت الكمية للمخزون وما عاد يظهر كطلب نشط.`,
+      "warning",
+      accountType,
+    )
   }
 
   function registerStore(store) {
@@ -793,7 +893,11 @@ function App() {
     }
 
     setStores((currentStores) => [newStore, ...currentStores])
-    showNotification(`تم تسجيل متجر ${newStore.name} وينتظر موافقة الإدارة.`, "success", "صاحب متجر")
+    showNotification(
+      `تم تسجيل متجر ${newStore.name}. الطلب صار عند الإدارة وبانتظار الموافقة حتى يظهر للزبائن.`,
+      "success",
+      "صاحب متجر",
+    )
   }
 
   function approveStore(storeName) {
@@ -802,7 +906,11 @@ function App() {
         store.name === storeName ? { ...store, rejectionReason: "", status: "approved" } : store,
       ),
     )
-    showNotification(`تمت الموافقة على متجر ${storeName}.`, "success", "الإدارة")
+    showNotification(
+      `تمت الموافقة على متجر ${storeName}. صار ظاهر للزبائن ويكدر يستقبل طلبات.`,
+      "success",
+      "الإدارة",
+    )
   }
 
   function rejectStore(storeName, reason = "بيانات المتجر تحتاج توضيح أكثر.") {
@@ -811,7 +919,11 @@ function App() {
         store.name === storeName ? { ...store, rejectionReason: reason, status: "rejected" } : store,
       ),
     )
-    showNotification(`تم رفض متجر ${storeName}.`, "warning", "الإدارة")
+    showNotification(
+      `تم رفض متجر ${storeName}. سبب الرفض محفوظ حتى يعرف صاحب المتجر شنو يحتاج يعدل.`,
+      "warning",
+      "الإدارة",
+    )
   }
 
   function reviewStoreAgain(storeName) {
@@ -820,14 +932,22 @@ function App() {
         store.name === storeName ? { ...store, status: "pending" } : store,
       ),
     )
-    showNotification(`رجع متجر ${storeName} للمراجعة.`, "success", "الإدارة")
+    showNotification(
+      `رجع متجر ${storeName} للمراجعة. راح يبقى مخفي عن الزبائن لحد قرار الإدارة الجديد.`,
+      "success",
+      "الإدارة",
+    )
   }
 
   function updatePlatformSettings(nextSettings) {
     setPlatformSettings((currentSettings) =>
       typeof nextSettings === "function" ? nextSettings(currentSettings) : nextSettings,
     )
-    showNotification("تم تحديث إعدادات العمولة والتوصيل.", "success", "الإدارة")
+    showNotification(
+      "تم تحديث إعدادات العمولة والتوصيل. الحسابات الجديدة راح تعتمد هذه القيم فورًا.",
+      "success",
+      "الإدارة",
+    )
   }
 
   function addProductToStore(storeName, product) {
@@ -854,7 +974,11 @@ function App() {
         products: [...store.products, newProduct],
       }))
     }
-    showNotification(`تمت إضافة منتج ${newProduct.name} إلى ${storeName}.`, "success", "صاحب متجر")
+    showNotification(
+      `تمت إضافة منتج ${newProduct.name} إلى ${storeName}. إذا المتجر مقبول، المنتج يظهر للزبائن.`,
+      "success",
+      "صاحب متجر",
+    )
   }
 
   function updateProductInStore(storeName, oldProductName, product) {
@@ -903,7 +1027,11 @@ function App() {
             : item,
         ),
     )
-    showNotification(`تم تعديل منتج ${updatedProduct.name}.`, "success", "صاحب متجر")
+    showNotification(
+      `تم تعديل منتج ${updatedProduct.name}. السعر والكمية والحالة تحدّثت بواجهة الزبون.`,
+      "success",
+      "صاحب متجر",
+    )
   }
 
   function deleteProductFromStore(storeName, productName) {
@@ -928,7 +1056,11 @@ function App() {
     setCartItems((items) =>
       items.filter((item) => item.store !== storeName || item.name !== productName),
     )
-    showNotification(`تم حذف منتج ${productName}.`, "warning", "صاحب متجر")
+    showNotification(
+      `تم حذف منتج ${productName}. انشال من المتجر ومن أي سلة مرتبطة بيه.`,
+      "warning",
+      "صاحب متجر",
+    )
   }
 
   return (

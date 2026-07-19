@@ -28,12 +28,20 @@ export function Shell({
     navItems[0]?.label ?? "لوحة البداية",
   )
   const [showNotificationCenter, setShowNotificationCenter] = useState(false)
+  const [showQuickCheck, setShowQuickCheck] = useState(false)
   const [notificationFilter, setNotificationFilter] = useState(notificationFilters[0].value)
   const [pendingSessionAction, setPendingSessionAction] = useState("")
   const unreadNotifications = notifications.filter((item) => !item.read).length
   const filteredNotifications = notifications.filter((item) =>
     matchesNotificationFilter(item, notificationFilter),
   )
+  const recentActivity = notifications.slice(0, 4)
+  const quickCheckItems = getQuickCheckItems({
+    notifications,
+    recentActivity,
+    stats,
+    storageMessage,
+  })
 
   function goToSection(item) {
     setActiveSectionLabel(item.label)
@@ -257,6 +265,56 @@ export function Shell({
           )}
         </div>
 
+        <div className="recent-activity-card">
+          <div className="recent-activity-header">
+            <div>
+              <span>سجل آخر العمليات</span>
+              <strong>آخر تغييرات صارت بهذه الجلسة</strong>
+            </div>
+            <small>{recentActivity.length} عمليات</small>
+          </div>
+          {recentActivity.length === 0 ? (
+            <div className="recent-activity-empty">
+              بعد ماكو عمليات مسجلة. أي طلب، تعديل، أو تنبيه راح يظهر هنا.
+            </div>
+          ) : (
+            <div className="recent-activity-list">
+              {recentActivity.map((item) => (
+                <div className={`recent-activity-item ${item.type}`} key={item.id}>
+                  <div>
+                    <strong>{getNotificationTitle(item.type)}</strong>
+                    <span>{item.message}</span>
+                  </div>
+                  <small>{formatNotificationTime(item.time)}</small>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="quick-check-card">
+          <div className="quick-check-header">
+            <div>
+              <span>فحص سريع</span>
+              <strong>تأكد من وضع اللوحة خلال لحظة</strong>
+            </div>
+            <button onClick={() => setShowQuickCheck((isVisible) => !isVisible)} type="button">
+              {showQuickCheck ? "إخفاء الفحص" : "تشغيل الفحص"}
+            </button>
+          </div>
+          {showQuickCheck && (
+            <div className="quick-check-list">
+              {quickCheckItems.map((item) => (
+                <div className={`quick-check-item ${item.status}`} key={item.label}>
+                  <span>{item.label}</span>
+                  <strong>{item.value}</strong>
+                  <small>{item.note}</small>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div className="stats">
           {stats.map((item) => (
             <div className="stat" key={item.label}>
@@ -296,6 +354,44 @@ function getNotificationTitle(type) {
   }
 
   return "تم بنجاح"
+}
+
+function getQuickCheckItems({ notifications, recentActivity, stats, storageMessage }) {
+  const hasStats = stats.some((item) => Number(item.value) > 0 || String(item.value).trim() !== "0")
+  const warningCount = notifications.filter((item) => item.type === "warning").length
+
+  return [
+    {
+      label: "حفظ البيانات",
+      note: storageMessage || "ماكو مشكلة حفظ ظاهرة حاليًا.",
+      status: storageMessage ? "warning" : "good",
+      value: storageMessage ? "يحتاج انتباه" : "مستقر",
+    },
+    {
+      label: "الإشعارات",
+      note:
+        warningCount > 0
+          ? "راجع التنبيهات حتى تعرف آخر المشاكل أو التحذيرات."
+          : "ماكو تنبيهات خطرة ضمن إشعارات هذه اللوحة.",
+      status: warningCount > 0 ? "warning" : "good",
+      value: `${notifications.length} محفوظة`,
+    },
+    {
+      label: "آخر العمليات",
+      note:
+        recentActivity.length > 0
+          ? "السجل يحتوي آخر تغييرات صارت بهذا الحساب."
+          : "بعد ماكو عمليات مسجلة بهذه الجلسة.",
+      status: recentActivity.length > 0 ? "good" : "muted",
+      value: `${recentActivity.length} ظاهرة`,
+    },
+    {
+      label: "بيانات اللوحة",
+      note: hasStats ? "الأرقام الأساسية ظاهرة وتقدر تراجع التفاصيل تحت." : "ابدأ بإضافة بيانات حتى تظهر أرقام اللوحة.",
+      status: hasStats ? "good" : "muted",
+      value: hasStats ? "موجودة" : "فارغة",
+    },
+  ]
 }
 
 function getSessionScopeTitle(accountType) {

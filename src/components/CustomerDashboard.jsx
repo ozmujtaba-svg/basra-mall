@@ -40,6 +40,7 @@ export function CustomerDashboard({
   const [paymentMethod, setPaymentMethod] = useState(paymentMethods[0])
   const [trackingSearch, setTrackingSearch] = useState("")
   const [copiedOrderId, setCopiedOrderId] = useState("")
+  const [pendingCancelOrderId, setPendingCancelOrderId] = useState("")
   const safeSelectedStore = selectedStore ?? stores[0] ?? {
     category: "",
     description: "لا يوجد متجر متاح حاليًا.",
@@ -556,9 +557,32 @@ export function CustomerDashboard({
               </div>
               {order.status === "ملغي" && <div className="canceled-order-note">تم إلغاء الطلب</div>}
               {order.status === "طلب جديد" && (
-                <button className="danger-action-button" onClick={() => onCancelOrder(order.id)}>
-                  إلغاء الطلب
-                </button>
+                <>
+                  <button
+                    className="danger-action-button"
+                    onClick={() => setPendingCancelOrderId(String(order.id))}
+                  >
+                    إلغاء الطلب
+                  </button>
+                  {pendingCancelOrderId === String(order.id) && (
+                    <div className="sensitive-confirm-card">
+                      <div>
+                        <strong>تأكيد إلغاء الطلب رقم {order.id}</strong>
+                        <span>
+                          إذا ألغيت الطلب راح يرجع المخزون للمتجر وينشال من الطلبات النشطة.
+                        </span>
+                      </div>
+                      <div className="sensitive-confirm-actions">
+                        <button onClick={() => confirmCancelOrder(order.id)} type="button">
+                          نعم، ألغي الطلب
+                        </button>
+                        <button onClick={() => setPendingCancelOrderId("")} type="button">
+                          تراجع
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
               <button className="reorder-button" onClick={() => onReorder(order)}>
                 إعادة الطلب
@@ -604,6 +628,11 @@ export function CustomerDashboard({
   function confirmSendOrder() {
     onSendOrder(paymentMethod)
     setShowOrderReview(false)
+  }
+
+  function confirmCancelOrder(orderId) {
+    onCancelOrder(orderId)
+    setPendingCancelOrderId("")
   }
 
   async function copyOrderNumber(orderId) {
