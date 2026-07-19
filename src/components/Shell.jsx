@@ -1,11 +1,24 @@
 import { useState } from "react"
 
+const notificationFilters = [
+  { label: "الكل", value: "all" },
+  { label: "جديد", value: "unread" },
+  { label: "تنبيه", value: "warning" },
+  { label: "نجاح", value: "success" },
+  { label: "معلومة", value: "info" },
+]
+
 export function Shell({
   children,
   dashboard,
   navItems = [],
+  notification,
+  notifications = [],
   onBack,
+  onClearNotifications,
+  onDismissNotification,
   onForgetAccount,
+  onReadNotifications,
   stats,
   storageMessage,
   user,
@@ -14,10 +27,28 @@ export function Shell({
   const [activeSectionLabel, setActiveSectionLabel] = useState(
     navItems[0]?.label ?? "لوحة البداية",
   )
+  const [showNotificationCenter, setShowNotificationCenter] = useState(false)
+  const [notificationFilter, setNotificationFilter] = useState(notificationFilters[0].value)
+  const unreadNotifications = notifications.filter((item) => !item.read).length
+  const filteredNotifications = notifications.filter((item) =>
+    matchesNotificationFilter(item, notificationFilter),
+  )
 
   function goToSection(item) {
     setActiveSectionLabel(item.label)
     scrollToDashboardSection(item.targetId)
+  }
+
+  function toggleNotificationCenter() {
+    setShowNotificationCenter((isVisible) => {
+      const nextVisible = !isVisible
+
+      if (nextVisible) {
+        onReadNotifications()
+      }
+
+      return nextVisible
+    })
   }
 
   return (
@@ -86,6 +117,90 @@ export function Shell({
           </div>
         )}
 
+        {notification && (
+          <div className={`app-notification ${notification.type}`}>
+            <div>
+              <div className="app-notification-title">
+                <strong>{getNotificationTitle(notification.type)}</strong>
+                <b>{notification.audience ?? user.accountType}</b>
+              </div>
+              <span>{notification.message}</span>
+            </div>
+            <button onClick={onDismissNotification} type="button">
+              إغلاق
+            </button>
+          </div>
+        )}
+
+        <div className="notification-center">
+          <div className="notification-center-top">
+            <div>
+              <span>مركز الإشعارات</span>
+              <strong>
+                {notifications.length} إشعارات محفوظة لـ {user.accountType}
+              </strong>
+              {unreadNotifications > 0 && (
+                <small>{unreadNotifications} جديد غير مقروء</small>
+              )}
+            </div>
+            <div className="notification-center-actions">
+              <button
+                className={unreadNotifications > 0 ? "has-unread" : ""}
+                onClick={toggleNotificationCenter}
+                type="button"
+              >
+                {showNotificationCenter ? "إخفاء" : "عرض"}
+              </button>
+              <button
+                disabled={notifications.length === 0}
+                onClick={onClearNotifications}
+                type="button"
+              >
+                مسح
+              </button>
+            </div>
+          </div>
+
+          {showNotificationCenter && (
+            <div className="notification-history">
+              <div className="notification-filter">
+                {notificationFilters.map((filter) => (
+                  <button
+                    className={notificationFilter === filter.value ? "active" : ""}
+                    key={filter.value}
+                    onClick={() => setNotificationFilter(filter.value)}
+                    type="button"
+                  >
+                    {filter.label}
+                  </button>
+                ))}
+              </div>
+              {notifications.length === 0 ? (
+                <div className="notification-empty">ماكو إشعارات محفوظة حاليًا.</div>
+              ) : filteredNotifications.length === 0 ? (
+                <div className="notification-empty">ماكو إشعارات مطابقة لهذا الفلتر.</div>
+              ) : (
+                filteredNotifications.map((item) => (
+                  <div
+                    className={`notification-history-item ${item.type} ${item.read ? "read" : "unread"}`}
+                    key={item.id}
+                  >
+                    <div className="notification-history-title">
+                      <strong>{getNotificationTitle(item.type)}</strong>
+                      <div className="notification-history-badges">
+                        {!item.read && <em>جديد</em>}
+                        <b>{item.audience ?? user.accountType}</b>
+                      </div>
+                    </div>
+                    <span>{item.message}</span>
+                    <small>{formatNotificationTime(item.time)}</small>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+
         <div className="stats">
           {stats.map((item) => (
             <div className="stat" key={item.label}>
@@ -113,6 +228,41 @@ function scrollToDashboardSection(sectionId) {
 
 function scrollToDashboardTop() {
   window.scrollTo({ top: 0, behavior: "smooth" })
+}
+
+function getNotificationTitle(type) {
+  if (type === "warning") {
+    return "تنبيه"
+  }
+
+  if (type === "info") {
+    return "معلومة"
+  }
+
+  return "تم بنجاح"
+}
+
+function matchesNotificationFilter(notification, filter) {
+  if (filter === "all") {
+    return true
+  }
+
+  if (filter === "unread") {
+    return !notification.read
+  }
+
+  return notification.type === filter
+}
+
+function formatNotificationTime(time) {
+  if (!time) {
+    return "الآن"
+  }
+
+  return new Intl.DateTimeFormat("ar-IQ", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(time))
 }
 
 function getWelcomeMessage(accountType, name) {

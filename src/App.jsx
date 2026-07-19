@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import "./App.css"
 import { categoryImages, customerStores, dashboardData } from "./data"
 import { AdminDashboard } from "./components/AdminDashboard"
@@ -36,6 +36,9 @@ function App() {
   const [platformSettings, setPlatformSettings] = useState(loadPlatformSettings)
   const [orderMessage, setOrderMessage] = useState("")
   const [storageMessage, setStorageMessage] = useState("")
+  const [appNotification, setAppNotification] = useState(null)
+  const [notificationHistory, setNotificationHistory] = useState([])
+  const notificationTimer = useRef(null)
   const [lastSaveTime, setLastSaveTime] = useState(loadLastSaveTime)
   const [nextOrderId, setNextOrderId] = useState(savedAppData.nextOrderId)
   const [loginInfo, setLoginInfo] = useState({
@@ -89,6 +92,12 @@ function App() {
     merchantOrders: visibleMerchantOrders,
   })
   const dashboardNavItems = getDashboardNavItems(accountType)
+  const visibleAppNotification = isNotificationForAccount(appNotification, accountType)
+    ? appNotification
+    : null
+  const visibleNotificationHistory = notificationHistory.filter((notification) =>
+    isNotificationForAccount(notification, accountType),
+  )
 
   useEffect(() => {
     const saved = saveToStorage(SETTINGS_STORAGE_KEY, platformSettings)
@@ -150,14 +159,36 @@ function App() {
     stores,
   ])
 
+  useEffect(() => () => clearTimeout(notificationTimer.current), [])
+
+  function showNotification(message, type = "success", audience = accountType) {
+    const notification = {
+      audience,
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      message,
+      read: false,
+      time: new Date().toISOString(),
+      type,
+    }
+
+    clearTimeout(notificationTimer.current)
+    setAppNotification(notification)
+    setNotificationHistory((history) => [notification, ...history].slice(0, 6))
+    notificationTimer.current = setTimeout(() => {
+      setAppNotification(null)
+    }, 3600)
+  }
+
   function enterDashboard() {
     if (!loginInfo.name.trim() || !loginInfo.phone.trim()) {
       setLoginMessage("اكتب الاسم ورقم الهاتف حتى تدخل للتطبيق.")
+      showNotification("اكتب الاسم ورقم الهاتف حتى تدخل للتطبيق.", "warning", accountType)
       return
     }
 
     if (accountType === "الإدارة" && loginInfo.adminCode.trim() !== "1234") {
       setLoginMessage("رمز الإدارة غير صحيح.")
+      showNotification("رمز الإدارة غير صحيح.", "warning", "الإدارة")
       return
     }
 
@@ -171,6 +202,7 @@ function App() {
 
     setLoginMessage("")
     setCurrentView("dashboard")
+    showNotification(`أهلًا ${loginInfo.name.trim()}، تم تسجيل الدخول كـ ${accountType}.`)
   }
 
   function chooseAccountType(type) {
@@ -192,6 +224,7 @@ function App() {
     })
     setLoginMessage("تم مسح الحساب المحفوظ. اختار حساب جديد وسجل دخول.")
     setCurrentView("login")
+    showNotification("تم مسح الحساب المحفوظ.", "info", "النظام")
   }
 
   function resetDemoData() {
@@ -220,6 +253,7 @@ function App() {
     })
     setOrderMessage("")
     setLastSaveTime("")
+    showNotification("تم مسح البيانات التجريبية ورجع التطبيق للبداية.", "warning", "الإدارة")
   }
 
   function exportDataBackup() {
@@ -253,6 +287,7 @@ function App() {
     link.download = `basra-mall-backup-${formatBackupDate(new Date())}.json`
     link.click()
     URL.revokeObjectURL(url)
+    showNotification("تم تجهيز نسخة احتياطية للبيانات.", "success", "الإدارة")
   }
 
   function importDataBackup(backupData) {
@@ -290,6 +325,7 @@ function App() {
 
     setStorageMessage("")
     setLastSaveTime(new Date().toISOString())
+    showNotification("تم استيراد النسخة الاحتياطية بنجاح.", "success", "الإدارة")
     return true
   }
 
@@ -307,21 +343,25 @@ function App() {
 
     if (productStatus === "مخفي مؤقتًا") {
       setOrderMessage("هذا المنتج مخفي مؤقتًا من صاحب المتجر.")
+      showNotification("هذا المنتج مخفي مؤقتًا من صاحب المتجر.", "warning", "زبون")
       return
     }
 
     if (productStatus === "نفد") {
       setOrderMessage("هذا المنتج حالته نفد وما يكدر الزبون يطلبه.")
+      showNotification("هذا المنتج نافد حاليًا.", "warning", "زبون")
       return
     }
 
     if (Number.isFinite(availableQuantity) && availableQuantity <= 0) {
       setOrderMessage("هذا المنتج نفد من المخزون وما يكدر الزبون يطلبه.")
+      showNotification("هذا المنتج نفد من المخزون.", "warning", "زبون")
       return
     }
 
     if (Number.isFinite(availableQuantity) && cartQuantity >= availableQuantity) {
       setOrderMessage(`المتوفر من ${product.name} هو ${availableQuantity} فقط.`)
+      showNotification(`المتوفر من ${product.name} هو ${availableQuantity} فقط.`, "warning", "زبون")
       return
     }
 
@@ -341,6 +381,7 @@ function App() {
       return [...items, { ...product, store: storeName, quantity: 1 }]
     })
     setOrderMessage("")
+    showNotification(`تمت إضافة ${product.name} إلى السلة.`, "success", "زبون")
   }
 
   function toggleFavoriteStore(storeName) {
@@ -363,6 +404,7 @@ function App() {
       notes: customerInfo.notes.trim(),
     })
     setOrderMessage("تم حفظ العنوان. تكدر تستخدمه بالطلبات الجاية.")
+    showNotification("تم حفظ عنوان الزبون.", "success", "زبون")
   }
 
   function useSavedCustomerAddress() {
@@ -378,6 +420,7 @@ function App() {
       notes: savedCustomerAddress.notes || info.notes,
     }))
     setOrderMessage("تم استخدام العنوان المحفوظ.")
+    showNotification("تم استخدام العنوان المحفوظ.", "success", "زبون")
   }
 
   function increaseCartItem(itemToUpdate) {
@@ -493,11 +536,13 @@ function App() {
   function sendOrder(paymentMethod = "الدفع عند الاستلام") {
     if (cartItems.length === 0) {
       setOrderMessage("السلة فارغة. أضف منتج أولًا حتى ترسل طلب.")
+      showNotification("السلة فارغة. أضف منتج أولًا.", "warning", "زبون")
       return
     }
 
     if (!customerInfo.name.trim() || !customerInfo.phone.trim() || !customerInfo.area.trim()) {
       setOrderMessage("اكتب اسم الزبون ورقم الهاتف والمنطقة قبل تأكيد الطلب.")
+      showNotification("اكتب اسم الزبون ورقم الهاتف والمنطقة.", "warning", "زبون")
       return
     }
 
@@ -517,6 +562,7 @@ function App() {
 
     if (invalidItem) {
       setOrderMessage(`المنتج ${invalidItem.name} غير متاح أو كميته بالسلة أكبر من المخزون.`)
+      showNotification(`المنتج ${invalidItem.name} غير متاح أو كميته أكبر من المخزون.`, "warning", "زبون")
       return
     }
 
@@ -587,6 +633,7 @@ function App() {
     setOrderMessage(
       `تم إرسال طلبك بنجاح. ${orderLabel}: ${orderNumbers}. احفظ الرقم حتى تتابع الطلب.`,
     )
+    showNotification(`تم إرسال الطلب بنجاح. ${orderLabel}: ${orderNumbers}.`, "success", "زبون")
   }
 
   function updateMerchantOrderStatus(orderId, status) {
@@ -596,6 +643,7 @@ function App() {
     setMerchantOrders((orders) =>
       orders.map((order) => (order.id === orderId ? { ...order, status } : order)),
     )
+    showNotification(`تم تحديث طلب رقم ${orderId} إلى: ${status}.`, "success", "صاحب متجر")
   }
 
   function prepareOrder(orderId) {
@@ -621,6 +669,7 @@ function App() {
 
       return [preparedOrder, ...orders]
     })
+    showNotification(`طلب رقم ${orderId} صار جاهز للتوصيل.`, "success", "صاحب متجر")
   }
 
   function updateDeliveryStatus(orderId, status) {
@@ -633,6 +682,7 @@ function App() {
     setDeliveryOrders((orders) =>
       orders.map((order) => (order.id === orderId ? { ...order, status } : order)),
     )
+    showNotification(`تم تحديث توصيل طلب رقم ${orderId} إلى: ${status}.`, "success", "سائق")
   }
 
   function updateOrderNote(orderId, internalNote) {
@@ -694,6 +744,7 @@ function App() {
       orders.map((order) => (order.id === orderId ? canceledOrder : order)),
     )
     setDeliveryOrders((orders) => orders.filter((order) => order.id !== orderId))
+    showNotification(`تم إلغاء طلب رقم ${orderId}.`, "warning", accountType)
   }
 
   function registerStore(store) {
@@ -708,6 +759,7 @@ function App() {
     }
 
     setStores((currentStores) => [newStore, ...currentStores])
+    showNotification(`تم تسجيل متجر ${newStore.name} وينتظر موافقة الإدارة.`, "success", "صاحب متجر")
   }
 
   function approveStore(storeName) {
@@ -716,6 +768,7 @@ function App() {
         store.name === storeName ? { ...store, rejectionReason: "", status: "approved" } : store,
       ),
     )
+    showNotification(`تمت الموافقة على متجر ${storeName}.`, "success", "الإدارة")
   }
 
   function rejectStore(storeName, reason = "بيانات المتجر تحتاج توضيح أكثر.") {
@@ -724,6 +777,7 @@ function App() {
         store.name === storeName ? { ...store, rejectionReason: reason, status: "rejected" } : store,
       ),
     )
+    showNotification(`تم رفض متجر ${storeName}.`, "warning", "الإدارة")
   }
 
   function reviewStoreAgain(storeName) {
@@ -732,6 +786,14 @@ function App() {
         store.name === storeName ? { ...store, status: "pending" } : store,
       ),
     )
+    showNotification(`رجع متجر ${storeName} للمراجعة.`, "success", "الإدارة")
+  }
+
+  function updatePlatformSettings(nextSettings) {
+    setPlatformSettings((currentSettings) =>
+      typeof nextSettings === "function" ? nextSettings(currentSettings) : nextSettings,
+    )
+    showNotification("تم تحديث إعدادات العمولة والتوصيل.", "success", "الإدارة")
   }
 
   function addProductToStore(storeName, product) {
@@ -758,6 +820,7 @@ function App() {
         products: [...store.products, newProduct],
       }))
     }
+    showNotification(`تمت إضافة منتج ${newProduct.name} إلى ${storeName}.`, "success", "صاحب متجر")
   }
 
   function updateProductInStore(storeName, oldProductName, product) {
@@ -806,6 +869,7 @@ function App() {
             : item,
         ),
     )
+    showNotification(`تم تعديل منتج ${updatedProduct.name}.`, "success", "صاحب متجر")
   }
 
   function deleteProductFromStore(storeName, productName) {
@@ -830,6 +894,7 @@ function App() {
     setCartItems((items) =>
       items.filter((item) => item.store !== storeName || item.name !== productName),
     )
+    showNotification(`تم حذف منتج ${productName}.`, "warning", "صاحب متجر")
   }
 
   return (
@@ -848,6 +913,23 @@ function App() {
           dashboard={dashboard}
           navItems={dashboardNavItems}
           storageMessage={storageMessage}
+          notification={visibleAppNotification}
+          notifications={visibleNotificationHistory}
+          onClearNotifications={() =>
+            setNotificationHistory((history) =>
+              history.filter((notification) => !isNotificationForAccount(notification, accountType)),
+            )
+          }
+          onDismissNotification={() => setAppNotification(null)}
+          onReadNotifications={() =>
+            setNotificationHistory((history) =>
+              history.map((notification) =>
+                isNotificationForAccount(notification, accountType)
+                  ? { ...notification, read: true }
+                  : notification,
+              ),
+            )
+          }
           stats={activeStats}
           user={activeUser}
           onBack={() => setCurrentView("login")}
@@ -918,7 +1000,7 @@ function App() {
               onResetData={resetDemoData}
               deliveredOrders={deliveredOrders}
               estimatedRevenue={estimatedRevenue}
-              onSettingsChange={setPlatformSettings}
+              onSettingsChange={updatePlatformSettings}
               settings={platformSettings}
               stores={stores}
             />
@@ -1352,6 +1434,14 @@ function normalizeSavedAddress(address, fallback) {
     landmark: typeof address.landmark === "string" ? address.landmark : "",
     notes: typeof address.notes === "string" ? address.notes : "",
   }
+}
+
+function isNotificationForAccount(notification, accountType) {
+  if (!notification) {
+    return false
+  }
+
+  return notification.audience === accountType || notification.audience === "النظام"
 }
 
 export default App

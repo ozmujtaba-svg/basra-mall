@@ -437,6 +437,247 @@ button span {
   color: #65706b;
 }
 
+.app-notification {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 18px;
+  padding: 14px;
+  border: 1px solid #c9ddd9;
+  border-radius: 14px;
+  background: #eef7f5;
+}
+
+.app-notification.success {
+  border-color: #c9ddd9;
+  background: #eef7f5;
+}
+
+.app-notification.warning {
+  border-color: #ead5a2;
+  background: #fff9e8;
+}
+
+.app-notification.info {
+  border-color: #ded8cc;
+  background: #fbfaf7;
+}
+
+.app-notification strong,
+.app-notification span {
+  display: block;
+  line-height: 1.7;
+}
+
+.app-notification-title {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+}
+
+.app-notification strong {
+  color: #0c6b66;
+}
+
+.app-notification-title b {
+  border-radius: 999px;
+  background: white;
+  color: #0c6b66;
+  padding: 5px 9px;
+  font-size: 12px;
+}
+
+.app-notification.warning strong {
+  color: #8a5d11;
+}
+
+.app-notification span {
+  color: #65706b;
+}
+
+.app-notification button {
+  min-width: 86px;
+  border-color: #0c6b66;
+  background: white;
+  color: #0c6b66;
+  text-align: center;
+  font-weight: bold;
+  padding: 10px 12px;
+}
+
+.notification-center {
+  margin-bottom: 18px;
+  padding: 14px;
+  border: 1px solid #ded8cc;
+  border-radius: 14px;
+  background: #fbfaf7;
+}
+
+.notification-center-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.notification-center-top span,
+.notification-center-top strong,
+.notification-center-top small {
+  display: block;
+  line-height: 1.7;
+}
+
+.notification-center-top span {
+  color: #65706b;
+}
+
+.notification-center-top strong {
+  color: #18221f;
+}
+
+.notification-center-top small {
+  width: fit-content;
+  margin-top: 4px;
+  border-radius: 999px;
+  background: #fff2ec;
+  color: #d76b50;
+  padding: 5px 9px;
+  font-weight: bold;
+}
+
+.notification-center-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.notification-center-actions button {
+  min-width: 72px;
+  border-color: #c9ddd9;
+  background: white;
+  color: #0c6b66;
+  text-align: center;
+  font-weight: bold;
+  padding: 10px 12px;
+}
+
+.notification-center-actions button:first-child {
+  border-color: #0c6b66;
+  background: #0c6b66;
+  color: white;
+}
+
+.notification-center-actions button.has-unread {
+  border-color: #d76b50;
+  background: #d76b50;
+  color: white;
+}
+
+.notification-history {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.notification-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.notification-filter button {
+  border-color: #c9ddd9;
+  background: white;
+  color: #0c6b66;
+  padding: 9px 12px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.notification-filter button.active {
+  border-color: #0c6b66;
+  background: #0c6b66;
+  color: white;
+}
+
+.notification-history-item,
+.notification-empty {
+  padding: 12px;
+  border: 1px solid #ded8cc;
+  border-radius: 12px;
+  background: white;
+}
+
+.notification-history-item.success {
+  border-color: #c9ddd9;
+  background: #eef7f5;
+}
+
+.notification-history-item.warning {
+  border-color: #ead5a2;
+  background: #fff9e8;
+}
+
+.notification-history-item.info {
+  background: #f6f1e8;
+}
+
+.notification-history-item.unread {
+  box-shadow: inset 4px 0 0 #d76b50;
+}
+
+.notification-history-item strong,
+.notification-history-item span,
+.notification-history-item small {
+  display: block;
+  line-height: 1.7;
+}
+
+.notification-history-title {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+}
+
+.notification-history-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.notification-history-item strong {
+  color: #0c6b66;
+}
+
+.notification-history-title b,
+.notification-history-title em {
+  border-radius: 999px;
+  background: white;
+  color: #0c6b66;
+  padding: 5px 9px;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: bold;
+}
+
+.notification-history-title em {
+  background: #fff2ec;
+  color: #d76b50;
+}
+
+.notification-history-item.warning strong {
+  color: #8a5d11;
+}
+
+.notification-history-item span,
+.notification-history-item small,
+.notification-empty {
+  color: #65706b;
+}
+
 .stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -4310,6 +4551,21 @@ button span {
 
   .dashboard-nav button {
     min-width: max-content;
+  }
+
+  .app-notification,
+  .notification-center-top {
+    display: grid;
+  }
+
+  .notification-center-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .notification-filter {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .stats,
