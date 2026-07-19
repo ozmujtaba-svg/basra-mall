@@ -2355,6 +2355,43 @@ button span {
   background: #eef7f5;
 }
 
+.merchant-action-counter {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 16px 0;
+  padding: 14px;
+  border: 1px solid #ead5a2;
+  border-radius: 14px;
+  background: #fff9e8;
+}
+
+.merchant-action-counter div {
+  padding: 14px;
+  border-radius: 12px;
+  background: white;
+}
+
+.merchant-action-counter span {
+  display: block;
+  color: #65706b;
+  line-height: 1.6;
+}
+
+.merchant-action-counter strong {
+  display: block;
+  color: #d76b50;
+  font-size: 28px;
+}
+
+.merchant-action-counter p {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #8a5d11;
+  font-weight: bold;
+  line-height: 1.8;
+}
+
 .merchant-product-row {
   display: grid;
   grid-template-columns: 96px 1.2fr 0.6fr auto auto;
@@ -2550,6 +2587,82 @@ button span {
   font-size: 28px;
 }
 
+.merchant-order-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.merchant-order-card-actions button {
+  border-color: #c9ddd9;
+  border-radius: 999px;
+  background: #eef7f5;
+  color: #0c6b66;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.merchant-copy-message {
+  width: fit-content;
+  border-radius: 999px;
+  background: #eef7f5;
+  color: #0c6b66;
+  padding: 8px 12px;
+  font-weight: bold;
+}
+
+.merchant-customer-contact {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #c9ddd9;
+  border-radius: 14px;
+  background: #eef7f5;
+}
+
+.merchant-customer-contact span,
+.merchant-customer-contact strong {
+  display: block;
+  line-height: 1.7;
+}
+
+.merchant-customer-contact span {
+  color: #65706b;
+  font-size: 13px;
+}
+
+.merchant-customer-contact strong {
+  color: #0c6b66;
+}
+
+.merchant-customer-contact-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.merchant-customer-contact-actions a,
+.merchant-customer-contact-actions button {
+  border: 1px solid #0c6b66;
+  border-radius: 999px;
+  background: white;
+  color: #0c6b66;
+  padding: 10px 12px;
+  text-decoration: none;
+  font: inherit;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.merchant-customer-contact-actions a {
+  background: #0c6b66;
+  color: white;
+}
+
 .merchant-order-facts {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -2562,6 +2675,45 @@ button span {
   padding: 12px;
   border-radius: 12px;
   background: #fbfaf7;
+}
+
+.merchant-prep-box {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #ead5a2;
+  border-radius: 14px;
+  background: #fff9e8;
+}
+
+.merchant-prep-box div {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border-radius: 12px;
+  background: white;
+}
+
+.merchant-prep-box span {
+  color: #65706b;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.merchant-prep-box strong {
+  color: #18221f;
+  line-height: 1.7;
+}
+
+.merchant-prep-box .merchant-prep-next {
+  grid-column: 1 / -1;
+  border: 1px solid #c9ddd9;
+  background: #eef7f5;
+}
+
+.merchant-prep-box .merchant-prep-next strong {
+  color: #0c6b66;
 }
 
 .merchant-order-facts span,
@@ -2634,6 +2786,49 @@ button span {
 
 .merchant-order-actions button {
   margin-top: 0;
+}
+
+.merchant-reject-confirm {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #efc3b8;
+  border-radius: 14px;
+  background: #fff2ec;
+}
+
+.merchant-reject-confirm strong,
+.merchant-reject-confirm span {
+  display: block;
+  line-height: 1.8;
+}
+
+.merchant-reject-confirm strong {
+  color: #8b3a2d;
+}
+
+.merchant-reject-confirm span {
+  color: #65706b;
+}
+
+.merchant-reject-confirm-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.merchant-reject-confirm-actions button:first-child {
+  border-color: #d76b50;
+  background: #d76b50;
+  color: white;
+  font-weight: bold;
+}
+
+.merchant-reject-confirm-actions button:last-child {
+  border-color: #ded8cc;
+  background: white;
+  color: #65706b;
+  font-weight: bold;
 }
 
 .danger-button {
@@ -3677,8 +3872,10 @@ button span {
   .merchant-product-row,
   .merchant-order-summary,
   .merchant-order-facts,
+  .merchant-prep-box,
   .merchant-order-items div,
   .merchant-order-quick-summary,
+  .merchant-action-counter,
   .merchant-order-actions,
   .admin-grid,
   .admin-monitor-grid,
@@ -3730,6 +3927,17 @@ button span {
   .merchant-product-actions {
     display: grid;
     justify-content: stretch;
+  }
+
+  .merchant-order-card-actions {
+    display: grid;
+    justify-content: stretch;
+  }
+
+  .merchant-customer-contact,
+  .merchant-customer-contact-actions,
+  .merchant-reject-confirm-actions {
+    display: grid;
   }
 
   .saved-address-actions {

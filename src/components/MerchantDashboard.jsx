@@ -55,6 +55,8 @@ export function MerchantDashboard({
   const [storeStatusFilter, setStoreStatusFilter] = useState(storeStatusFilters[0].value)
   const [message, setMessage] = useState("")
   const [productMessage, setProductMessage] = useState("")
+  const [copiedOrderId, setCopiedOrderId] = useState("")
+  const [rejectConfirmOrderId, setRejectConfirmOrderId] = useState("")
   const selectedStore = stores.find((store) => store.name === selectedStoreName) ?? stores[0]
   const hasStores = stores.length > 0
   const filteredStoresByStatus = stores.filter((store) =>
@@ -70,6 +72,7 @@ export function MerchantDashboard({
   )
   const sortedOrders = sortOrders(filteredOrders, orderSort)
   const merchantOrderSummary = getMerchantOrderSummary(orders)
+  const actionOrdersCount = merchantOrderSummary.newOrders + merchantOrderSummary.preparingOrders
   const merchantOrderAlert = getMerchantOrderAlert(merchantOrderSummary)
   const orderGroups = [
     { title: "طلبات جديدة", status: "طلب جديد" },
@@ -209,6 +212,35 @@ export function MerchantDashboard({
     setProductImage("")
     setProductStatus(productStatuses[0])
     setEditingProductName("")
+  }
+
+  async function copyMerchantOrder(order) {
+    const orderText = formatMerchantOrderCopyText(order, commissionRate)
+
+    try {
+      await navigator.clipboard.writeText(orderText)
+    } catch {
+      copyTextFallback(orderText)
+    }
+
+    setCopiedOrderId(String(order.id))
+  }
+
+  async function copyCustomerPhone(phoneNumber) {
+    const cleanPhone = String(phoneNumber)
+
+    try {
+      await navigator.clipboard.writeText(cleanPhone)
+    } catch {
+      copyTextFallback(cleanPhone)
+    }
+
+    setProductMessage(`تم نسخ رقم الزبون: ${cleanPhone}`)
+  }
+
+  function confirmRejectOrder(orderId) {
+    onCancelOrder(orderId)
+    setRejectConfirmOrderId("")
   }
 
   return (
@@ -531,6 +563,25 @@ export function MerchantDashboard({
 
       <h2 id="merchant-orders">طلبات المتجر</h2>
       <p>الطلبات مرتبة حسب المرحلة حتى تعرف شنو يحتاج تجهيز وشنو صار جاهز للتوصيل.</p>
+      <div className="merchant-action-counter">
+        <div>
+          <span>طلبات تحتاج إجراء</span>
+          <strong>{actionOrdersCount}</strong>
+        </div>
+        <div>
+          <span>تحتاج قبول</span>
+          <strong>{merchantOrderSummary.newOrders}</strong>
+        </div>
+        <div>
+          <span>تحتاج تجهيز</span>
+          <strong>{merchantOrderSummary.preparingOrders}</strong>
+        </div>
+        <p>
+          {actionOrdersCount > 0
+            ? "ابدأ بالطلبات الجديدة، وبعد القبول جهّز الطلبات قيد التجهيز."
+            : "ماكو طلب يحتاج إجراء حاليًا."}
+        </p>
+      </div>
       <div className={`merchant-order-alert ${merchantOrderAlert.className}`}>
         <div>
           <strong>{merchantOrderAlert.title}</strong>
@@ -613,7 +664,27 @@ export function MerchantDashboard({
                         <small>طلب رقم</small>
                         <h3>{order.id}</h3>
                       </div>
-                      <span className="status-pill">{order.status}</span>
+                      <div className="merchant-order-card-actions">
+                        <span className="status-pill">{order.status}</span>
+                        <button onClick={() => copyMerchantOrder(order)} type="button">
+                          نسخ بيانات الطلب
+                        </button>
+                      </div>
+                    </div>
+                    {copiedOrderId === String(order.id) && (
+                      <div className="merchant-copy-message">تم نسخ بيانات الطلب رقم {order.id}</div>
+                    )}
+                    <div className="merchant-customer-contact">
+                      <div>
+                        <span>تواصل سريع مع الزبون</span>
+                        <strong>{order.customer} - {order.phone}</strong>
+                      </div>
+                      <div className="merchant-customer-contact-actions">
+                        <a href={`tel:${getPhoneLink(order.phone)}`}>اتصال بالزبون</a>
+                        <button onClick={() => copyCustomerPhone(order.phone)} type="button">
+                          نسخ رقم الزبون
+                        </button>
+                      </div>
                     </div>
                     <div className="merchant-order-facts">
                       <div>
@@ -645,6 +716,28 @@ export function MerchantDashboard({
                       <div className="order-meta">الدلالة: {order.landmark}</div>
                     )}
                     {order.notes && <div className="order-meta">ملاحظات الزبون: {order.notes}</div>}
+                    <div className="merchant-prep-box">
+                      <div>
+                        <span>المطلوب تجهيز</span>
+                        <strong>{formatOrderPrepItems(order.items)}</strong>
+                      </div>
+                      <div>
+                        <span>عدد القطع</span>
+                        <strong>{getOrderItemCount(order.items)} قطعة</strong>
+                      </div>
+                      <div>
+                        <span>طريقة الدفع</span>
+                        <strong>{order.paymentMethod ?? "الدفع عند الاستلام"}</strong>
+                      </div>
+                      <div>
+                        <span>المبلغ المطلوب</span>
+                        <strong>{formatMoney(order.total)}</strong>
+                      </div>
+                      <div className="merchant-prep-next">
+                        <span>الخطوة الجاية</span>
+                        <strong>{getMerchantPrepStep(order.status)}</strong>
+                      </div>
+                    </div>
                     <div className="merchant-order-items">
                       {order.items.map((item) => (
                         <div key={`${order.id}-${item.store}-${item.name}`}>
@@ -696,11 +789,30 @@ export function MerchantDashboard({
                         </button>
                       )}
                       {["طلب جديد", "قيد التجهيز", "جاهز للتوصيل"].includes(order.status) && (
-                        <button className="danger-action-button" onClick={() => onCancelOrder(order.id)}>
+                        <button
+                          className="danger-action-button"
+                          onClick={() => setRejectConfirmOrderId(String(order.id))}
+                        >
                           رفض الطلب
                         </button>
                       )}
                     </div>
+                    {rejectConfirmOrderId === String(order.id) && (
+                      <div className="merchant-reject-confirm">
+                        <div>
+                          <strong>هل أنت متأكد من رفض الطلب رقم {order.id}؟</strong>
+                          <span>إذا رفضت الطلب راح يتغير إلى ملغي ويظهر للزبون أنه مرفوض.</span>
+                        </div>
+                        <div className="merchant-reject-confirm-actions">
+                          <button onClick={() => confirmRejectOrder(order.id)} type="button">
+                            نعم، ارفض الطلب
+                          </button>
+                          <button onClick={() => setRejectConfirmOrderId("")} type="button">
+                            تراجع
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))
               )}
@@ -824,6 +936,10 @@ function getOrderItemCount(items) {
   return items.reduce((total, item) => total + Number(item.quantity), 0)
 }
 
+function formatOrderPrepItems(items) {
+  return items.map((item) => `${item.name} × ${item.quantity}`).join("، ")
+}
+
 function getMerchantOrderSummary(orders) {
   return {
     newOrders: orders.filter((order) => order.status === "طلب جديد").length,
@@ -906,6 +1022,65 @@ function getMerchantOrderWorkLabel(status) {
   }
 
   return "متوقف"
+}
+
+function getMerchantPrepStep(status) {
+  if (status === "طلب جديد") {
+    return "راجع الطلب واضغط قبول الطلب إذا كل المنتجات متوفرة."
+  }
+
+  if (status === "قيد التجهيز") {
+    return "جهّز المنتجات بالكيس، وبعدها اضغط جاهز للتوصيل."
+  }
+
+  if (status === "جاهز للتوصيل") {
+    return "انتظر السائق حتى يستلم الطلب من المتجر."
+  }
+
+  if (status === "قيد التوصيل") {
+    return "الطلب صار عند السائق، تابع الحالة فقط."
+  }
+
+  if (status === "تم التسليم") {
+    return "الطلب مكتمل، راجع أرباح المتجر."
+  }
+
+  return "الطلب متوقف ولا يحتاج تجهيز حاليًا."
+}
+
+function formatMerchantOrderCopyText(order, commissionRate) {
+  return [
+    `طلب رقم: ${order.id}`,
+    `الزبون: ${order.customer}`,
+    `الهاتف: ${order.phone}`,
+    `المنطقة: ${order.area}`,
+    order.landmark ? `الدلالة: ${order.landmark}` : "",
+    order.notes ? `ملاحظات الزبون: ${order.notes}` : "",
+    `المنتجات: ${formatOrderPrepItems(order.items)}`,
+    `طريقة الدفع: ${order.paymentMethod ?? "الدفع عند الاستلام"}`,
+    `المبلغ الكلي: ${formatMoney(order.total)}`,
+    `ربح المتجر المتوقع: ${formatMoney(getOrderMerchantProfit(order, commissionRate))}`,
+    `الحالة: ${order.status}`,
+  ]
+    .filter(Boolean)
+    .join("\n")
+}
+
+function copyTextFallback(text) {
+  const textarea = document.createElement("textarea")
+
+  textarea.value = text
+  textarea.setAttribute("readonly", "")
+  textarea.style.position = "fixed"
+  textarea.style.opacity = "0"
+  document.body.appendChild(textarea)
+  textarea.select()
+  document.execCommand("copy")
+  document.body.removeChild(textarea)
+}
+
+function getPhoneLink(phone) {
+  return String(phone).replace(/[^\d+]/g, "")
 }
 
 function formatMoney(value) {
