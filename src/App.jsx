@@ -22,7 +22,7 @@ const defaultPlatformSettings = {
 
 function App() {
   const [savedAppData] = useState(loadAppData)
-  const [savedAccount] = useState(loadSavedAccount)
+  const [savedAccount, setSavedAccount] = useState(loadSavedAccount)
   const [accountType, setAccountType] = useState(savedAccount.accountType)
   const [currentView, setCurrentView] = useState("login")
   const [stores, setStores] = useState(savedAppData.stores)
@@ -69,6 +69,7 @@ function App() {
     name: loginInfo.name.trim(),
     phone: loginInfo.phone.trim(),
   }
+  const visibleCustomerOrders = customerOrders.filter((order) => order.phone === activeUser.phone)
   const merchantStores = stores.filter((store) => store.ownerPhone === activeUser.phone)
   const merchantStoreNames = merchantStores.map((store) => store.name)
   const approvedStores = stores.filter(
@@ -83,7 +84,7 @@ function App() {
   const activeStats = getActiveStats({
     accountType,
     cartItems,
-    customerOrders,
+    customerOrders: visibleCustomerOrders,
     stores: accountType === "زبون" ? approvedStores : stores,
     merchantStores,
     dashboard,
@@ -98,6 +99,7 @@ function App() {
   const visibleNotificationHistory = notificationHistory.filter((notification) =>
     isNotificationForAccount(notification, accountType),
   )
+  const savedAccountWarning = getSavedAccountWarning(savedAccount, accountType, loginInfo)
 
   useEffect(() => {
     const saved = saveToStorage(SETTINGS_STORAGE_KEY, platformSettings)
@@ -108,6 +110,10 @@ function App() {
   }, [platformSettings])
 
   useEffect(() => {
+    if (currentView !== "dashboard") {
+      return
+    }
+
     const saved = saveToStorage(ACCOUNT_STORAGE_KEY, {
         accountType,
         name: loginInfo.name,
@@ -117,7 +123,7 @@ function App() {
     if (!saved) {
       setStorageMessage("تعذر حفظ الحساب داخل المتصفح. تقدر تكمل، بس قد تحتاج تسجل دخول مرة ثانية.")
     }
-  }, [accountType, loginInfo.name, loginInfo.phone])
+  }, [accountType, currentView, loginInfo.name, loginInfo.phone])
 
   useEffect(() => {
     const appDataSnapshot = {
@@ -186,9 +192,21 @@ function App() {
       return
     }
 
+    if (!isValidIraqiPhone(loginInfo.phone)) {
+      setLoginMessage("رقم الهاتف لازم يبدأ بـ 07 ويتكون من 11 رقم.")
+      showNotification("رقم الهاتف لازم يبدأ بـ 07 ويتكون من 11 رقم.", "warning", accountType)
+      return
+    }
+
     if (accountType === "الإدارة" && loginInfo.adminCode.trim() !== "1234") {
       setLoginMessage("رمز الإدارة غير صحيح.")
       showNotification("رمز الإدارة غير صحيح.", "warning", "الإدارة")
+      return
+    }
+
+    if (savedAccountWarning) {
+      setLoginMessage(savedAccountWarning)
+      showNotification(savedAccountWarning, "warning", "النظام")
       return
     }
 
@@ -200,6 +218,11 @@ function App() {
       }))
     }
 
+    setSavedAccount({
+      accountType,
+      name: loginInfo.name.trim(),
+      phone: loginInfo.phone.trim(),
+    })
     setLoginMessage("")
     setCurrentView("dashboard")
     showNotification(`أهلًا ${loginInfo.name.trim()}، تم تسجيل الدخول كـ ${accountType}.`)
@@ -208,6 +231,11 @@ function App() {
   function chooseAccountType(type) {
     setAccountType(type)
     setLoginMessage("")
+    setOrderMessage("")
+    setAppNotification(null)
+    setNotificationHistory((history) =>
+      history.filter((notification) => notification.audience === "النظام"),
+    )
     setLoginInfo((info) => ({
       ...info,
       adminCode: type === "الإدارة" ? info.adminCode : "",
@@ -216,6 +244,11 @@ function App() {
 
   function forgetSavedAccount() {
     localStorage.removeItem(ACCOUNT_STORAGE_KEY)
+    setSavedAccount({
+      accountType: "زبون",
+      name: "",
+      phone: "",
+    })
     setAccountType("زبون")
     setLoginInfo({
       adminCode: "",
@@ -315,6 +348,7 @@ function App() {
 
     if (backupData?.savedAccount) {
       const importedAccount = normalizeSavedAccount(backupData.savedAccount)
+      setSavedAccount(importedAccount)
       setAccountType(importedAccount.accountType)
       setLoginInfo((info) => ({
         ...info,
@@ -906,7 +940,9 @@ function App() {
           loginInfo={loginInfo}
           loginMessage={loginMessage}
           onEnter={enterDashboard}
+          onForgetAccount={forgetSavedAccount}
           onLoginInfoChange={setLoginInfo}
+          savedAccountWarning={savedAccountWarning}
         />
       ) : (
         <Shell
@@ -939,7 +975,7 @@ function App() {
             <CustomerDashboard
               cartItems={cartItems}
               customerInfo={customerInfo}
-              customerOrders={customerOrders}
+              customerOrders={visibleCustomerOrders}
               deliveryFee={platformSettings.deliveryFee}
               favoriteStoreNames={favoriteStoreNames}
               savedCustomerAddress={savedCustomerAddress}
@@ -1246,6 +1282,21 @@ function normalizeSavedAccount(account) {
   }
 }
 
+function getSavedAccountWarning(savedAccount, selectedAccountType, loginInfo) {
+  const savedPhone = savedAccount.phone.trim()
+  const enteredPhone = loginInfo.phone.trim()
+
+  if (!savedPhone || !enteredPhone || savedPhone !== enteredPhone) {
+    return ""
+  }
+
+  if (savedAccount.accountType === selectedAccountType) {
+    return ""
+  }
+
+  return `هذا الرقم محفوظ كـ ${savedAccount.accountType}. إذا تريد تدخل كـ ${selectedAccountType}، بدّل الحساب أولًا حتى ما تختلط البيانات.`
+}
+
 function saveToStorage(key, value) {
   try {
     localStorage.setItem(key, JSON.stringify(value))
@@ -1442,6 +1493,10 @@ function isNotificationForAccount(notification, accountType) {
   }
 
   return notification.audience === accountType || notification.audience === "النظام"
+}
+
+function isValidIraqiPhone(phone) {
+  return /^07\d{9}$/.test(phone.trim())
 }
 
 export default App

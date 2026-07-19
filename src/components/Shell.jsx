@@ -29,6 +29,7 @@ export function Shell({
   )
   const [showNotificationCenter, setShowNotificationCenter] = useState(false)
   const [notificationFilter, setNotificationFilter] = useState(notificationFilters[0].value)
+  const [pendingSessionAction, setPendingSessionAction] = useState("")
   const unreadNotifications = notifications.filter((item) => !item.read).length
   const filteredNotifications = notifications.filter((item) =>
     matchesNotificationFilter(item, notificationFilter),
@@ -51,6 +52,27 @@ export function Shell({
     })
   }
 
+  function requestSessionAction(action) {
+    setPendingSessionAction(action)
+  }
+
+  function cancelSessionAction() {
+    setPendingSessionAction("")
+  }
+
+  function confirmSessionAction() {
+    const action = pendingSessionAction
+
+    setPendingSessionAction("")
+
+    if (action === "forget") {
+      onForgetAccount()
+      return
+    }
+
+    onBack()
+  }
+
   return (
     <section className="dashboard">
       <div className="dashboard-hero">
@@ -70,18 +92,52 @@ export function Shell({
             </p>
           </div>
           <div className="session-actions">
-            <button className="back-button" onClick={onBack}>
+            <button className="back-button" onClick={() => requestSessionAction("back")}>
               خروج
             </button>
-            <button className="forget-account-button" onClick={onForgetAccount}>
+            <button
+              className="forget-account-button"
+              onClick={() => requestSessionAction("forget")}
+            >
               تبديل حساب
             </button>
           </div>
         </div>
 
+        {pendingSessionAction && (
+          <div className="session-confirm-card">
+            <div>
+              <strong>
+                {pendingSessionAction === "forget" ? "تأكيد تبديل الحساب" : "تأكيد الخروج"}
+              </strong>
+              <span>
+                {pendingSessionAction === "forget"
+                  ? "راح ترجع لشاشة الدخول وتختار حساب ثاني بدل الحساب الحالي."
+                  : "راح ترجع لشاشة الدخول، والحساب المحفوظ يبقى موجود حتى تكمل منه لاحقًا."}
+              </span>
+            </div>
+            <div className="session-confirm-actions">
+              <button onClick={confirmSessionAction} type="button">
+                {pendingSessionAction === "forget" ? "نعم، بدّل الحساب" : "نعم، خروج"}
+              </button>
+              <button onClick={cancelSessionAction} type="button">
+                إلغاء
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="welcome-message">
           <strong>{welcomeMessage.title}</strong>
           <span>{welcomeMessage.description}</span>
+        </div>
+
+        <div className="session-scope-card">
+          <div>
+            <span>جلسة محمية</span>
+            <strong>{getSessionScopeTitle(user.accountType)}</strong>
+          </div>
+          <p>{getSessionScopeDescription(user)}</p>
         </div>
 
         {navItems.length > 0 && (
@@ -240,6 +296,38 @@ function getNotificationTitle(type) {
   }
 
   return "تم بنجاح"
+}
+
+function getSessionScopeTitle(accountType) {
+  if (accountType === "صاحب متجر") {
+    return "واجهة صاحب المتجر فقط"
+  }
+
+  if (accountType === "سائق") {
+    return "واجهة السائق فقط"
+  }
+
+  if (accountType === "الإدارة") {
+    return "واجهة الإدارة فقط"
+  }
+
+  return "واجهة الزبون فقط"
+}
+
+function getSessionScopeDescription(user) {
+  if (user.accountType === "صاحب متجر") {
+    return `هذه الجلسة تعرض متاجر وطلبات رقم ${user.phone} فقط.`
+  }
+
+  if (user.accountType === "سائق") {
+    return "هذه الجلسة تعرض مهام التوصيل فقط ولا تعرض إدارة المتاجر أو لوحة الإدارة."
+  }
+
+  if (user.accountType === "الإدارة") {
+    return "هذه الجلسة مخصصة للإدارة ومحمية برمز الإدارة التجريبي."
+  }
+
+  return `هذه الجلسة تعرض طلبات الزبون المرتبطة برقم ${user.phone} فقط.`
 }
 
 function matchesNotificationFilter(notification, filter) {

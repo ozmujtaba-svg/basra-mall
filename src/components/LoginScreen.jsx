@@ -1,6 +1,28 @@
 import { accountDetails } from "../data"
 
 const publicAccountTypes = ["زبون", "صاحب متجر", "سائق"]
+const accountPermissions = {
+  زبون: [
+    "تصفح المتاجر المقبولة فقط",
+    "إضافة منتجات للسلة وإرسال الطلب",
+    "متابعة طلباته وحفظ عنوانه",
+  ],
+  "صاحب متجر": [
+    "تسجيل متجره ومتابعة حالة الموافقة",
+    "إدارة منتجات متاجره فقط",
+    "متابعة طلبات متاجره فقط",
+  ],
+  سائق: [
+    "مشاهدة طلبات التوصيل الجاهزة",
+    "استلام الطلب وتحديث حالة التسليم",
+    "تسجيل ملاحظات مهمة التوصيل",
+  ],
+  الإدارة: [
+    "مراجعة قبول ورفض المتاجر",
+    "متابعة كل الطلبات والأرباح",
+    "إدارة النسخ الاحتياطية والإعدادات",
+  ],
+}
 
 export function LoginScreen({
   accountType,
@@ -8,8 +30,12 @@ export function LoginScreen({
   loginMessage,
   onAccountChange,
   onEnter,
+  onForgetAccount,
   onLoginInfoChange,
+  savedAccountWarning,
 }) {
+  const hasSavedAccount = Boolean(loginInfo.name.trim() && loginInfo.phone.trim())
+
   return (
     <section className="card">
       <div className="intro">
@@ -23,7 +49,27 @@ export function LoginScreen({
 
       <div className="login">
         <h2>تسجيل الدخول</h2>
-        <p>اختر نوع حسابك حتى نفتح الواجهة المناسبة لك فقط.</p>
+        <p>اختر نوع حسابك حتى نفتح الواجهة المناسبة لك فقط، بدون خلط بين الصلاحيات.</p>
+
+        {hasSavedAccount && (
+          <div className="saved-account-card">
+            <div>
+              <span>آخر حساب محفوظ</span>
+              <strong>{loginInfo.name}</strong>
+              <small>
+                {accountType} / {loginInfo.phone}
+              </small>
+            </div>
+            <div className="saved-account-actions">
+              <button onClick={onEnter} type="button">
+                كمل بهذا الحساب
+              </button>
+              <button onClick={onForgetAccount} type="button">
+                بدّل حساب
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="options">
           {publicAccountTypes.map((type) => (
@@ -55,6 +101,28 @@ export function LoginScreen({
           <strong>الواجهة المختارة: {accountType}</strong>
           <br />
           {accountDetails[accountType]}
+        </div>
+
+        {savedAccountWarning && (
+          <div className="account-warning-card">
+            <strong>انتبه للحساب المحفوظ</strong>
+            <span>{savedAccountWarning}</span>
+            <button onClick={onForgetAccount} type="button">
+              بدّل الحساب المحفوظ
+            </button>
+          </div>
+        )}
+
+        <div className="permission-card">
+          <div>
+            <span>الصلاحيات بعد الدخول</span>
+            <strong>{accountType}</strong>
+          </div>
+          <ul>
+            {accountPermissions[accountType].map((permission) => (
+              <li key={permission}>{permission}</li>
+            ))}
+          </ul>
         </div>
 
         <div className="login-form">
