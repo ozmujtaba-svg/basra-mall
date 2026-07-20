@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 
 const categories = ["الكل", "ملابس", "كوزمتك", "عطور", "أحذية", "إكسسوارات"]
 const productFilters = ["الكل", "المتوفر", "الكمية القليلة", "النافد"]
@@ -41,37 +41,64 @@ export function CustomerDashboard({
   const [trackingSearch, setTrackingSearch] = useState("")
   const [copiedOrderId, setCopiedOrderId] = useState("")
   const [pendingCancelOrderId, setPendingCancelOrderId] = useState("")
-  const safeSelectedStore = selectedStore ?? stores[0] ?? {
-    category: "",
-    description: "لا يوجد متجر متاح حاليًا.",
-    name: "لا يوجد متجر",
-    products: [],
-  }
+  const safeSelectedStore = useMemo(
+    () =>
+      selectedStore ?? stores[0] ?? {
+        category: "",
+        description: "لا يوجد متجر متاح حاليًا.",
+        name: "لا يوجد متجر",
+        products: [],
+      },
+    [selectedStore, stores],
+  )
   const normalizedSearch = searchText.trim().toLowerCase()
-  const categoryStores =
-    activeCategory === "الكل" ? stores : stores.filter((store) => store.category === activeCategory)
-  const visibleStores = categoryStores.filter((store) => matchesSearch(store, normalizedSearch))
-  const suggestedStores = visibleStores.slice(0, 3)
-  const favoriteStores = stores.filter((store) => favoriteStoreNames.includes(store.name))
-  const cartQuantity = cartItems.reduce((total, item) => total + item.quantity, 0)
-  const activeOrders = customerOrders.filter((order) => order.status !== "ملغي" && order.status !== "تم التسليم")
-  const subtotal = cartItems.reduce(
-    (total, item) => total + getPriceValue(item.price) * item.quantity,
-    0,
+  const categoryStores = useMemo(
+    () => (activeCategory === "الكل" ? stores : stores.filter((store) => store.category === activeCategory)),
+    [activeCategory, stores],
+  )
+  const visibleStores = useMemo(
+    () => categoryStores.filter((store) => matchesSearch(store, normalizedSearch)),
+    [categoryStores, normalizedSearch],
+  )
+  const suggestedStores = useMemo(() => visibleStores.slice(0, 3), [visibleStores])
+  const favoriteStores = useMemo(
+    () => stores.filter((store) => favoriteStoreNames.includes(store.name)),
+    [favoriteStoreNames, stores],
+  )
+  const cartQuantity = useMemo(
+    () => cartItems.reduce((total, item) => total + item.quantity, 0),
+    [cartItems],
+  )
+  const activeOrders = useMemo(
+    () => customerOrders.filter((order) => order.status !== "ملغي" && order.status !== "تم التسليم"),
+    [customerOrders],
+  )
+  const subtotal = useMemo(
+    () => cartItems.reduce((total, item) => total + getPriceValue(item.price) * item.quantity, 0),
+    [cartItems],
   )
   const finalTotal = cartItems.length > 0 ? subtotal + deliveryFee : 0
-  const visibleProducts = safeSelectedStore.products.filter(
-    (product) => product.status !== "مخفي مؤقتًا",
+  const visibleProducts = useMemo(
+    () => safeSelectedStore.products.filter((product) => product.status !== "مخفي مؤقتًا"),
+    [safeSelectedStore.products],
   )
-  const filteredProducts = visibleProducts.filter((product) =>
-    matchesProductFilter(product, activeProductFilter),
+  const filteredProducts = useMemo(
+    () => visibleProducts.filter((product) => matchesProductFilter(product, activeProductFilter)),
+    [activeProductFilter, visibleProducts],
   )
   const latestOrder = customerOrders[0]
-  const latestOrderItemsCount = latestOrder ? getOrderItemsCount(latestOrder.items) : 0
+  const latestOrderItemsCount = useMemo(
+    () => (latestOrder ? getOrderItemsCount(latestOrder.items) : 0),
+    [latestOrder],
+  )
   const normalizedTrackingSearch = trackingSearch.trim()
-  const visibleCustomerOrders = normalizedTrackingSearch
-    ? customerOrders.filter((order) => String(order.id).includes(normalizedTrackingSearch))
-    : customerOrders
+  const visibleCustomerOrders = useMemo(
+    () =>
+      normalizedTrackingSearch
+        ? customerOrders.filter((order) => String(order.id).includes(normalizedTrackingSearch))
+        : customerOrders,
+    [customerOrders, normalizedTrackingSearch],
+  )
 
   return (
     <div className="customer-layout">
@@ -119,7 +146,7 @@ export function CustomerDashboard({
           <div className="suggested-store-list">
             {suggestedStores.map((store) => (
               <button key={`suggested-${store.name}`} onClick={() => onSelectStore(store)} type="button">
-                {store.image && <img src={store.image} alt="" />}
+                {store.image && <img src={store.image} alt="" loading="lazy" decoding="async" />}
                 <span>{store.category}</span>
                 <strong>{store.name}</strong>
               </button>
@@ -176,7 +203,9 @@ export function CustomerDashboard({
                 className={`store-card ${safeSelectedStore.name === store.name ? "active" : ""}`}
                 key={store.name}
               >
-                {store.image && <img className="store-thumb" src={store.image} alt="" />}
+                {store.image && (
+                  <img className="store-thumb" src={store.image} alt="" loading="lazy" decoding="async" />
+                )}
                 <small>{store.category}</small>
                 <h3>{store.name}</h3>
                 <span>{store.description}</span>
@@ -202,7 +231,16 @@ export function CustomerDashboard({
             <h2>{safeSelectedStore.name}</h2>
             <p>{safeSelectedStore.description}</p>
           </div>
-          {safeSelectedStore.image && <img className="store-hero-image" src={safeSelectedStore.image} alt="" />}
+          {safeSelectedStore.image && (
+            <img
+              className="store-hero-image"
+              src={safeSelectedStore.image}
+              alt=""
+              loading="eager"
+              decoding="async"
+              fetchPriority="high"
+            />
+          )}
           <div className="store-detail-meta">
             <span>{filteredProducts.length} منتجات</span>
             <span>التوصيل داخل البصرة</span>
@@ -248,7 +286,9 @@ export function CustomerDashboard({
 
               return (
                 <div className="product-card" key={product.name}>
-                  {product.image && <img className="product-image" src={product.image} alt="" />}
+                  {product.image && (
+                    <img className="product-image" src={product.image} alt="" loading="lazy" decoding="async" />
+                  )}
                   <div>
                     <h3>{product.name}</h3>
                     <span>{product.price}</span>

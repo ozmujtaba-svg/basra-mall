@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 
 const deliveryStatusFilters = ["الكل", "جاهز للتوصيل", "قيد التوصيل", "تم التسليم"]
 const deliverySortOptions = [
@@ -23,30 +23,74 @@ export function DriverDashboard({ onUpdateOrderNote, onUpdateStatus, orders, sto
   const [copyMessage, setCopyMessage] = useState("")
   const [confirmPickupId, setConfirmPickupId] = useState(null)
   const [confirmDeliveryId, setConfirmDeliveryId] = useState(null)
-  const filteredOrders = orders
-    .filter((order) => deliveryStatusFilter === "الكل" || order.status === deliveryStatusFilter)
-    .filter((order) => matchesOrderSearch(order, orderSearch))
-    .sort((firstOrder, secondOrder) => sortDeliveryOrders(firstOrder, secondOrder, deliverySort))
-  const deliveredOrders = orders.filter((order) => order.status === "تم التسليم")
-  const activeDeliveries = orders.filter((order) => order.status === "قيد التوصيل")
-  const availableDeliveries = orders.filter((order) => order.status === "جاهز للتوصيل")
-  const deliveryEarnings = deliveredOrders.reduce((total, order) => total + order.deliveryFee, 0)
-  const todayDeliveredOrders = deliveredOrders.filter((order) => isToday(order.createdAt))
-  const todayDeliveryEarnings = getDeliveryFees(todayDeliveredOrders)
-  const availableDeliveryFees = getDeliveryFees(availableDeliveries)
-  const activeDeliveryFees = getDeliveryFees(activeDeliveries)
-  const expectedDeliveryFees = getDeliveryFees(orders.filter((order) => order.status !== "ملغي"))
-  const priorityDeliveries = availableDeliveries.filter((order) => getOrderAgeMinutes(order.createdAt) >= 30)
-  const nextPriorityOrder = [...availableDeliveries].sort(sortOrdersByPriority)[0]
-  const latestDeliveredOrder = [...deliveredOrders].sort((firstOrder, secondOrder) => secondOrder.id - firstOrder.id)[0]
-  const orderGroups = [
-    { title: "جاهزة للاستلام", status: "جاهز للتوصيل" },
-    { title: "قيد التوصيل", status: "قيد التوصيل" },
-    { title: "تم التسليم", status: "تم التسليم" },
-  ].map((group) => ({
-    ...group,
-    orders: filteredOrders.filter((order) => order.status === group.status),
-  }))
+  const filteredOrders = useMemo(
+    () =>
+      orders
+        .filter((order) => deliveryStatusFilter === "الكل" || order.status === deliveryStatusFilter)
+        .filter((order) => matchesOrderSearch(order, orderSearch))
+        .sort((firstOrder, secondOrder) => sortDeliveryOrders(firstOrder, secondOrder, deliverySort)),
+    [deliverySort, deliveryStatusFilter, orderSearch, orders],
+  )
+  const deliveredOrders = useMemo(
+    () => orders.filter((order) => order.status === "تم التسليم"),
+    [orders],
+  )
+  const activeDeliveries = useMemo(
+    () => orders.filter((order) => order.status === "قيد التوصيل"),
+    [orders],
+  )
+  const availableDeliveries = useMemo(
+    () => orders.filter((order) => order.status === "جاهز للتوصيل"),
+    [orders],
+  )
+  const deliveryEarnings = useMemo(
+    () => deliveredOrders.reduce((total, order) => total + order.deliveryFee, 0),
+    [deliveredOrders],
+  )
+  const todayDeliveredOrders = useMemo(
+    () => deliveredOrders.filter((order) => isToday(order.createdAt)),
+    [deliveredOrders],
+  )
+  const todayDeliveryEarnings = useMemo(
+    () => getDeliveryFees(todayDeliveredOrders),
+    [todayDeliveredOrders],
+  )
+  const availableDeliveryFees = useMemo(
+    () => getDeliveryFees(availableDeliveries),
+    [availableDeliveries],
+  )
+  const activeDeliveryFees = useMemo(
+    () => getDeliveryFees(activeDeliveries),
+    [activeDeliveries],
+  )
+  const expectedDeliveryFees = useMemo(
+    () => getDeliveryFees(orders.filter((order) => order.status !== "ملغي")),
+    [orders],
+  )
+  const priorityDeliveries = useMemo(
+    () => availableDeliveries.filter((order) => getOrderAgeMinutes(order.createdAt) >= 30),
+    [availableDeliveries],
+  )
+  const nextPriorityOrder = useMemo(
+    () => [...availableDeliveries].sort(sortOrdersByPriority)[0],
+    [availableDeliveries],
+  )
+  const latestDeliveredOrder = useMemo(
+    () => [...deliveredOrders].sort((firstOrder, secondOrder) => secondOrder.id - firstOrder.id)[0],
+    [deliveredOrders],
+  )
+  const orderGroups = useMemo(
+    () =>
+      [
+        { title: "جاهزة للاستلام", status: "جاهز للتوصيل" },
+        { title: "قيد التوصيل", status: "قيد التوصيل" },
+        { title: "تم التسليم", status: "تم التسليم" },
+      ].map((group) => ({
+        ...group,
+        orders: filteredOrders.filter((order) => order.status === group.status),
+      })),
+    [filteredOrders],
+  )
 
   return (
     <div className="orders-panel">

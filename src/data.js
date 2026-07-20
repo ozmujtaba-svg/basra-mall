@@ -1,8 +1,8 @@
-import accessoriesImage from "./assets/marketplace/accessories.png"
-import clothingImage from "./assets/marketplace/clothing.png"
-import cosmeticsImage from "./assets/marketplace/cosmetics.png"
-import perfumeImage from "./assets/marketplace/perfume.png"
-import shoesImage from "./assets/marketplace/shoes.png"
+import accessoriesImage from "./assets/marketplace/accessories.jpg"
+import clothingImage from "./assets/marketplace/clothing.jpg"
+import cosmeticsImage from "./assets/marketplace/cosmetics.jpg"
+import perfumeImage from "./assets/marketplace/perfume.jpg"
+import shoesImage from "./assets/marketplace/shoes.jpg"
 
 export const categoryImages = {
   ملابس: clothingImage,

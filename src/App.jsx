@@ -1581,10 +1581,37 @@ function normalizeImportedAppData(backupData) {
 }
 
 function normalizeStore(store) {
+  const categoryImage = categoryImages[store.category]
+
   return {
     ...store,
-    products: Array.isArray(store.products) ? store.products : [],
+    image: normalizeMarketplaceImage(store.image, categoryImage),
+    products: Array.isArray(store.products)
+      ? store.products.map((product) => normalizeProduct(product, categoryImage))
+      : [],
   }
+}
+
+function normalizeProduct(product, fallbackImage) {
+  return {
+    ...product,
+    image: normalizeMarketplaceImage(product.image, fallbackImage),
+  }
+}
+
+function normalizeMarketplaceImage(image, fallbackImage) {
+  if (!image || isOldMarketplaceImage(image)) {
+    return fallbackImage
+  }
+
+  return image
+}
+
+function isOldMarketplaceImage(image) {
+  const imagePath = String(image)
+  const oldImageNames = ["accessories", "category-collage", "clothing", "cosmetics", "perfume", "shoes"]
+
+  return imagePath.endsWith(".png") && oldImageNames.some((name) => imagePath.includes(name))
 }
 
 function normalizeOrder(order) {

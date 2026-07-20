@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 
 const orderStatusFilters = [
   "الكل",
@@ -64,65 +64,115 @@ export function AdminDashboard({
   const [pendingResetData, setPendingResetData] = useState(false)
   const [pendingImportFile, setPendingImportFile] = useState(null)
   const [pendingRejectStoreName, setPendingRejectStoreName] = useState("")
-  const pendingStores = stores.filter((store) => store.status === "pending")
-  const rejectedStores = stores.filter((store) => store.status === "rejected")
-  const approvedStores = stores.filter((store) => store.status !== "pending" && store.status !== "rejected")
-  const filteredStores = stores
-    .map((store, index) => ({ ...store, adminOrder: index }))
-    .filter((store) => matchesStoreStatusFilter(store, storeStatusFilter))
-    .filter((store) => matchesStoreSearch(store, storeSearch))
-    .sort((firstStore, secondStore) => sortStores(firstStore, secondStore, storeSort))
-  const canceledOrders = allOrders.filter((order) => order.status === "ملغي")
-  const nonCanceledOrders = allOrders.filter((order) => order.status !== "ملغي")
-  const productCount = stores.reduce((total, store) => total + store.products.length, 0)
-  const topStore = getTopStore(nonCanceledOrders)
-  const totalSales = nonCanceledOrders.reduce((total, order) => total + order.subtotal, 0)
-  const salesCommission = nonCanceledOrders.reduce(
-    (total, order) => total + order.subtotal * commissionRate,
-    0,
+  const pendingStores = useMemo(() => stores.filter((store) => store.status === "pending"), [stores])
+  const rejectedStores = useMemo(() => stores.filter((store) => store.status === "rejected"), [stores])
+  const approvedStores = useMemo(
+    () => stores.filter((store) => store.status !== "pending" && store.status !== "rejected"),
+    [stores],
   )
-  const deliveryRevenue = deliveredOrders.reduce((total, order) => total + order.deliveryFee, 0)
+  const filteredStores = useMemo(
+    () =>
+      stores
+        .map((store, index) => ({ ...store, adminOrder: index }))
+        .filter((store) => matchesStoreStatusFilter(store, storeStatusFilter))
+        .filter((store) => matchesStoreSearch(store, storeSearch))
+        .sort((firstStore, secondStore) => sortStores(firstStore, secondStore, storeSort)),
+    [storeSearch, storeSort, storeStatusFilter, stores],
+  )
+  const canceledOrders = useMemo(
+    () => allOrders.filter((order) => order.status === "ملغي"),
+    [allOrders],
+  )
+  const nonCanceledOrders = useMemo(
+    () => allOrders.filter((order) => order.status !== "ملغي"),
+    [allOrders],
+  )
+  const productCount = useMemo(
+    () => stores.reduce((total, store) => total + store.products.length, 0),
+    [stores],
+  )
+  const topStore = useMemo(() => getTopStore(nonCanceledOrders), [nonCanceledOrders])
+  const totalSales = useMemo(
+    () => nonCanceledOrders.reduce((total, order) => total + order.subtotal, 0),
+    [nonCanceledOrders],
+  )
+  const salesCommission = useMemo(
+    () => nonCanceledOrders.reduce((total, order) => total + order.subtotal * commissionRate, 0),
+    [commissionRate, nonCanceledOrders],
+  )
+  const deliveryRevenue = useMemo(
+    () => deliveredOrders.reduce((total, order) => total + order.deliveryFee, 0),
+    [deliveredOrders],
+  )
   const averageOrderValue = nonCanceledOrders.length > 0 ? totalSales / nonCanceledOrders.length : 0
-  const monitoringStats = getMonitoringStats({
-    allOrders,
-    commissionRate,
-    pendingStores,
-  })
-  const todayStats = getTodayStats(allOrders, commissionRate)
-  const weekStats = getWeekStats(allOrders, commissionRate)
-  const topWeeklyStores = getTopWeeklyStores(allOrders)
-  const topWeeklyProducts = getTopWeeklyProducts(allOrders)
-  const adminAlerts = getAdminAlerts({
-    allOrders,
-    canceledOrders,
-    pendingStores,
-  })
-  const adminTasks = getAdminTasks({ allOrders, canceledOrders, pendingStores })
-  const newOrdersCount = allOrders.filter((order) => order.status === "طلب جديد").length
-  const inDeliveryOrdersCount = allOrders.filter((order) => order.status === "قيد التوصيل").length
+  const monitoringStats = useMemo(
+    () =>
+      getMonitoringStats({
+        allOrders,
+        commissionRate,
+        pendingStores,
+      }),
+    [allOrders, commissionRate, pendingStores],
+  )
+  const todayStats = useMemo(() => getTodayStats(allOrders, commissionRate), [allOrders, commissionRate])
+  const weekStats = useMemo(() => getWeekStats(allOrders, commissionRate), [allOrders, commissionRate])
+  const topWeeklyStores = useMemo(() => getTopWeeklyStores(allOrders), [allOrders])
+  const topWeeklyProducts = useMemo(() => getTopWeeklyProducts(allOrders), [allOrders])
+  const adminAlerts = useMemo(
+    () =>
+      getAdminAlerts({
+        allOrders,
+        canceledOrders,
+        pendingStores,
+      }),
+    [allOrders, canceledOrders, pendingStores],
+  )
+  const adminTasks = useMemo(
+    () => getAdminTasks({ allOrders, canceledOrders, pendingStores }),
+    [allOrders, canceledOrders, pendingStores],
+  )
+  const newOrdersCount = useMemo(
+    () => allOrders.filter((order) => order.status === "طلب جديد").length,
+    [allOrders],
+  )
+  const inDeliveryOrdersCount = useMemo(
+    () => allOrders.filter((order) => order.status === "قيد التوصيل").length,
+    [allOrders],
+  )
   const activeAlertTitle = adminAlerts[0]?.title ?? "الوضع مستقر"
-  const delayedAdminOrders = getDelayedAdminOrders(allOrders)
-  const topDelayedAdminOrders = delayedAdminOrders.slice(0, 3)
-  const systemHealth = getSystemHealthSummary({ allOrders, lastSaveTime, productCount, stores })
-  const projectSummary = getProjectSummary({
-    allOrders,
-    approvedStores,
-    deliveredOrders,
-    lastSaveTime,
-    pendingStores,
-    productCount,
-    rejectedStores,
-    stores,
-  })
-  const adminActivityLog = getAdminActivityLog({
-    allOrders,
-    delayedAdminOrders,
-    focusOrder,
-    pendingStores,
-    rejectedStores,
-    scrollToAdminSection,
-    goToStoreReview,
-  })
+  const delayedAdminOrders = useMemo(() => getDelayedAdminOrders(allOrders), [allOrders])
+  const topDelayedAdminOrders = useMemo(() => delayedAdminOrders.slice(0, 3), [delayedAdminOrders])
+  const systemHealth = useMemo(
+    () => getSystemHealthSummary({ allOrders, lastSaveTime, productCount, stores }),
+    [allOrders, lastSaveTime, productCount, stores],
+  )
+  const projectSummary = useMemo(
+    () =>
+      getProjectSummary({
+        allOrders,
+        approvedStores,
+        deliveredOrders,
+        lastSaveTime,
+        pendingStores,
+        productCount,
+        rejectedStores,
+        stores,
+      }),
+    [allOrders, approvedStores, deliveredOrders, lastSaveTime, pendingStores, productCount, rejectedStores, stores],
+  )
+  const adminActivityLog = useMemo(
+    () =>
+      getAdminActivityLog({
+        allOrders,
+        delayedAdminOrders,
+        focusOrder,
+        pendingStores,
+        rejectedStores,
+        scrollToAdminSection,
+        goToStoreReview,
+      }),
+    [allOrders, delayedAdminOrders, pendingStores, rejectedStores],
+  )
   const quickDecisionRows = [
     {
       title: "مراجعة متاجر جديدة",
@@ -165,11 +215,15 @@ export function AdminDashboard({
       onClick: () => goToOrderReview("الكل"),
     },
   ]
-  const filteredOrders = allOrders
-    .filter((order) => orderStatusFilter === "الكل" || order.status === orderStatusFilter)
-    .filter((order) => matchesDateFilter(order, orderDateFilter))
-    .filter((order) => matchesOrderSearch(order, orderSearch))
-    .sort((firstOrder, secondOrder) => sortOrders(firstOrder, secondOrder, orderSort))
+  const filteredOrders = useMemo(
+    () =>
+      allOrders
+        .filter((order) => orderStatusFilter === "الكل" || order.status === orderStatusFilter)
+        .filter((order) => matchesDateFilter(order, orderDateFilter))
+        .filter((order) => matchesOrderSearch(order, orderSearch))
+        .sort((firstOrder, secondOrder) => sortOrders(firstOrder, secondOrder, orderSort)),
+    [allOrders, orderDateFilter, orderSearch, orderSort, orderStatusFilter],
+  )
 
   return (
     <div className="orders-panel">

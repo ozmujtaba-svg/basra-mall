@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 
 const storeCategories = ["ملابس", "كوزمتك", "عطور", "أحذية", "إكسسوارات"]
 const productStatuses = ["متوفر", "مخفي مؤقتًا", "نفد"]
@@ -58,34 +58,55 @@ export function MerchantDashboard({
   const [copiedOrderId, setCopiedOrderId] = useState("")
   const [rejectConfirmOrderId, setRejectConfirmOrderId] = useState("")
   const [pendingDeleteProductName, setPendingDeleteProductName] = useState("")
-  const selectedStore = stores.find((store) => store.name === selectedStoreName) ?? stores[0]
+  const selectedStore = useMemo(
+    () => stores.find((store) => store.name === selectedStoreName) ?? stores[0],
+    [selectedStoreName, stores],
+  )
   const hasStores = stores.length > 0
-  const filteredStoresByStatus = stores.filter((store) =>
-    matchesStoreStatusFilter(store, storeStatusFilter),
+  const filteredStoresByStatus = useMemo(
+    () => stores.filter((store) => matchesStoreStatusFilter(store, storeStatusFilter)),
+    [storeStatusFilter, stores],
   )
-  const rejectedStores = stores.filter((store) => store.status === "rejected")
-  const merchantRevenue = calculateMerchantRevenue(orders, commissionRate)
-  const topMerchantProduct = getTopMerchantProduct(orders, stores)
-  const filteredOrders = orders.filter(
-    (order) =>
-      matchesOrderSearch(order, orderSearch) &&
-      (orderStatusFilter === "الكل" || order.status === orderStatusFilter),
+  const rejectedStores = useMemo(
+    () => stores.filter((store) => store.status === "rejected"),
+    [stores],
   )
-  const sortedOrders = sortOrders(filteredOrders, orderSort)
-  const merchantOrderSummary = getMerchantOrderSummary(orders)
+  const merchantRevenue = useMemo(
+    () => calculateMerchantRevenue(orders, commissionRate),
+    [commissionRate, orders],
+  )
+  const topMerchantProduct = useMemo(
+    () => getTopMerchantProduct(orders, stores),
+    [orders, stores],
+  )
+  const filteredOrders = useMemo(
+    () =>
+      orders.filter(
+        (order) =>
+          matchesOrderSearch(order, orderSearch) &&
+          (orderStatusFilter === "الكل" || order.status === orderStatusFilter),
+      ),
+    [orderSearch, orderStatusFilter, orders],
+  )
+  const sortedOrders = useMemo(() => sortOrders(filteredOrders, orderSort), [filteredOrders, orderSort])
+  const merchantOrderSummary = useMemo(() => getMerchantOrderSummary(orders), [orders])
   const actionOrdersCount = merchantOrderSummary.newOrders + merchantOrderSummary.preparingOrders
   const merchantOrderAlert = getMerchantOrderAlert(merchantOrderSummary)
-  const orderGroups = [
-    { title: "طلبات جديدة", status: "طلب جديد" },
-    { title: "قيد التجهيز", status: "قيد التجهيز" },
-    { title: "جاهزة للتوصيل", status: "جاهز للتوصيل" },
-    { title: "قيد التوصيل", status: "قيد التوصيل" },
-    { title: "مكتملة", status: "تم التسليم" },
-    { title: "ملغية", status: "ملغي" },
-  ].map((group) => ({
-    ...group,
-    orders: sortedOrders.filter((order) => order.status === group.status),
-  })).filter((group) => orderStatusFilter === "الكل" || group.status === orderStatusFilter)
+  const orderGroups = useMemo(
+    () =>
+      [
+        { title: "طلبات جديدة", status: "طلب جديد" },
+        { title: "قيد التجهيز", status: "قيد التجهيز" },
+        { title: "جاهزة للتوصيل", status: "جاهز للتوصيل" },
+        { title: "قيد التوصيل", status: "قيد التوصيل" },
+        { title: "مكتملة", status: "تم التسليم" },
+        { title: "ملغية", status: "ملغي" },
+      ].map((group) => ({
+        ...group,
+        orders: sortedOrders.filter((order) => order.status === group.status),
+      })).filter((group) => orderStatusFilter === "الكل" || group.status === orderStatusFilter),
+    [orderStatusFilter, sortedOrders],
+  )
 
   useEffect(() => {
     if (!stores.some((store) => store.name === selectedStoreName)) {
@@ -456,7 +477,7 @@ export function MerchantDashboard({
 
           {productImage.trim() && (
             <div className="product-image-preview">
-              <img src={productImage.trim()} alt="" />
+              <img src={productImage.trim()} alt="" loading="lazy" decoding="async" />
               <span>معاينة صورة المنتج</span>
             </div>
           )}
@@ -502,7 +523,15 @@ export function MerchantDashboard({
 
               return (
                 <div className="merchant-product-row" key={`${selectedStore.name}-${product.name}`}>
-                  {product.image && <img className="merchant-product-image" src={product.image} alt="" />}
+                  {product.image && (
+                    <img
+                      className="merchant-product-image"
+                      src={product.image}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  )}
                   <div>
                     <strong>{product.name}</strong>
                     <span>{product.price}</span>
