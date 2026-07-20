@@ -5384,6 +5384,10 @@ button span {
 }
 
 @media (max-width: 760px) {
+  .page {
+    padding: 14px;
+  }
+
   .card {
     grid-template-columns: 1fr;
   }
@@ -5392,7 +5396,7 @@ button span {
   .login,
   .dashboard-hero,
   .dashboard-body {
-    padding: 28px;
+    padding: 24px;
   }
 
   .intro h1,
@@ -5426,6 +5430,60 @@ button span {
     min-width: max-content;
   }
 
+  button,
+  .route-contact-actions a,
+  .merchant-customer-contact-actions a,
+  .import-data-button {
+    min-height: 48px;
+    padding: 13px 14px;
+    text-align: center;
+  }
+
+  .options button,
+  .enter-button,
+  .send-order-button,
+  .confirm-send-button,
+  .prepare-button,
+  .delivery-button,
+  .danger-action-button,
+  .reorder-button,
+  .register-button,
+  .secondary-form-button,
+  .approve-button,
+  .reject-button,
+  .reset-data-button,
+  .export-orders-button,
+  .back-button,
+  .forget-account-button {
+    width: 100%;
+  }
+
+  .dashboard-nav,
+  .category-tabs,
+  .product-filter-tabs,
+  .merchant-store-filter,
+  .merchant-order-filter,
+  .driver-order-filter,
+  .admin-order-filter,
+  .admin-store-status-summary,
+  .admin-store-filter,
+  .notification-filter {
+    gap: 10px;
+  }
+
+  .category-tabs button,
+  .product-filter-tabs button,
+  .merchant-store-filter button,
+  .merchant-order-filter button,
+  .driver-order-filter button,
+  .admin-order-filter button,
+  .admin-store-status-summary button,
+  .admin-store-filter button,
+  .notification-filter button {
+    min-height: 44px;
+    padding: 11px 12px;
+  }
+
   .app-notification,
   .notification-center-top,
   .session-confirm-card,
@@ -5437,6 +5495,16 @@ button span {
   .notification-center-actions {
     display: grid;
     grid-template-columns: 1fr 1fr;
+  }
+
+  .notification-center-actions button,
+  .saved-account-actions button,
+  .project-save-actions button,
+  .admin-health-actions button,
+  .merchant-order-card-actions button,
+  .merchant-order-actions button,
+  .merchant-product-actions button {
+    width: 100%;
   }
 
   .notification-filter {
@@ -5566,9 +5634,388 @@ button span {
     display: grid;
   }
 
+  .store-card,
+  .product-card,
+  .latest-order-card,
+  .tracking-card,
+  .order-card,
+  .delivery-order-card,
+  .merchant-product-row,
+  .merchant-order-card,
+  .merchant-order-alert,
+  .merchant-top-product-card,
+  .admin-late-card,
+  .driver-priority-card,
+  .driver-task-summary {
+    min-width: 0;
+    padding: 14px;
+    border-radius: 12px;
+  }
+
+  .store-card h3,
+  .product-card h3,
+  .latest-order-card h3,
+  .tracking-card h3,
+  .order-card h3,
+  .merchant-product-row strong,
+  .merchant-order-card h3,
+  .merchant-top-product-card strong,
+  .delivery-order-card strong,
+  .driver-task-summary strong,
+  .admin-late-card strong {
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+
+  .store-card small,
+  .product-card span,
+  .latest-order-card small,
+  .latest-order-card span,
+  .tracking-card span,
+  .merchant-product-row span,
+  .merchant-product-row small,
+  .merchant-order-card span,
+  .merchant-order-card small,
+  .delivery-order-card span,
+  .delivery-order-card small,
+  .admin-late-card span,
+  .admin-late-card small {
+    line-height: 1.8;
+    overflow-wrap: anywhere;
+  }
+
+  .store-list,
+  .product-list,
+  .suggested-store-list,
+  .favorite-store-list,
+  .merchant-products,
+  .merchant-order-groups,
+  .tracking-card,
+  .driver-history-grid,
+  .admin-activity-list {
+    gap: 12px;
+  }
+
+  .store-thumb,
+  .product-image,
+  .product-image-preview img,
+  .merchant-product-image {
+    max-height: 190px;
+    object-fit: cover;
+  }
+
+  .merchant-product-image {
+    width: 100%;
+    height: 160px;
+  }
+
+  .merchant-order-facts div,
+  .merchant-order-items div,
+  .merchant-order-money,
+  .delivery-route div,
+  .delivery-route-details div,
+  .quick-check-item,
+  .recent-activity-item,
+  .project-summary-grid div,
+  .launch-check-item,
+  .development-roadmap-item,
+  .current-version-grid div,
+  .admin-health-grid div {
+    padding: 12px;
+  }
+
+  .admin-table,
+  .admin-decision-table,
+  .admin-order-list,
+  .admin-late-list,
+  .admin-task-list,
+  .top-store-list,
+  .notification-history,
+  .cart-list,
+  .order-review-list {
+    gap: 10px;
+  }
+
+  .admin-table-head,
+  .admin-decision-head {
+    display: none;
+  }
+
+  .admin-table-row,
+  .admin-decision-row,
+  .admin-activity-item,
+  .notification-history-item,
+  .top-store-row,
+  .cart-item,
+  .order-review-item,
+  .admin-late-card {
+    min-width: 0;
+    padding: 14px;
+    border-radius: 12px;
+  }
+
+  .admin-table-row,
+  .admin-decision-row,
+  .top-store-row,
+  .cart-item {
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .admin-table-row > *,
+  .admin-decision-row > *,
+  .top-store-row > *,
+  .cart-item > *,
+  .order-review-item > * {
+    min-width: 0;
+  }
+
+  .admin-table-row > * + *,
+  .admin-decision-row > * + * {
+    padding-top: 10px;
+    border-top: 1px solid rgba(36, 48, 45, 0.1);
+  }
+
+  .admin-table-row strong,
+  .admin-table-row small,
+  .admin-decision-row strong,
+  .admin-decision-row small,
+  .admin-activity-item strong,
+  .admin-activity-item span,
+  .admin-activity-item small,
+  .notification-history-item strong,
+  .notification-history-item span,
+  .notification-history-item small,
+  .top-store-row strong,
+  .top-store-row small,
+  .cart-item strong,
+  .cart-item span,
+  .order-review-item strong,
+  .order-review-item span {
+    overflow-wrap: anywhere;
+  }
+
+  .decision-count,
+  .top-store-row > strong {
+    width: fit-content;
+    white-space: normal;
+  }
+
+  .top-store-rank {
+    width: 32px;
+    height: 32px;
+  }
+
+  .notification-history-title,
+  .notification-history-badges {
+    align-items: flex-start;
+    display: grid;
+    gap: 8px;
+  }
+
+  .notification-history-badges {
+    justify-items: start;
+  }
+
+  input,
+  select,
+  textarea {
+    min-height: 48px;
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  textarea {
+    min-height: 104px;
+  }
+
+  label {
+    line-height: 1.6;
+  }
+
+  .login-form,
+  .customer-info-form,
+  .customer-info-grid,
+  .merchant-form,
+  .settings-grid,
+  .store-review-actions,
+  .tracking-search-box,
+  .store-search,
+  .order-search,
+  .admin-order-search,
+  .admin-store-search,
+  .admin-store-sort,
+  .admin-order-sort,
+  .driver-order-sort,
+  .merchant-order-sort,
+  .order-note-box,
+  .quick-notes,
+  .driver-quick-notes {
+    gap: 12px;
+  }
+
+  .login-form input,
+  .customer-info-grid input,
+  .customer-info-grid textarea,
+  .merchant-form input,
+  .merchant-form select,
+  .tracking-search-box input,
+  .store-search input,
+  .order-search input,
+  .admin-order-search input,
+  .admin-store-search input,
+  .admin-store-sort select,
+  .admin-order-sort select,
+  .driver-order-sort select,
+  .merchant-order-sort select,
+  .store-review-actions input,
+  .store-review-actions select,
+  .setting-control input,
+  .order-note-box textarea {
+    border-radius: 12px;
+    padding: 14px;
+  }
+
+  .merchant-form input[type="file"] {
+    padding: 10px;
+  }
+
+  .merchant-form input[type="file"]::file-selector-button {
+    display: block;
+    width: 100%;
+    margin: 0 0 10px;
+    min-height: 40px;
+  }
+
+  .quick-notes-list,
+  .driver-quick-notes div {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .quick-notes-list button,
+  .driver-quick-notes button {
+    border-radius: 12px;
+    white-space: normal;
+  }
+
+  .tracking-search-box label,
+  .store-review-actions label {
+    width: 100%;
+  }
+
+  .dashboard-body,
+  .customer-layout,
+  .admin-grid,
+  .merchant-products,
+  .merchant-order-groups,
+  .driver-start-card,
+  .driver-priority-card,
+  .project-summary-section,
+  .project-readiness-panel,
+  .launch-checklist-panel,
+  .development-roadmap-panel,
+  .admin-activity-log,
+  .notification-center {
+    gap: 16px;
+  }
+
+  .dashboard-hero,
+  .dashboard-body,
+  .customer-layout > section,
+  .cart-panel,
+  .tracking-panel,
+  .merchant-form-card,
+  .orders-panel,
+  .admin-section,
+  .driver-start-card,
+  .driver-priority-card,
+  .driver-history-card,
+  .driver-earnings-card,
+  .notification-center,
+  .recent-activity-card {
+    border-radius: 14px;
+  }
+
+  .customer-layout > section,
+  .cart-panel,
+  .tracking-panel,
+  .merchant-form-card,
+  .orders-panel,
+  .admin-section,
+  .driver-history-card,
+  .driver-earnings-card,
+  .notification-center,
+  .recent-activity-card {
+    padding: 16px;
+  }
+
+  .customer-layout > section > h2,
+  .suggested-stores-header h2,
+  .store-detail-hero h2,
+  .cart-panel > h2,
+  .tracking-panel > h2,
+  .merchant-form-card > h2,
+  .merchant-section-top h2,
+  .orders-panel > h2,
+  .admin-section > h3,
+  .section-header-actions h3,
+  .driver-start-card h2,
+  .driver-priority-card h3,
+  .driver-history-card h3,
+  .driver-earnings-card h3,
+  .delivery-group-title h3 {
+    margin-bottom: 12px;
+    font-size: 20px;
+    line-height: 1.45;
+  }
+
+  .customer-layout > section > h2::before,
+  .suggested-stores-header h2::before,
+  .store-detail-hero h2::before,
+  .cart-panel > h2::before,
+  .tracking-panel > h2::before,
+  .merchant-form-card > h2::before,
+  .merchant-section-top h2::before,
+  .orders-panel > h2::before,
+  .admin-section > h3::before,
+  .section-header-actions h3::before,
+  .driver-start-card h2::before,
+  .driver-priority-card h3::before,
+  .driver-history-card h3::before,
+  .driver-earnings-card h3::before,
+  .delivery-group-title h3::before {
+    width: 7px;
+    height: 26px;
+  }
+
+  .dashboard-hero p,
+  .customer-start-card p,
+  .driver-start-card p,
+  .merchant-section-top p,
+  .admin-section p,
+  .current-section-bar,
+  .saved-address-card,
+  .cart-alert,
+  .app-notification {
+    line-height: 1.8;
+  }
+
+  .section-header-actions,
+  .merchant-section-top,
+  .suggested-stores-header,
+  .favorite-stores-header,
+  .admin-monitor-header,
+  .delivery-group-header,
+  .driver-history-header {
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
   .scroll-top-button {
     left: 12px;
     bottom: 12px;
+    min-height: 44px;
     padding: 10px 13px;
     font-size: 13px;
   }
