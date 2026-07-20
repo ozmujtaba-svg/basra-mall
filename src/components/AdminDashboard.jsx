@@ -104,6 +104,16 @@ export function AdminDashboard({
   const delayedAdminOrders = getDelayedAdminOrders(allOrders)
   const topDelayedAdminOrders = delayedAdminOrders.slice(0, 3)
   const systemHealth = getSystemHealthSummary({ allOrders, lastSaveTime, productCount, stores })
+  const projectSummary = getProjectSummary({
+    allOrders,
+    approvedStores,
+    deliveredOrders,
+    lastSaveTime,
+    pendingStores,
+    productCount,
+    rejectedStores,
+    stores,
+  })
   const adminActivityLog = getAdminActivityLog({
     allOrders,
     delayedAdminOrders,
@@ -163,6 +173,129 @@ export function AdminDashboard({
 
   return (
     <div className="orders-panel">
+      <section className="admin-section project-summary-section" id="admin-summary">
+        <div className="project-summary-hero">
+          <div>
+            <span>جاهزية النسخة الاحترافية</span>
+            <h2>ملخص المشروع</h2>
+            <p>
+              نظرة سريعة على وضع مول البصرة الحالي: شنو مبني، شنو يحتاج متابعة،
+              وشنو باقي قبل الإطلاق الحقيقي.
+            </p>
+          </div>
+          <div className={`project-readiness-score ${projectSummary.level}`}>
+            <span>درجة الجاهزية</span>
+            <strong>{projectSummary.score}%</strong>
+            <small>{projectSummary.title}</small>
+          </div>
+        </div>
+
+        <div className="project-summary-grid">
+          {projectSummary.stats.map((item) => (
+            <div className={item.level ?? ""} key={item.label}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <small>{item.note}</small>
+            </div>
+          ))}
+        </div>
+
+        <div className="project-readiness-panel">
+          <div>
+            <h3>شنو موجود حاليًا</h3>
+            <ul>
+              {projectSummary.readyFeatures.map((feature) => (
+                <li key={feature}>{feature}</li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <h3>شنو باقي قبل الاحتراف</h3>
+            <ul>
+              {projectSummary.nextSteps.map((step) => (
+                <li key={step}>{step}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        <div className="launch-checklist-panel">
+          <div className="launch-checklist-header">
+            <div>
+              <h3>قائمة مهام قبل الإطلاق</h3>
+              <p>هاي القائمة تفرق بين الأشياء الجاهزة كتجربة والأشياء المطلوبة للنسخة الاحترافية.</p>
+            </div>
+            <span>{projectSummary.launchChecklist.length} مهام</span>
+          </div>
+          <div className="launch-checklist-grid">
+            {projectSummary.launchChecklist.map((task) => (
+              <div className={`launch-check-item ${task.status}`} key={task.title}>
+                <span>{task.statusLabel}</span>
+                <strong>{task.title}</strong>
+                <small>{task.note}</small>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="development-roadmap-panel">
+          <div className="development-roadmap-header">
+            <div>
+              <h3>خريطة مراحل التطوير</h3>
+              <p>مسار واضح من النموذج الحالي إلى إطلاق مول البصرة بشكل رسمي.</p>
+            </div>
+            <span>{projectSummary.developmentRoadmap.length} مراحل</span>
+          </div>
+          <div className="development-roadmap-list">
+            {projectSummary.developmentRoadmap.map((stage) => (
+              <div className={`development-roadmap-item ${stage.status}`} key={stage.title}>
+                <span>{stage.phase}</span>
+                <strong>{stage.title}</strong>
+                <small>{stage.note}</small>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="current-version-notes">
+          <div className="current-version-header">
+            <div>
+              <h3>ملاحظات النسخة الحالية</h3>
+              <p>حدود مهمة لازم تبقى واضحة قبل التعامل ويا التطبيق كنسخة احترافية.</p>
+            </div>
+            <span>نسخة تجريبية</span>
+          </div>
+          <div className="current-version-grid">
+            {projectSummary.currentVersionNotes.map((note) => (
+              <div className={note.level} key={note.title}>
+                <strong>{note.title}</strong>
+                <span>{note.description}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="project-save-strip">
+          <div>
+            <span>آخر حفظ داخل المتصفح</span>
+            <strong>{formatLastSaveTime(lastSaveTime)}</strong>
+          </div>
+          <div>
+            <span>آخر حفظ Git</span>
+            <strong>يدوي من الطرفية</strong>
+            <small>نحفظه بعد كل مجموعة إضافات مثل ما متفقين.</small>
+          </div>
+          <div className="project-save-actions">
+            <button onClick={exportProjectSummary} type="button">
+              تصدير ملخص المشروع
+            </button>
+            <button onClick={() => scrollToAdminSection("admin-data")} type="button">
+              افتح إدارة البيانات
+            </button>
+          </div>
+        </div>
+      </section>
+
       <section className="admin-section" id="admin-monitor">
         <div>
           <h2>لوحة الإدارة</h2>
@@ -1156,10 +1289,67 @@ export function AdminDashboard({
     URL.revokeObjectURL(url)
     setDataMessage("تم تجهيز ملف النتائج الظاهرة حسب البحث والفلتر الحالي.")
   }
+
+  function exportProjectSummary() {
+    const summaryText = formatProjectSummaryText(projectSummary, lastSaveTime)
+    const blob = new Blob([`\uFEFF${summaryText}`], { type: "text/plain;charset=utf-8" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+
+    link.href = url
+    link.download = "basra-mall-project-summary.txt"
+    link.click()
+    URL.revokeObjectURL(url)
+    setDataMessage("تم تجهيز ملف ملخص المشروع.")
+  }
 }
 
 function formatOrderItems(items) {
   return items.map((item) => `${item.name} × ${item.quantity}`).join("، ")
+}
+
+function formatProjectSummaryText(projectSummary, lastSaveTime) {
+  return [
+    "ملخص مشروع مول البصرة",
+    "======================",
+    "",
+    `درجة الجاهزية: ${projectSummary.score}%`,
+    `الحالة: ${projectSummary.title}`,
+    `آخر حفظ داخل المتصفح: ${formatLastSaveTime(lastSaveTime)}`,
+    "آخر حفظ Git: يدوي من الطرفية",
+    "",
+    "أرقام المشروع",
+    "------------",
+    ...projectSummary.stats.map((item) => `- ${item.label}: ${item.value} (${item.note})`),
+    "",
+    "شنو موجود حاليًا",
+    "----------------",
+    ...projectSummary.readyFeatures.map((feature) => `- ${feature}`),
+    "",
+    "شنو باقي قبل الاحتراف",
+    "----------------------",
+    ...projectSummary.nextSteps.map((step) => `- ${step}`),
+    "",
+    "قائمة مهام قبل الإطلاق",
+    "----------------------",
+    ...projectSummary.launchChecklist.map(
+      (task) => `- ${task.title}: ${task.statusLabel} - ${task.note}`,
+    ),
+    "",
+    "خريطة مراحل التطوير",
+    "-------------------",
+    ...projectSummary.developmentRoadmap.map(
+      (stage) => `- ${stage.phase}: ${stage.title} - ${stage.note}`,
+    ),
+    "",
+    "ملاحظات النسخة الحالية",
+    "----------------------",
+    ...projectSummary.currentVersionNotes.map(
+      (note) => `- ${note.title}: ${note.description}`,
+    ),
+    "",
+    "ملاحظة: هذا الملف صادر من النسخة التجريبية داخل المتصفح.",
+  ].join("\n")
 }
 
 function getTopStore(orders) {
@@ -1569,6 +1759,181 @@ function getAdminActivityLog({
   }
 
   return activities
+}
+
+function getProjectSummary({
+  allOrders,
+  approvedStores,
+  deliveredOrders,
+  lastSaveTime,
+  pendingStores,
+  productCount,
+  rejectedStores,
+  stores,
+}) {
+  const checks = [
+    stores.length > 0,
+    approvedStores.length > 0,
+    productCount > 0,
+    allOrders.length > 0,
+    Boolean(lastSaveTime),
+  ]
+  const score = Math.round((checks.filter(Boolean).length / checks.length) * 100)
+  const level = score >= 80 ? "good" : score >= 50 ? "warning" : "muted"
+  const title =
+    level === "good"
+      ? "جاهزية جيدة للتجربة الموسعة"
+      : level === "warning"
+        ? "جاهزية متوسطة وتحتاج ترتيب"
+        : "بداية جيدة وتحتاج بيانات أكثر"
+
+  return {
+    level,
+    score,
+    title,
+    stats: [
+      {
+        label: "المتاجر",
+        note: `${pendingStores.length} قيد المراجعة / ${rejectedStores.length} مرفوضة`,
+        value: stores.length,
+      },
+      {
+        label: "المتاجر الظاهرة",
+        level: approvedStores.length === 0 ? "warning" : "good",
+        note: "هذه المتاجر يراها الزبون داخل المول",
+        value: approvedStores.length,
+      },
+      {
+        label: "المنتجات",
+        level: productCount === 0 ? "warning" : "good",
+        note: "منتجات جاهزة للعرض والطلب",
+        value: productCount,
+      },
+      {
+        label: "الطلبات",
+        level: allOrders.length === 0 ? "muted" : "good",
+        note: `${deliveredOrders.length} طلب وصل لمرحلة التسليم`,
+        value: allOrders.length,
+      },
+    ],
+    readyFeatures: [
+      "دخول منفصل للزبون وصاحب المتجر والسائق والإدارة",
+      "تسجيل المتاجر وموافقة الإدارة مع سبب الرفض",
+      "إدارة المنتجات والصور والكميات وحالة المنتج",
+      "سلة وطلب مع رقم طلب وطريقة دفع تجريبية",
+      "تتبع الطلبات، مهام السائق، والأرباح التقريبية",
+      "نسخ احتياطي واستيراد وفحص سريع داخل التطبيق",
+    ],
+    nextSteps: [
+      "ربط قاعدة بيانات حقيقية بدل تخزين المتصفح",
+      "تسجيل دخول حقيقي برقم الهاتف أو رمز تحقق",
+      "لوحة صلاحيات أقوى للإدارة وأصحاب المتاجر",
+      "اختبار تجربة الموبايل على أكثر من حجم شاشة",
+      "تجهيز خطة نشر واستضافة ونسخ احتياطي خارج الجهاز",
+    ],
+    launchChecklist: [
+      {
+        note: "حاليًا البيانات محفوظة داخل المتصفح مع نسخة احتياطية يدوية.",
+        status: "later",
+        statusLabel: "يحتاج تنفيذ لاحقًا",
+        title: "قاعدة بيانات حقيقية",
+      },
+      {
+        note: "موجود دخول تجريبي بالاسم ورقم الهاتف، والرمز للإدارة فقط.",
+        status: "trial",
+        statusLabel: "جاهز تجريبيًا",
+        title: "تسجيل دخول وفصل الحسابات",
+      },
+      {
+        note: "طريقة الدفع موجودة كاختيار، لكن ماكو بوابة دفع حقيقية بعد.",
+        status: "later",
+        statusLabel: "يحتاج تنفيذ لاحقًا",
+        title: "تجربة دفع حقيقية",
+      },
+      {
+        note: "الواجهة متجاوبة، وتحتاج تجربة فعلية على أكثر من جهاز قبل الإطلاق.",
+        status: "trial",
+        statusLabel: "جاهز تجريبيًا",
+        title: "اختبار الموبايل",
+      },
+      {
+        note: "الإدارة تقدر تغيّر العمولة والتوصيل، لكن السياسة التجارية تحتاج تثبيت.",
+        status: "trial",
+        statusLabel: "جاهز تجريبيًا",
+        title: "سياسة العمولة والتوصيل",
+      },
+      {
+        note: "النسخ الاحتياطي موجود كملف، والنسخة الاحترافية تحتاج حفظ خارج الجهاز.",
+        status: "later",
+        statusLabel: "يحتاج تنفيذ لاحقًا",
+        title: "نسخة احتياطية خارج الجهاز",
+      },
+    ],
+    developmentRoadmap: [
+      {
+        note: "الواجهات الأساسية موجودة، والبيانات تجريبية داخل المتصفح.",
+        phase: "المرحلة 1",
+        status: "current",
+        title: "النموذج التجريبي الحالي",
+      },
+      {
+        note: "نربط المتاجر والطلبات والمنتجات بقاعدة بيانات بدل التخزين المحلي.",
+        phase: "المرحلة 2",
+        status: "next",
+        title: "نسخة بيانات حقيقية",
+      },
+      {
+        note: "نضيف تسجيل دخول برقم الهاتف ورمز تحقق وصلاحيات ثابتة لكل نوع حساب.",
+        phase: "المرحلة 3",
+        status: "later",
+        title: "نسخة تسجيل دخول حقيقي",
+      },
+      {
+        note: "نجهز الدفع، متابعة السائق، وسياسة التوصيل والعمولات بشكل قابل للتشغيل.",
+        phase: "المرحلة 4",
+        status: "later",
+        title: "نسخة دفع وتوصيل",
+      },
+      {
+        note: "نراجع الأمان، النسخ الاحتياطي، الأداء، وتجربة الموبايل قبل النشر.",
+        phase: "المرحلة 5",
+        status: "later",
+        title: "نسخة إطلاق رسمي",
+      },
+    ],
+    currentVersionNotes: [
+      {
+        description: "كل البيانات محفوظة داخل متصفح هذا الجهاز، وليست قاعدة بيانات مشتركة.",
+        level: "warning",
+        title: "تخزين محلي فقط",
+      },
+      {
+        description: "اختيار الدفع موجود للتجربة، لكن ماكو بوابة دفع أو تحويل أموال حقيقي.",
+        level: "warning",
+        title: "ماكو دفع حقيقي",
+      },
+      {
+        description: "الدخول بالاسم ورقم الهاتف تجريبي، ورمز الإدارة مؤقت وليس نظام أمان حقيقي.",
+        level: "warning",
+        title: "تسجيل دخول تجريبي",
+      },
+      {
+        description: "النسخ الاحتياطي يتم يدويًا من لوحة الإدارة أو Git من الطرفية.",
+        level: "info",
+        title: "نسخ احتياطي يدوي",
+      },
+      {
+        description: "الأرباح والعمولات أرقام تقريبية تساعدك تفهم الفكرة قبل الربط الحقيقي.",
+        level: "info",
+        title: "حسابات تقريبية",
+      },
+      {
+        description: "هذه النسخة مناسبة للاختبار وترتيب الفكرة وتجربة سير العمل قبل البناء الاحترافي.",
+        level: "good",
+        title: "صالحة للاختبار",
+      },
+    ],
+  }
 }
 
 function getOrderDelayMinutes(createdAt) {

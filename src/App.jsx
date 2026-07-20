@@ -1279,6 +1279,7 @@ function getDashboardNavItems(accountType) {
 
   if (accountType === "الإدارة") {
     return [
+      { label: "ملخص المشروع", targetId: "admin-summary" },
       { label: "المراقبة", targetId: "admin-monitor" },
       { label: "الإعدادات", targetId: "admin-settings" },
       { label: "البيانات", targetId: "admin-data" },

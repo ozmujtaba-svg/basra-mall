@@ -3667,6 +3667,438 @@ button span {
   background: #fff2ec;
 }
 
+.project-summary-section {
+  display: grid;
+  gap: 16px;
+}
+
+.project-summary-hero {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 16px;
+  align-items: center;
+}
+
+.project-summary-hero span,
+.project-summary-hero p,
+.project-readiness-score span,
+.project-readiness-score small {
+  color: #65706b;
+  line-height: 1.8;
+}
+
+.project-summary-hero h2 {
+  margin: 4px 0 8px;
+  color: #18221f;
+}
+
+.project-readiness-score {
+  min-width: 180px;
+  padding: 16px;
+  border: 1px solid #c9ddd9;
+  border-radius: 14px;
+  background: #eef7f5;
+}
+
+.project-readiness-score.warning {
+  border-color: #ead5a2;
+  background: #fff9e8;
+}
+
+.project-readiness-score.muted {
+  border-color: #ded8cc;
+  background: #f6f1e8;
+}
+
+.project-readiness-score strong {
+  display: block;
+  color: #0c6b66;
+  font-size: 34px;
+  line-height: 1.2;
+}
+
+.project-readiness-score.warning strong {
+  color: #8a5d11;
+}
+
+.project-readiness-score.muted strong {
+  color: #65706b;
+}
+
+.project-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.project-summary-grid div {
+  padding: 14px;
+  border: 1px solid #c9ddd9;
+  border-radius: 12px;
+  background: #eef7f5;
+}
+
+.project-summary-grid div.warning {
+  border-color: #ead5a2;
+  background: #fff9e8;
+}
+
+.project-summary-grid div.muted {
+  border-color: #ded8cc;
+  background: #f6f1e8;
+}
+
+.project-summary-grid span,
+.project-summary-grid small {
+  display: block;
+  color: #65706b;
+  line-height: 1.7;
+}
+
+.project-summary-grid strong {
+  display: block;
+  color: #0c6b66;
+  font-size: 26px;
+  line-height: 1.4;
+}
+
+.project-readiness-panel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.project-readiness-panel > div {
+  padding: 16px;
+  border: 1px solid #ded8cc;
+  border-radius: 14px;
+  background: #fbfaf7;
+}
+
+.project-readiness-panel h3 {
+  margin-bottom: 10px;
+}
+
+.project-readiness-panel ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0 18px 0 0;
+  color: #42504b;
+  line-height: 1.7;
+}
+
+.launch-checklist-panel {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid #ded8cc;
+  border-radius: 14px;
+  background: #fbfaf7;
+}
+
+.launch-checklist-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.launch-checklist-header h3 {
+  margin-bottom: 6px;
+}
+
+.launch-checklist-header p {
+  margin: 0;
+  color: #65706b;
+  line-height: 1.8;
+}
+
+.launch-checklist-header span {
+  border-radius: 999px;
+  background: #eef7f5;
+  color: #0c6b66;
+  padding: 6px 10px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.launch-checklist-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.launch-check-item {
+  padding: 14px;
+  border: 1px solid #c9ddd9;
+  border-radius: 12px;
+  background: #eef7f5;
+}
+
+.launch-check-item.later {
+  border-color: #ead5a2;
+  background: #fff9e8;
+}
+
+.launch-check-item span,
+.launch-check-item strong,
+.launch-check-item small {
+  display: block;
+  line-height: 1.7;
+}
+
+.launch-check-item span {
+  width: fit-content;
+  margin-bottom: 8px;
+  border-radius: 999px;
+  background: white;
+  color: #0c6b66;
+  padding: 5px 9px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.launch-check-item.later span {
+  color: #8a5d11;
+}
+
+.launch-check-item strong {
+  color: #18221f;
+  font-size: 18px;
+}
+
+.launch-check-item small {
+  color: #65706b;
+}
+
+.development-roadmap-panel {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid #c9ddd9;
+  border-radius: 14px;
+  background: #eef7f5;
+}
+
+.development-roadmap-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.development-roadmap-header h3 {
+  margin-bottom: 6px;
+}
+
+.development-roadmap-header p {
+  margin: 0;
+  color: #65706b;
+  line-height: 1.8;
+}
+
+.development-roadmap-header span {
+  border-radius: 999px;
+  background: white;
+  color: #0c6b66;
+  padding: 6px 10px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.development-roadmap-list {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.development-roadmap-item {
+  position: relative;
+  padding: 14px;
+  border: 1px solid #ded8cc;
+  border-radius: 12px;
+  background: white;
+}
+
+.development-roadmap-item.current {
+  border-color: #0c6b66;
+  background: white;
+  box-shadow: inset 0 4px 0 #0c6b66;
+}
+
+.development-roadmap-item.next {
+  border-color: #ead5a2;
+  background: #fff9e8;
+  box-shadow: inset 0 4px 0 #d76b50;
+}
+
+.development-roadmap-item span,
+.development-roadmap-item strong,
+.development-roadmap-item small {
+  display: block;
+  line-height: 1.7;
+}
+
+.development-roadmap-item span {
+  width: fit-content;
+  margin-bottom: 8px;
+  border-radius: 999px;
+  background: #f6f1e8;
+  color: #65706b;
+  padding: 5px 9px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.development-roadmap-item.current span {
+  background: #eef7f5;
+  color: #0c6b66;
+}
+
+.development-roadmap-item.next span {
+  background: white;
+  color: #8a5d11;
+}
+
+.development-roadmap-item strong {
+  color: #18221f;
+  font-size: 17px;
+}
+
+.development-roadmap-item small {
+  color: #65706b;
+}
+
+.current-version-notes {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid #ead5a2;
+  border-radius: 14px;
+  background: #fff9e8;
+}
+
+.current-version-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.current-version-header h3 {
+  margin-bottom: 6px;
+}
+
+.current-version-header p {
+  margin: 0;
+  color: #65706b;
+  line-height: 1.8;
+}
+
+.current-version-header span {
+  border-radius: 999px;
+  background: white;
+  color: #8a5d11;
+  padding: 6px 10px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.current-version-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.current-version-grid div {
+  padding: 14px;
+  border: 1px solid #ded8cc;
+  border-radius: 12px;
+  background: white;
+}
+
+.current-version-grid div.warning {
+  border-color: #ead5a2;
+}
+
+.current-version-grid div.info {
+  border-color: #ded8cc;
+  background: #fbfaf7;
+}
+
+.current-version-grid div.good {
+  border-color: #c9ddd9;
+  background: #eef7f5;
+}
+
+.current-version-grid strong,
+.current-version-grid span {
+  display: block;
+  line-height: 1.7;
+}
+
+.current-version-grid strong {
+  color: #18221f;
+  font-size: 18px;
+}
+
+.current-version-grid div.warning strong {
+  color: #8a5d11;
+}
+
+.current-version-grid div.good strong {
+  color: #0c6b66;
+}
+
+.current-version-grid span {
+  color: #65706b;
+}
+
+.project-save-strip {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid #c9ddd9;
+  border-radius: 14px;
+  background: #eef7f5;
+}
+
+.project-save-strip span,
+.project-save-strip small {
+  display: block;
+  color: #65706b;
+  line-height: 1.7;
+}
+
+.project-save-strip strong {
+  display: block;
+  color: #0c6b66;
+  line-height: 1.7;
+}
+
+.project-save-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.project-save-actions button {
+  border-color: #0c6b66;
+  background: #0c6b66;
+  color: white;
+  text-align: center;
+  font-weight: bold;
+}
+
+.project-save-actions button:last-child {
+  background: white;
+  color: #0c6b66;
+}
+
 .admin-quick-nav {
   display: flex;
   flex-wrap: wrap;
@@ -4980,6 +5412,9 @@ button span {
   }
 
   .dashboard-nav-title,
+  .current-version-header,
+  .development-roadmap-header,
+  .launch-checklist-header,
   .quick-check-header,
   .recent-activity-header,
   .current-section-bar {
@@ -5037,6 +5472,13 @@ button span {
   .merchant-action-counter,
   .merchant-order-actions,
   .admin-grid,
+  .project-summary-hero,
+  .project-summary-grid,
+  .project-readiness-panel,
+  .launch-checklist-grid,
+  .development-roadmap-list,
+  .current-version-grid,
+  .project-save-strip,
   .admin-fast-summary,
   .admin-decision-head,
   .admin-decision-row,
@@ -5081,6 +5523,7 @@ button span {
   .cart-alert,
   .admin-login-shortcut,
   .session-actions,
+  .project-save-actions,
   .store-toolbar,
   .latest-order-card,
   .suggested-stores-header,
