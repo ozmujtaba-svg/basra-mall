@@ -52,6 +52,7 @@ export function CustomerDashboard({
     [selectedStore, stores],
   )
   const normalizedSearch = searchText.trim().toLowerCase()
+  const hasStoreFilters = activeCategory !== "الكل" || Boolean(normalizedSearch)
   const categoryStores = useMemo(
     () => (activeCategory === "الكل" ? stores : stores.filter((store) => store.category === activeCategory)),
     [activeCategory, stores],
@@ -166,6 +167,21 @@ export function CustomerDashboard({
             placeholder="اكتب اسم متجر أو نوع أو منتج"
           />
         </label>
+        <div className="filter-summary">
+          <div>
+            <strong>{visibleStores.length}</strong>
+            <span>
+              {hasStoreFilters
+                ? `نتائج حسب ${activeCategory === "الكل" ? "كل التصنيفات" : activeCategory}`
+                : "كل المتاجر المتاحة"}
+            </span>
+          </div>
+          {hasStoreFilters && (
+            <button onClick={resetStoreFilters} type="button">
+              عرض الكل
+            </button>
+          )}
+        </div>
         <div className="favorite-stores" id="customer-favorites">
           <div className="favorite-stores-header">
             <h3>متاجري المفضلة</h3>
@@ -196,7 +212,13 @@ export function CustomerDashboard({
         </div>
         <div className="store-list">
           {visibleStores.length === 0 ? (
-            <div className="empty-search">ماكو متجر أو منتج مطابق للبحث الحالي.</div>
+            <div className="empty-search">
+              <strong>ماكو نتائج مطابقة</strong>
+              <span>جرّب تمسح البحث أو ترجع التصنيف إلى الكل حتى تظهر المتاجر المتاحة.</span>
+              <button onClick={resetStoreFilters} type="button">
+                عرض كل المتاجر
+              </button>
+            </div>
           ) : (
             visibleStores.map((store) => (
               <div
@@ -263,6 +285,21 @@ export function CustomerDashboard({
             </button>
           ))}
         </div>
+        <div className="filter-summary product-result-summary">
+          <div>
+            <strong>{filteredProducts.length}</strong>
+            <span>
+              {activeProductFilter === "الكل"
+                ? "كل المنتجات الظاهرة"
+                : `منتجات حسب فلتر ${activeProductFilter}`}
+            </span>
+          </div>
+          {activeProductFilter !== "الكل" && (
+            <button onClick={() => setActiveProductFilter("الكل")} type="button">
+              عرض كل المنتجات
+            </button>
+          )}
+        </div>
         <div className="product-list">
           {visibleProducts.length === 0 ? (
             <div className="product-card">
@@ -273,6 +310,9 @@ export function CustomerDashboard({
             <div className="product-card">
               <h3>لا توجد منتجات بهذا الفلتر</h3>
               <span>غيّر الفلتر حتى تشوف منتجات ثانية داخل المتجر.</span>
+              <button onClick={() => setActiveProductFilter("الكل")} type="button">
+                عرض كل المنتجات
+              </button>
             </div>
           ) : (
             filteredProducts.map((product) => {
@@ -553,6 +593,11 @@ export function CustomerDashboard({
               />
             </label>
             <span>{visibleCustomerOrders.length} طلب ظاهر</span>
+            {normalizedTrackingSearch && (
+              <button onClick={resetTrackingSearch} type="button">
+                عرض كل الطلبات
+              </button>
+            )}
           </div>
         )}
         {customerOrders.length === 0 ? (
@@ -564,6 +609,9 @@ export function CustomerDashboard({
           <div className="tracking-card">
             <h3>لا يوجد طلب بهذا الرقم</h3>
             <span>تأكد من رقم الطلب أو امسح البحث حتى تظهر كل الطلبات.</span>
+            <button onClick={resetTrackingSearch} type="button">
+              عرض كل الطلبات
+            </button>
           </div>
         ) : (
           visibleCustomerOrders.map((order) => (
@@ -707,6 +755,19 @@ export function CustomerDashboard({
 
     if (nextVisibleStores.length > 0) {
       onSelectStore(nextVisibleStores[0])
+    }
+  }
+
+  function resetTrackingSearch() {
+    setTrackingSearch("")
+  }
+
+  function resetStoreFilters() {
+    setSearchText("")
+    setActiveCategory("الكل")
+
+    if (stores[0]) {
+      onSelectStore(stores[0])
     }
   }
 

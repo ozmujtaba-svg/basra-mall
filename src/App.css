@@ -1297,6 +1297,46 @@ button span {
   color: white;
 }
 
+.filter-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 12px 0 16px;
+  padding: 12px;
+  border: 1px solid #c9ddd9;
+  border-radius: 12px;
+  background: #eef7f5;
+}
+
+.filter-summary div {
+  display: grid;
+  gap: 3px;
+}
+
+.filter-summary strong {
+  color: #0c6b66;
+  font-size: 24px;
+}
+
+.filter-summary span {
+  color: #65706b;
+  line-height: 1.6;
+}
+
+.filter-summary button {
+  border-color: #0c6b66;
+  background: white;
+  color: #0c6b66;
+  font-weight: bold;
+}
+
+.product-result-summary,
+.order-result-summary,
+.store-result-summary {
+  margin: 0;
+}
+
 .favorite-stores {
   display: grid;
   gap: 10px;
@@ -1432,11 +1472,24 @@ button span {
 }
 
 .empty-search {
+  display: grid;
+  gap: 10px;
   padding: 16px;
   border-radius: 12px;
   background: #fbfaf7;
   color: #65706b;
   line-height: 1.8;
+}
+
+.empty-search strong {
+  color: #18221f;
+}
+
+.empty-search button {
+  width: fit-content;
+  border-color: #0c6b66;
+  color: #0c6b66;
+  font-weight: bold;
 }
 
 .store-directory,
@@ -5128,6 +5181,52 @@ button span {
   font-weight: bold;
 }
 
+.revenue-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.revenue-section-header h3 {
+  margin: 0;
+}
+
+.revenue-section-header p {
+  margin: 4px 0 0;
+  color: #65706b;
+}
+
+.revenue-section-header > span {
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: #eef7f5;
+  color: #0c6b66;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.revenue-period-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 14px;
+}
+
+.revenue-period-filter button {
+  border-color: #c9ddd9;
+  background: white;
+  color: #0c6b66;
+  font-weight: bold;
+}
+
+.revenue-period-filter button.active {
+  border-color: #0c6b66;
+  background: #0c6b66;
+  color: white;
+}
+
 .revenue-grid {
   display: grid;
   gap: 10px;
@@ -5210,12 +5309,26 @@ button span {
 }
 
 .admin-table-empty {
+  display: grid;
+  gap: 8px;
+  justify-items: center;
   padding: 14px;
   border: 1px solid #ded8cc;
   border-radius: 12px;
   background: #fbfaf7;
   color: #65706b;
   text-align: center;
+}
+
+.admin-table-empty strong {
+  color: #18221f;
+}
+
+.admin-table-empty button {
+  margin-top: 4px;
+  border-color: #0c6b66;
+  background: #0c6b66;
+  color: white;
 }
 
 .store-status-action {
@@ -5902,6 +6015,23 @@ button span {
   .tracking-search-box label,
   .store-review-actions label {
     width: 100%;
+  }
+
+  .filter-summary {
+    display: grid;
+    align-items: stretch;
+  }
+
+  .filter-summary button,
+  .empty-search button,
+  .tracking-search-box button,
+  .revenue-period-filter button {
+    width: 100%;
+  }
+
+  .revenue-section-header {
+    display: grid;
+    align-items: stretch;
   }
 
   .dashboard-body,

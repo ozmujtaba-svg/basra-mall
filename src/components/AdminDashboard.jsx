@@ -34,6 +34,7 @@ const rejectionReasons = [
   "رقم الهاتف غير صحيح",
   "المنطقة غير محددة",
 ]
+const revenuePeriodFilters = ["اليوم", "آخر 7 أيام", "كل الوقت"]
 
 export function AdminDashboard({
   allOrders,
@@ -56,6 +57,7 @@ export function AdminDashboard({
   const [orderDateFilter, setOrderDateFilter] = useState(orderDateFilters[0])
   const [orderSearch, setOrderSearch] = useState("")
   const [orderSort, setOrderSort] = useState(orderSortOptions[0])
+  const [revenuePeriodFilter, setRevenuePeriodFilter] = useState(revenuePeriodFilters[0])
   const [storeSearch, setStoreSearch] = useState("")
   const [storeSort, setStoreSort] = useState(storeSortOptions[0])
   const [storeStatusFilter, setStoreStatusFilter] = useState(storeStatusFilters[0].value)
@@ -79,6 +81,8 @@ export function AdminDashboard({
         .sort((firstStore, secondStore) => sortStores(firstStore, secondStore, storeSort)),
     [storeSearch, storeSort, storeStatusFilter, stores],
   )
+  const hasAdminStoreFilters =
+    storeStatusFilter !== storeStatusFilters[0].value || Boolean(storeSearch.trim())
   const canceledOrders = useMemo(
     () => allOrders.filter((order) => order.status === "ملغي"),
     [allOrders],
@@ -105,6 +109,14 @@ export function AdminDashboard({
     [deliveredOrders],
   )
   const averageOrderValue = nonCanceledOrders.length > 0 ? totalSales / nonCanceledOrders.length : 0
+  const revenuePeriodOrders = useMemo(
+    () => filterOrdersByRevenuePeriod(allOrders, revenuePeriodFilter),
+    [allOrders, revenuePeriodFilter],
+  )
+  const revenuePeriodStats = useMemo(
+    () => getRevenuePeriodStats(revenuePeriodOrders, commissionRate),
+    [commissionRate, revenuePeriodOrders],
+  )
   const monitoringStats = useMemo(
     () =>
       getMonitoringStats({
@@ -224,6 +236,16 @@ export function AdminDashboard({
         .sort((firstOrder, secondOrder) => sortOrders(firstOrder, secondOrder, orderSort)),
     [allOrders, orderDateFilter, orderSearch, orderSort, orderStatusFilter],
   )
+  const hasAdminOrderFilters =
+    orderStatusFilter !== orderStatusFilters[0] ||
+    orderDateFilter !== orderDateFilters[0] ||
+    Boolean(orderSearch.trim())
+
+  function resetAdminOrderFilters() {
+    setOrderSearch("")
+    setOrderStatusFilter(orderStatusFilters[0])
+    setOrderDateFilter(orderDateFilters[0])
+  }
 
   return (
     <div className="orders-panel">
@@ -870,31 +892,49 @@ export function AdminDashboard({
       </section>
 
       <section className="admin-section" id="admin-revenue">
-        <h3>تفصيل الأرباح</h3>
+        <div className="revenue-section-header">
+          <div>
+            <h3>تفصيل الأرباح</h3>
+            <p>اختار الفترة حتى تشوف المبيعات والعمولة وأجور التوصيل حسب الوقت.</p>
+          </div>
+          <span>{getRevenuePeriodLabel(revenuePeriodFilter)}</span>
+        </div>
+        <div className="revenue-period-filter">
+          {revenuePeriodFilters.map((filter) => (
+            <button
+              className={revenuePeriodFilter === filter ? "active" : ""}
+              key={filter}
+              onClick={() => setRevenuePeriodFilter(filter)}
+              type="button"
+            >
+              {filter}
+            </button>
+          ))}
+        </div>
         <div className="revenue-grid">
           <div className="revenue-row">
-            <span>مجموع المبيعات</span>
-            <strong>{formatMoney(totalSales)}</strong>
+            <span>مبيعات الفترة</span>
+            <strong>{formatMoney(revenuePeriodStats.sales)}</strong>
           </div>
           <div className="revenue-row">
             <span>متوسط قيمة الطلب</span>
-            <strong>{formatMoney(averageOrderValue)}</strong>
+            <strong>{formatMoney(revenuePeriodStats.averageOrderValue)}</strong>
           </div>
           <div className="revenue-row">
             <span>عمولة الإدارة ({formatPercent(commissionRate)})</span>
-            <strong>{formatMoney(salesCommission)}</strong>
+            <strong>{formatMoney(revenuePeriodStats.commission)}</strong>
           </div>
           <div className="revenue-row">
             <span>أجور التوصيل المسلّمة</span>
-            <strong>{formatMoney(deliveryRevenue)}</strong>
+            <strong>{formatMoney(revenuePeriodStats.delivery)}</strong>
           </div>
           <div className="revenue-row muted">
-            <span>طلبات ملغية مستبعدة</span>
-            <strong>{canceledOrders.length}</strong>
+            <span>طلبات ملغية بالفترة</span>
+            <strong>{revenuePeriodStats.canceled}</strong>
           </div>
           <div className="revenue-row total">
-            <span>صافي ربح الإدارة</span>
-            <strong>{formatMoney(estimatedRevenue)}</strong>
+            <span>صافي ربح الإدارة للفترة</span>
+            <strong>{formatMoney(revenuePeriodStats.netRevenue)}</strong>
           </div>
         </div>
       </section>
@@ -961,6 +1001,19 @@ export function AdminDashboard({
             ))}
           </select>
         </label>
+        <div className="filter-summary store-result-summary">
+          <div>
+            <strong>{filteredStores.length}</strong>
+            <span>
+              {hasAdminStoreFilters ? "متاجر مطابقة للبحث والفلتر" : "كل المتاجر المسجلة"}
+            </span>
+          </div>
+          {hasAdminStoreFilters && (
+            <button onClick={resetAdminStoreFilters} type="button">
+              عرض كل المتاجر
+            </button>
+          )}
+        </div>
         <div className="admin-table">
           <div className="admin-table-head">
             <span>اسم المتجر</span>
@@ -969,7 +1022,13 @@ export function AdminDashboard({
             <span>إجراء</span>
           </div>
           {filteredStores.length === 0 ? (
-            <div className="admin-table-empty">لا توجد متاجر بهذه الحالة الآن.</div>
+            <div className="admin-table-empty">
+              <strong>لا توجد متاجر مطابقة</strong>
+              <span>غيّر البحث أو الفلتر حتى تظهر متاجر ثانية.</span>
+              <button onClick={resetAdminStoreFilters} type="button">
+                عرض كل المتاجر
+              </button>
+            </div>
           ) : (
             filteredStores.map((store) => (
               <div className={`admin-table-row store-${getStoreStatusClass(store.status)}`} key={store.name}>
@@ -1102,6 +1161,19 @@ export function AdminDashboard({
             </button>
           ))}
         </div>
+        <div className="filter-summary order-result-summary">
+          <div>
+            <strong>{filteredOrders.length}</strong>
+            <span>
+              {hasAdminOrderFilters ? "طلبات مطابقة للبحث والفلاتر" : "كل طلبات الإدارة"}
+            </span>
+          </div>
+          {hasAdminOrderFilters && (
+            <button onClick={resetAdminOrderFilters} type="button">
+              عرض كل الطلبات
+            </button>
+          )}
+        </div>
         {allOrders.length === 0 ? (
           <div className="order-card">
             <h3>لا توجد طلبات بعد</h3>
@@ -1111,6 +1183,9 @@ export function AdminDashboard({
           <div className="order-card">
             <h3>لا توجد طلبات مطابقة</h3>
             <p className="order-meta">غيّر البحث أو الفلتر حتى تظهر طلبات ثانية.</p>
+            <button onClick={resetAdminOrderFilters} type="button">
+              عرض كل الطلبات
+            </button>
           </div>
         ) : (
           <div className="admin-order-list">
@@ -1278,6 +1353,11 @@ export function AdminDashboard({
     scrollToAdminSection("admin-orders")
   }
 
+  function resetAdminStoreFilters() {
+    setStoreSearch("")
+    setStoreStatusFilter(storeStatusFilters[0].value)
+  }
+
   function updateRejectReason(storeName, reason) {
     setStoreRejectReasons((currentReasons) => ({
       ...currentReasons,
@@ -1439,6 +1519,47 @@ function getMonitoringStats({ allOrders, commissionRate, pendingStores }) {
     pendingStores: pendingStores.length,
     todayRevenue,
   }
+}
+
+function filterOrdersByRevenuePeriod(orders, period) {
+  if (period === "اليوم") {
+    return orders.filter((order) => isToday(order.createdAt))
+  }
+
+  if (period === "آخر 7 أيام") {
+    return orders.filter((order) => isWithinLastDays(order.createdAt, 7))
+  }
+
+  return orders
+}
+
+function getRevenuePeriodStats(orders, commissionRate) {
+  const activeOrders = orders.filter((order) => order.status !== "ملغي")
+  const deliveredOrders = orders.filter((order) => order.status === "تم التسليم")
+  const sales = activeOrders.reduce((total, order) => total + Number(order.subtotal ?? 0), 0)
+  const delivery = deliveredOrders.reduce((total, order) => total + Number(order.deliveryFee ?? 0), 0)
+  const commission = sales * commissionRate
+
+  return {
+    averageOrderValue: activeOrders.length > 0 ? sales / activeOrders.length : 0,
+    canceled: orders.filter((order) => order.status === "ملغي").length,
+    commission,
+    delivery,
+    netRevenue: commission + delivery,
+    sales,
+  }
+}
+
+function getRevenuePeriodLabel(period) {
+  if (period === "اليوم") {
+    return "أرقام اليوم فقط"
+  }
+
+  if (period === "آخر 7 أيام") {
+    return "أرقام آخر أسبوع"
+  }
+
+  return "كل بيانات الأرباح"
 }
 
 function getTodayStats(allOrders, commissionRate) {
@@ -1666,7 +1787,9 @@ function matchesStoreSearch(store, searchText) {
   }
 
   const productNames = store.products.map((product) => product.name).join(" ")
-  const searchableText = `${store.name} ${store.ownerName} ${store.phone} ${store.area} ${store.category} ${store.status} ${store.rejectionReason} ${productNames}`
+  const statusLabel = getStoreStatusLabel(store.status)
+  const statusNote = getStoreStatusNote(store.status)
+  const searchableText = `${store.name} ${store.ownerName} ${store.phone} ${store.area} ${store.category} ${store.status} ${statusLabel} ${statusNote} ${store.rejectionReason} ${productNames}`
 
   return searchableText.toLowerCase().includes(search)
 }

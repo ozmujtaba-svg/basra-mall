@@ -15,11 +15,13 @@ const quickDriverNotes = [
   "الطلب تأخر بالمحل",
   "تم التسليم نقدًا",
 ]
+const revenuePeriodFilters = ["اليوم", "آخر 7 أيام", "كل الوقت"]
 
 export function DriverDashboard({ onUpdateOrderNote, onUpdateStatus, orders, stores = [] }) {
   const [orderSearch, setOrderSearch] = useState("")
   const [deliveryStatusFilter, setDeliveryStatusFilter] = useState(deliveryStatusFilters[0])
   const [deliverySort, setDeliverySort] = useState(deliverySortOptions[0])
+  const [revenuePeriodFilter, setRevenuePeriodFilter] = useState(revenuePeriodFilters[0])
   const [copyMessage, setCopyMessage] = useState("")
   const [confirmPickupId, setConfirmPickupId] = useState(null)
   const [confirmDeliveryId, setConfirmDeliveryId] = useState(null)
@@ -67,6 +69,18 @@ export function DriverDashboard({ onUpdateOrderNote, onUpdateStatus, orders, sto
     () => getDeliveryFees(orders.filter((order) => order.status !== "ملغي")),
     [orders],
   )
+  const revenuePeriodOrders = useMemo(
+    () => filterOrdersByRevenuePeriod(orders, revenuePeriodFilter),
+    [orders, revenuePeriodFilter],
+  )
+  const revenuePeriodDeliveredOrders = useMemo(
+    () => revenuePeriodOrders.filter((order) => order.status === "تم التسليم"),
+    [revenuePeriodOrders],
+  )
+  const revenuePeriodDeliveryEarnings = useMemo(
+    () => getDeliveryFees(revenuePeriodDeliveredOrders),
+    [revenuePeriodDeliveredOrders],
+  )
   const priorityDeliveries = useMemo(
     () => availableDeliveries.filter((order) => getOrderAgeMinutes(order.createdAt) >= 30),
     [availableDeliveries],
@@ -91,6 +105,13 @@ export function DriverDashboard({ onUpdateOrderNote, onUpdateStatus, orders, sto
       })),
     [filteredOrders],
   )
+  const hasDeliveryOrderFilters =
+    deliveryStatusFilter !== deliveryStatusFilters[0] || Boolean(orderSearch.trim())
+
+  function resetDeliveryOrderFilters() {
+    setOrderSearch("")
+    setDeliveryStatusFilter(deliveryStatusFilters[0])
+  }
 
   return (
     <div className="orders-panel">
@@ -193,7 +214,19 @@ export function DriverDashboard({ onUpdateOrderNote, onUpdateStatus, orders, sto
       <section className="driver-earnings-card">
         <div>
           <h3>أرباح السائق</h3>
-          <p>ملخص يوضح أجور التوصيل حسب مرحلة الطلب.</p>
+          <p>ملخص يوضح أجور التوصيل حسب مرحلة الطلب والفترة المختارة.</p>
+        </div>
+        <div className="revenue-period-filter">
+          {revenuePeriodFilters.map((filter) => (
+            <button
+              className={revenuePeriodFilter === filter ? "active" : ""}
+              key={filter}
+              onClick={() => setRevenuePeriodFilter(filter)}
+              type="button"
+            >
+              {filter}
+            </button>
+          ))}
         </div>
         <div className="driver-earnings-grid">
           <div className="revenue-row">
@@ -205,12 +238,12 @@ export function DriverDashboard({ onUpdateOrderNote, onUpdateStatus, orders, sto
             <strong>{activeDeliveries.length}</strong>
           </div>
           <div className="revenue-row">
-            <span>طلبات تم تسليمها</span>
-            <strong>{deliveredOrders.length}</strong>
+            <span>طلبات مسلّمة بالفترة</span>
+            <strong>{revenuePeriodDeliveredOrders.length}</strong>
           </div>
           <div className="revenue-row total">
-            <span>أجور التوصيل المسلّمة</span>
-            <strong>{formatMoney(deliveryEarnings)}</strong>
+            <span>أجور التوصيل للفترة</span>
+            <strong>{formatMoney(revenuePeriodDeliveryEarnings)}</strong>
           </div>
           <div className="revenue-row">
             <span>أجرة الطلبات الجاهزة</span>
@@ -254,6 +287,19 @@ export function DriverDashboard({ onUpdateOrderNote, onUpdateStatus, orders, sto
           </button>
         ))}
       </div>
+      <div className="filter-summary order-result-summary">
+        <div>
+          <strong>{filteredOrders.length}</strong>
+          <span>
+            {hasDeliveryOrderFilters ? "مهام مطابقة للبحث والفلتر" : "كل مهام السائق"}
+          </span>
+        </div>
+        {hasDeliveryOrderFilters && (
+          <button onClick={resetDeliveryOrderFilters} type="button">
+            عرض كل المهام
+          </button>
+        )}
+      </div>
       {copyMessage && <div className="driver-copy-message">{copyMessage}</div>}
       {orders.length === 0 ? (
         <div className="order-card">
@@ -264,6 +310,9 @@ export function DriverDashboard({ onUpdateOrderNote, onUpdateStatus, orders, sto
         <div className="order-card">
           <h3>لا توجد نتائج مطابقة</h3>
           <p className="order-meta">غيّر كلمة البحث أو فلتر الحالة حتى تظهر طلبات التوصيل.</p>
+          <button onClick={resetDeliveryOrderFilters} type="button">
+            عرض كل المهام
+          </button>
         </div>
       ) : (
         <div className="delivery-groups">
@@ -620,6 +669,18 @@ function formatOrderDate(createdAt) {
 
 function getDeliveryFees(orders) {
   return orders.reduce((total, order) => total + Number(order.deliveryFee ?? 0), 0)
+}
+
+function filterOrdersByRevenuePeriod(orders, period) {
+  if (period === "اليوم") {
+    return orders.filter((order) => isToday(order.createdAt))
+  }
+
+  if (period === "آخر 7 أيام") {
+    return orders.filter((order) => isWithinLastDays(order.createdAt, 7))
+  }
+
+  return orders
 }
 
 function getOrderAgeMinutes(createdAt) {

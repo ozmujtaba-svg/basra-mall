@@ -23,6 +23,7 @@ const storeStatusFilters = [
   { label: "مرفوض", value: "rejected" },
 ]
 const MAX_PRODUCT_IMAGE_SIZE = 900
+const revenuePeriodFilters = ["اليوم", "آخر 7 أيام", "كل الوقت"]
 
 export function MerchantDashboard({
   commissionRate,
@@ -53,6 +54,7 @@ export function MerchantDashboard({
   const [orderStatusFilter, setOrderStatusFilter] = useState("الكل")
   const [orderSort, setOrderSort] = useState(orderSortOptions[0].value)
   const [storeStatusFilter, setStoreStatusFilter] = useState(storeStatusFilters[0].value)
+  const [revenuePeriodFilter, setRevenuePeriodFilter] = useState(revenuePeriodFilters[0])
   const [message, setMessage] = useState("")
   const [productMessage, setProductMessage] = useState("")
   const [copiedOrderId, setCopiedOrderId] = useState("")
@@ -71,9 +73,13 @@ export function MerchantDashboard({
     () => stores.filter((store) => store.status === "rejected"),
     [stores],
   )
+  const revenuePeriodOrders = useMemo(
+    () => filterOrdersByRevenuePeriod(orders, revenuePeriodFilter),
+    [orders, revenuePeriodFilter],
+  )
   const merchantRevenue = useMemo(
-    () => calculateMerchantRevenue(orders, commissionRate),
-    [commissionRate, orders],
+    () => calculateMerchantRevenue(revenuePeriodOrders, commissionRate),
+    [commissionRate, revenuePeriodOrders],
   )
   const topMerchantProduct = useMemo(
     () => getTopMerchantProduct(orders, stores),
@@ -92,6 +98,7 @@ export function MerchantDashboard({
   const merchantOrderSummary = useMemo(() => getMerchantOrderSummary(orders), [orders])
   const actionOrdersCount = merchantOrderSummary.newOrders + merchantOrderSummary.preparingOrders
   const merchantOrderAlert = getMerchantOrderAlert(merchantOrderSummary)
+  const hasMerchantOrderFilters = orderStatusFilter !== "الكل" || Boolean(orderSearch.trim())
   const orderGroups = useMemo(
     () =>
       [
@@ -274,6 +281,11 @@ export function MerchantDashboard({
   function confirmRejectOrder(orderId) {
     onCancelOrder(orderId)
     setRejectConfirmOrderId("")
+  }
+
+  function resetMerchantOrderFilters() {
+    setOrderSearch("")
+    setOrderStatusFilter("الكل")
   }
 
   return (
@@ -587,17 +599,29 @@ export function MerchantDashboard({
           </div>
           <span className="status-pill">عمولة {formatPercent(commissionRate)}</span>
         </div>
+        <div className="revenue-period-filter">
+          {revenuePeriodFilters.map((filter) => (
+            <button
+              className={revenuePeriodFilter === filter ? "active" : ""}
+              key={filter}
+              onClick={() => setRevenuePeriodFilter(filter)}
+              type="button"
+            >
+              {filter}
+            </button>
+          ))}
+        </div>
         <div className="merchant-revenue-grid">
           <div className="revenue-row">
-            <span>مجموع المبيعات</span>
+            <span>مبيعات الفترة</span>
             <strong>{formatMoney(merchantRevenue.totalSales)}</strong>
           </div>
           <div className="revenue-row">
-            <span>عدد الطلبات المحتسبة</span>
+            <span>طلبات محتسبة بالفترة</span>
             <strong>{merchantRevenue.activeOrders}</strong>
           </div>
           <div className="revenue-row muted">
-            <span>طلبات ملغية</span>
+            <span>طلبات ملغية بالفترة</span>
             <strong>{merchantRevenue.canceledOrders}</strong>
           </div>
           <div className="revenue-row">
@@ -605,7 +629,7 @@ export function MerchantDashboard({
             <strong>{formatMoney(merchantRevenue.commission)}</strong>
           </div>
           <div className="revenue-row total">
-            <span>صافي المبلغ المتوقع للمتجر</span>
+            <span>صافي مبلغ المتجر للفترة</span>
             <strong>{formatMoney(merchantRevenue.netPayout)}</strong>
           </div>
         </div>
@@ -695,6 +719,19 @@ export function MerchantDashboard({
           ))}
         </select>
       </label>
+      <div className="filter-summary order-result-summary">
+        <div>
+          <strong>{filteredOrders.length}</strong>
+          <span>
+            {hasMerchantOrderFilters ? "طلبات مطابقة للبحث والفلتر" : "كل طلبات المتجر"}
+          </span>
+        </div>
+        {hasMerchantOrderFilters && (
+          <button onClick={resetMerchantOrderFilters} type="button">
+            عرض كل الطلبات
+          </button>
+        )}
+      </div>
       {orders.length === 0 ? (
         <div className="order-card">
           <h3>لا توجد طلبات جديدة بعد</h3>
@@ -703,7 +740,10 @@ export function MerchantDashboard({
       ) : filteredOrders.length === 0 ? (
         <div className="order-card">
           <h3>لا توجد نتائج مطابقة</h3>
-          <p className="order-meta">غيّر كلمة البحث حتى تظهر الطلبات.</p>
+          <p className="order-meta">غيّر كلمة البحث أو فلتر الحالة حتى تظهر الطلبات.</p>
+          <button onClick={resetMerchantOrderFilters} type="button">
+            عرض كل الطلبات
+          </button>
         </div>
       ) : (
         <div className="merchant-order-groups">
@@ -1159,6 +1199,38 @@ function formatOrderDate(createdAt) {
 
 function formatPercent(value) {
   return `${Math.round(value * 100)}%`
+}
+
+function filterOrdersByRevenuePeriod(orders, period) {
+  if (period === "اليوم") {
+    return orders.filter((order) => isToday(order.createdAt))
+  }
+
+  if (period === "آخر 7 أيام") {
+    return orders.filter((order) => isWithinLastDays(order.createdAt, 7))
+  }
+
+  return orders
+}
+
+function isToday(createdAt) {
+  const orderDate = new Date(createdAt)
+  const today = new Date()
+
+  return (
+    orderDate.getFullYear() === today.getFullYear() &&
+    orderDate.getMonth() === today.getMonth() &&
+    orderDate.getDate() === today.getDate()
+  )
+}
+
+function isWithinLastDays(createdAt, days) {
+  const orderDate = new Date(createdAt)
+  const startDate = new Date()
+  startDate.setHours(0, 0, 0, 0)
+  startDate.setDate(startDate.getDate() - (days - 1))
+
+  return orderDate >= startDate
 }
 
 function calculateMerchantRevenue(orders, commissionRate) {
