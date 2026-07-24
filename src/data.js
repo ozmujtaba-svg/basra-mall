@@ -66,6 +66,11 @@ export const customerStores = [
   {
     name: "بوتيك شط العرب",
     category: "ملابس",
+    area: "العشار",
+    phone: "07700000001",
+    ownerName: "إدارة بوتيك شط العرب",
+    ownerPhone: "07700000001",
+    status: "approved",
     image: categoryImages["ملابس"],
     description: "ملابس يومية ومناسبات مختارة للزبائن داخل البصرة.",
     products: [
@@ -77,6 +82,11 @@ export const customerStores = [
   {
     name: "لمسة كوزمتك",
     category: "كوزمتك",
+    area: "الجزائر",
+    phone: "07700000002",
+    ownerName: "إدارة لمسة كوزمتك",
+    ownerPhone: "07700000002",
+    status: "approved",
     image: categoryImages["كوزمتك"],
     description: "مكياج وعناية بالبشرة مع منتجات مناسبة للاستخدام اليومي.",
     products: [
@@ -88,6 +98,11 @@ export const customerStores = [
   {
     name: "عطور البصرة",
     category: "عطور",
+    area: "البراضعية",
+    phone: "07700000003",
+    ownerName: "إدارة عطور البصرة",
+    ownerPhone: "07700000003",
+    status: "approved",
     image: categoryImages["عطور"],
     description: "عطور شرقية وغربية وبخور ومجموعات هدايا.",
     products: [
@@ -99,6 +114,11 @@ export const customerStores = [
   {
     name: "خطوة للأحذية",
     category: "أحذية",
+    area: "المعقل",
+    phone: "07700000004",
+    ownerName: "إدارة خطوة للأحذية",
+    ownerPhone: "07700000004",
+    status: "approved",
     image: categoryImages["أحذية"],
     description: "أحذية رياضية ورسمية وصنادل للموسم.",
     products: [
@@ -110,6 +130,11 @@ export const customerStores = [
   {
     name: "إكسسوارات كورنيش",
     category: "إكسسوارات",
+    area: "الكورنيش",
+    phone: "07700000005",
+    ownerName: "إدارة إكسسوارات كورنيش",
+    ownerPhone: "07700000005",
+    status: "approved",
     image: categoryImages["إكسسوارات"],
     description: "حقائب وساعات ونظارات وقطع تكمل الإطلالة.",
     products: [

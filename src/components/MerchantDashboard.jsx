@@ -121,7 +121,7 @@ export function MerchantDashboard({
     }
   }, [selectedStoreName, stores])
 
-  function submitStore(event) {
+  async function submitStore(event) {
     event.preventDefault()
 
     if (!storeName.trim() || !area.trim()) {
@@ -131,12 +131,16 @@ export function MerchantDashboard({
 
     const contactPhone = phone.trim() || merchant.phone
 
-    onRegisterStore({
+    const storeSaved = await onRegisterStore({
       name: storeName.trim(),
       category,
       phone: contactPhone,
       area: area.trim(),
     })
+    if (storeSaved === false) {
+      setMessage("تعذر حفظ المتجر بقاعدة البيانات. راجع التنبيه وحاول مرة ثانية.")
+      return
+    }
     setStoreName("")
     setPhone("")
     setArea("")
@@ -147,7 +151,7 @@ export function MerchantDashboard({
     )
   }
 
-  function submitProduct(event) {
+  async function submitProduct(event) {
     event.preventDefault()
 
     if (!selectedStoreName || !productName.trim() || !productPrice.trim() || !productQuantity.trim()) {
@@ -179,7 +183,11 @@ export function MerchantDashboard({
     }
 
     if (editingProductName) {
-      onUpdateProduct(selectedStoreName, editingProductName, productData)
+      const productUpdated = await onUpdateProduct(selectedStoreName, editingProductName, productData)
+      if (productUpdated === false) {
+        setProductMessage("تعذر تعديل المنتج بقاعدة البيانات. حاول مرة ثانية.")
+        return
+      }
       resetProductForm()
       setProductMessage(
         "تم تعديل المنتج بنجاح. السعر والكمية والحالة تحدّثت داخل متجر الزبون.",
@@ -187,7 +195,11 @@ export function MerchantDashboard({
       return
     }
 
-    onAddProduct(selectedStoreName, productData)
+    const productAdded = await onAddProduct(selectedStoreName, productData)
+    if (productAdded === false) {
+      setProductMessage("تعذر حفظ المنتج بقاعدة البيانات. حاول مرة ثانية.")
+      return
+    }
     resetProductForm()
     setProductMessage(
       "تمت إضافة المنتج بنجاح. إذا المتجر مقبول، المنتج يظهر للزبون ويكدر يضيفه للسلة.",
@@ -234,8 +246,12 @@ export function MerchantDashboard({
     setProductMessage("عدّل البيانات بالنموذج، وبعدها اضغط حفظ التعديل.")
   }
 
-  function deleteProduct(productNameToDelete) {
-    onDeleteProduct(selectedStore.name, productNameToDelete)
+  async function deleteProduct(productNameToDelete) {
+    const productDeleted = await onDeleteProduct(selectedStore.name, productNameToDelete)
+    if (productDeleted === false) {
+      setProductMessage("تعذر حذف المنتج من قاعدة البيانات. حاول مرة ثانية.")
+      return
+    }
 
     if (editingProductName === productNameToDelete) {
       resetProductForm()

@@ -7,6 +7,20 @@ import { DriverDashboard } from "./components/DriverDashboard"
 import { LoginScreen } from "./components/LoginScreen"
 import { MerchantDashboard } from "./components/MerchantDashboard"
 import { Shell } from "./components/Shell"
+import { isSupabaseConfigured, supabase } from "./lib/supabase"
+import {
+  createMarketplaceOrders,
+  fetchMarketplaceOrders,
+  updateMarketplaceOrder,
+} from "./lib/orderRepository"
+import {
+  createMarketplaceProduct,
+  createMarketplaceStore,
+  deleteMarketplaceProduct,
+  fetchMarketplaceStores,
+  updateMarketplaceProduct,
+  updateMarketplaceStoreStatus,
+} from "./lib/storeRepository"
 
 const DELIVERY_FEE = 5000
 const ADMIN_COMMISSION_RATE = 0.05
@@ -39,6 +53,7 @@ function App() {
   const [appNotification, setAppNotification] = useState(null)
   const [notificationHistory, setNotificationHistory] = useState([])
   const notificationTimer = useRef(null)
+  const completeSupabaseLoginRef = useRef(null)
   const [lastSaveTime, setLastSaveTime] = useState(loadLastSaveTime)
   const [nextOrderId, setNextOrderId] = useState(savedAppData.nextOrderId)
   const [loginInfo, setLoginInfo] = useState({
@@ -47,6 +62,11 @@ function App() {
     phone: savedAccount.phone,
   })
   const [loginMessage, setLoginMessage] = useState("")
+  const [authEmail, setAuthEmail] = useState("")
+  const [authPassword, setAuthPassword] = useState("")
+  const [authLoading, setAuthLoading] = useState(false)
+  const [authSession, setAuthSession] = useState(null)
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false)
   const [customerInfo, setCustomerInfo] = useState(savedAppData.customerInfo)
 
   const dashboard = dashboardData[accountType]
@@ -100,6 +120,7 @@ function App() {
     isNotificationForAccount(notification, accountType),
   )
   const savedAccountWarning = getSavedAccountWarning(savedAccount, accountType, loginInfo)
+  completeSupabaseLoginRef.current = completeSupabaseLogin
 
   useEffect(() => {
     const saved = saveToStorage(SETTINGS_STORAGE_KEY, platformSettings)
@@ -167,6 +188,62 @@ function App() {
 
   useEffect(() => () => clearTimeout(notificationTimer.current), [])
 
+  useEffect(() => {
+    if (!supabase) return undefined
+
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) completeSupabaseLoginRef.current(data.session)
+    })
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY" && session) {
+        setAuthSession(session)
+        setAuthEmail(session.user.email ?? "")
+        setAccountType("الإدارة")
+        setCurrentView("login")
+        setIsPasswordRecovery(true)
+        setAuthPassword("")
+        setLoginMessage("اكتب كلمة مرور جديدة من 8 أحرف أو أكثر، ثم اضغط حفظ.")
+      } else if (session) completeSupabaseLoginRef.current(session)
+      else setAuthSession(null)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  useEffect(() => {
+    if (!authSession || currentView !== "dashboard") return undefined
+
+    let ignore = false
+    Promise.all([fetchMarketplaceOrders(), fetchMarketplaceStores()])
+      .then(([orders, databaseStores]) => {
+        if (ignore) return
+
+        if (accountType === "زبون") setCustomerOrders(orders)
+        if (accountType === "صاحب متجر") setMerchantOrders(orders)
+        if (accountType === "سائق") setDeliveryOrders(orders)
+        if (accountType === "الإدارة") {
+          setMerchantOrders(orders)
+          setDeliveryOrders(orders.filter((order) => order.status !== "طلب جديد"))
+        }
+        setStores((currentStores) => {
+          const mergedStores = mergeMarketplaceStores(currentStores, databaseStores)
+          setSelectedStore((currentStore) =>
+            mergedStores.find((store) => store.name === currentStore.name) ?? mergedStores[0],
+          )
+          return mergedStores
+        })
+        setStorageMessage("")
+      })
+      .catch((error) => {
+        if (!ignore) setStorageMessage(`تعذر جلب بيانات قاعدة البيانات: ${error.message}`)
+      })
+
+    return () => {
+      ignore = true
+    }
+  }, [accountType, authSession, currentView])
+
   function showNotification(message, type = "success", audience = accountType) {
     const notification = {
       audience,
@@ -206,16 +283,6 @@ function App() {
       return
     }
 
-    if (accountType === "الإدارة" && loginInfo.adminCode.trim() !== "1234") {
-      setLoginMessage("رمز الإدارة غير صحيح. تأكد من الرمز التجريبي ثم حاول مرة ثانية.")
-      showNotification(
-        "رمز الإدارة غير صحيح. تأكد من الرمز التجريبي ثم حاول مرة ثانية.",
-        "warning",
-        "الإدارة",
-      )
-      return
-    }
-
     if (savedAccountWarning) {
       setLoginMessage(savedAccountWarning)
       showNotification(savedAccountWarning, "warning", "النظام")
@@ -242,6 +309,216 @@ function App() {
     )
   }
 
+  async function sendEmailLoginLink() {
+    const email = authEmail.trim().toLowerCase()
+
+    if (!isSupabaseConfigured || !supabase) {
+      setLoginMessage("اتصال قاعدة البيانات غير مفعّل بعد. تقدر تستخدم الدخول التجريبي مؤقتًا.")
+      return
+    }
+    if (accountType === "الإدارة") {
+      setLoginMessage("حساب الإدارة ما يننشأ من الواجهة العامة. استخدم الدخول التجريبي حاليًا.")
+      return
+    }
+    if (!loginInfo.name.trim() || !isValidIraqiPhone(loginInfo.phone) || !isValidEmail(email)) {
+      setLoginMessage("اكتب الاسم، رقم عراقي صحيح، وإيميل صحيح حتى نرسل رابط الدخول.")
+      return
+    }
+
+    setAuthLoading(true)
+    setLoginMessage("")
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: window.location.origin,
+        data: {
+          account_type: accountType,
+          full_name: loginInfo.name.trim(),
+          phone: loginInfo.phone.trim(),
+        },
+      },
+    })
+    setAuthLoading(false)
+
+    setLoginMessage(
+      error
+        ? `تعذر إرسال رابط الدخول: ${error.message}`
+        : "تم إرسال رابط الدخول إلى إيميلك. افتح الرسالة واضغط الرابط حتى تدخل للحساب.",
+    )
+  }
+
+  async function signInWithPassword() {
+    const email = authEmail.trim().toLowerCase()
+
+    if (!supabase || !isValidEmail(email) || authPassword.length < 8) {
+      setLoginMessage("اكتب إيميل صحيح وكلمة مرور من 8 أحرف أو أكثر.")
+      return
+    }
+
+    setAuthLoading(true)
+    setLoginMessage("")
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password: authPassword,
+    })
+    setAuthLoading(false)
+    setLoginMessage(error ? `تعذر الدخول: ${error.message}` : "تم تسجيل الدخول بنجاح.")
+  }
+
+  async function sendPasswordReset() {
+    const email = authEmail.trim().toLowerCase()
+
+    if (!supabase || !isValidEmail(email)) {
+      setLoginMessage("اكتب إيميل الإدارة الصحيح حتى نرسل رابط تغيير كلمة المرور.")
+      return
+    }
+
+    setAuthLoading(true)
+    setLoginMessage("")
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin,
+    })
+    setAuthLoading(false)
+    setLoginMessage(
+      error
+        ? `تعذر إرسال رابط تغيير كلمة المرور: ${error.message}`
+        : "تم إرسال رابط تغيير كلمة المرور. افتح الإيميل واضغط الرابط.",
+    )
+  }
+
+  async function updateRecoveredPassword() {
+    if (!supabase || authPassword.length < 8) {
+      setLoginMessage("كلمة المرور الجديدة لازم تكون 8 أحرف أو أكثر.")
+      return
+    }
+
+    setAuthLoading(true)
+    setLoginMessage("")
+    const { error } = await supabase.auth.updateUser({ password: authPassword })
+    setAuthLoading(false)
+
+    if (error) {
+      setLoginMessage(`تعذر حفظ كلمة المرور: ${error.message}`)
+      return
+    }
+
+    setIsPasswordRecovery(false)
+    setLoginMessage("تم تغيير كلمة المرور. هسه اضغط دخول بكلمة المرور.")
+    await supabase.auth.signOut()
+    setAuthSession(null)
+  }
+
+  async function signUpWithPassword() {
+    const email = authEmail.trim().toLowerCase()
+
+    if (!supabase || !loginInfo.name.trim() || !isValidIraqiPhone(loginInfo.phone)) {
+      setLoginMessage("اكتب الاسم ورقم عراقي صحيح حتى ننشئ الحساب.")
+      return
+    }
+    if (!isValidEmail(email) || authPassword.length < 8) {
+      setLoginMessage("اكتب إيميل صحيح وكلمة مرور من 8 أحرف أو أكثر.")
+      return
+    }
+
+    setAuthLoading(true)
+    setLoginMessage("")
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password: authPassword,
+      options: {
+        data: {
+          account_type: accountType,
+          full_name: loginInfo.name.trim(),
+          phone: loginInfo.phone.trim(),
+        },
+      },
+    })
+    setAuthLoading(false)
+
+    if (error) {
+      setLoginMessage(`تعذر إنشاء الحساب: ${error.message}`)
+      return
+    }
+
+    setLoginMessage(
+      data.session
+        ? "تم إنشاء الحساب والدخول بنجاح."
+        : "تم إنشاء الحساب، لكن تأكيد الإيميل ما زال مفعّلًا في Supabase.",
+    )
+  }
+
+  async function signInWithPhone() {
+    if (!supabase || !loginInfo.name.trim() || !isValidIraqiPhone(loginInfo.phone)) {
+      setLoginMessage("اكتب الاسم ورقم عراقي صحيح حتى تدخل.")
+      return
+    }
+
+    setAuthLoading(true)
+    setLoginMessage("")
+    const { error } = await supabase.auth.signInAnonymously({
+      options: {
+        data: {
+          account_type: accountType,
+          full_name: loginInfo.name.trim(),
+          phone: loginInfo.phone.trim(),
+        },
+      },
+    })
+    setAuthLoading(false)
+    setLoginMessage(error ? `تعذر الدخول: ${error.message}` : `تم الدخول كـ ${accountType} بنجاح.`)
+  }
+
+  async function completeSupabaseLogin(session) {
+    const user = session.user
+    const metadata = user.user_metadata ?? {}
+    const nextAccountType = getPublicAccountType(metadata.account_type)
+    const nextName = String(metadata.full_name ?? loginInfo.name).trim()
+    const nextPhone = String(metadata.phone ?? loginInfo.phone).trim()
+
+    if (!nextName || !isValidIraqiPhone(nextPhone)) {
+      setLoginMessage("تم تأكيد الإيميل، لكن الاسم أو رقم الهاتف ناقص. أكمل البيانات وأرسل الرابط مرة ثانية.")
+      return
+    }
+
+    let error = null
+
+    if (nextAccountType === "الإدارة") {
+      const { data: adminProfile, error: adminError } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .maybeSingle()
+
+      error = adminError
+      if (!error && adminProfile?.role !== "admin") {
+        setLoginMessage("هذا الحساب غير مفعّل كحساب إدارة.")
+        await supabase.auth.signOut()
+        return
+      }
+    } else {
+      const result = await supabase.from("profiles").upsert({
+        id: user.id,
+        full_name: nextName,
+        phone: nextPhone,
+        role: getDatabaseRole(nextAccountType),
+      }, { onConflict: "id" })
+      error = result.error
+    }
+
+    if (error) {
+      setLoginMessage(`تم تأكيد الإيميل، لكن تعذر تجهيز الملف الشخصي: ${error.message}`)
+      return
+    }
+
+    setAuthSession(session)
+    setAuthEmail(user.email ?? "")
+    setAccountType(nextAccountType)
+    setLoginInfo((info) => ({ ...info, name: nextName, phone: nextPhone }))
+    setSavedAccount({ accountType: nextAccountType, name: nextName, phone: nextPhone })
+    setCurrentView("dashboard")
+    setLoginMessage("")
+  }
+
   function chooseAccountType(type) {
     setAccountType(type)
     setLoginMessage("")
@@ -256,7 +533,11 @@ function App() {
     }))
   }
 
-  function forgetSavedAccount() {
+  async function forgetSavedAccount() {
+    if (authSession && supabase) {
+      await supabase.auth.signOut()
+    }
+
     localStorage.removeItem(ACCOUNT_STORAGE_KEY)
     setSavedAccount({
       accountType: "زبون",
@@ -631,7 +912,7 @@ function App() {
     )
   }
 
-  function sendOrder(paymentMethod = "الدفع عند الاستلام") {
+  async function sendOrder(paymentMethod = "الدفع عند الاستلام") {
     if (cartItems.length === 0) {
       setOrderMessage("السلة فارغة. أضف منتج واحد على الأقل، وبعدها ارجع لتأكيد الطلب.")
       showNotification(
@@ -682,7 +963,7 @@ function App() {
 
     const orderGroups = groupCartByStore(cartItems)
     const createdAt = new Date().toISOString()
-    const newOrders = orderGroups.map((items, index) => {
+    let newOrders = orderGroups.map((items, index) => {
       const subtotal = items.reduce(
         (total, item) => total + getPriceValue(item.price) * item.quantity,
         0,
@@ -706,6 +987,17 @@ function App() {
         createdAt,
       }
     })
+
+    if (authSession) {
+      try {
+        newOrders = await createMarketplaceOrders(newOrders, stores, authSession.user.id)
+        setStorageMessage("")
+      } catch (error) {
+        setOrderMessage(`تعذر حفظ الطلب بقاعدة البيانات: ${error.message}`)
+        showNotification("ما تم إرسال الطلب لأن قاعدة البيانات رفضت الحفظ.", "warning", "زبون")
+        return
+      }
+    }
 
     setStores((currentStores) => {
       const updatedStores = currentStores.map((store) => ({
@@ -754,7 +1046,24 @@ function App() {
     )
   }
 
-  function updateMerchantOrderStatus(orderId, status) {
+  async function persistSyncedOrderChange(order, changes) {
+    if (!authSession || !order?.isSynced) return true
+
+    try {
+      await updateMarketplaceOrder(order.id, changes)
+      setStorageMessage("")
+      return true
+    } catch (error) {
+      setStorageMessage(`تعذر تحديث الطلب بقاعدة البيانات: ${error.message}`)
+      showNotification("ما تغيرت حالة الطلب لأن قاعدة البيانات رفضت التحديث.", "warning", accountType)
+      return false
+    }
+  }
+
+  async function updateMerchantOrderStatus(orderId, status) {
+    const targetOrder = merchantOrders.find((order) => order.id === orderId)
+    if (!(await persistSyncedOrderChange(targetOrder, { status }))) return
+
     setCustomerOrders((orders) =>
       orders.map((order) => (order.id === orderId ? { ...order, status } : order)),
     )
@@ -768,12 +1077,14 @@ function App() {
     )
   }
 
-  function prepareOrder(orderId) {
+  async function prepareOrder(orderId) {
     const orderToPrepare = merchantOrders.find((order) => order.id === orderId)
 
     if (!orderToPrepare) {
       return
     }
+
+    if (!(await persistSyncedOrderChange(orderToPrepare, { status: "جاهز للتوصيل" }))) return
 
     const preparedOrder = { ...orderToPrepare, status: "جاهز للتوصيل" }
     setCustomerOrders((orders) =>
@@ -798,7 +1109,14 @@ function App() {
     )
   }
 
-  function updateDeliveryStatus(orderId, status) {
+  async function updateDeliveryStatus(orderId, status) {
+    const targetOrder = deliveryOrders.find((order) => order.id === orderId)
+    const remoteChanges = {
+      status,
+      ...(status === "قيد التوصيل" && authSession ? { driverId: authSession.user.id } : {}),
+    }
+    if (!(await persistSyncedOrderChange(targetOrder, remoteChanges))) return
+
     setCustomerOrders((orders) =>
       orders.map((order) => (order.id === orderId ? { ...order, status } : order)),
     )
@@ -815,7 +1133,13 @@ function App() {
     )
   }
 
-  function updateOrderNote(orderId, internalNote) {
+  async function updateOrderNote(orderId, internalNote) {
+    const targetOrder =
+      customerOrders.find((order) => order.id === orderId) ??
+      merchantOrders.find((order) => order.id === orderId) ??
+      deliveryOrders.find((order) => order.id === orderId)
+    if (!(await persistSyncedOrderChange(targetOrder, { internalNote }))) return
+
     setCustomerOrders((orders) =>
       orders.map((order) => (order.id === orderId ? { ...order, internalNote } : order)),
     )
@@ -827,7 +1151,7 @@ function App() {
     )
   }
 
-  function cancelOrder(orderId) {
+  async function cancelOrder(orderId) {
     const orderToCancel =
       customerOrders.find((order) => order.id === orderId) ??
       merchantOrders.find((order) => order.id === orderId)
@@ -835,6 +1159,8 @@ function App() {
     if (!orderToCancel || orderToCancel.status === "ملغي") {
       return
     }
+
+    if (!(await persistSyncedOrderChange(orderToCancel, { status: "ملغي" }))) return
 
     const canceledOrder = { ...orderToCancel, status: "ملغي" }
 
@@ -881,8 +1207,8 @@ function App() {
     )
   }
 
-  function registerStore(store) {
-    const newStore = {
+  async function registerStore(store) {
+    let newStore = {
       ...store,
       ownerName: activeUser.name,
       ownerPhone: activeUser.phone,
@@ -892,15 +1218,42 @@ function App() {
       products: [],
     }
 
+    if (authSession) {
+      try {
+        newStore = await createMarketplaceStore(
+          newStore,
+          authSession.user.id,
+          activeUser.name,
+          activeUser.phone,
+        )
+        newStore.image = normalizeMarketplaceImage(newStore.image, categoryImages[newStore.category])
+        setStorageMessage("")
+      } catch (error) {
+        setStorageMessage(`تعذر تسجيل المتجر بقاعدة البيانات: ${error.message}`)
+        showNotification("ما تم تسجيل المتجر لأن قاعدة البيانات رفضت الحفظ.", "warning", "صاحب متجر")
+        return false
+      }
+    }
+
     setStores((currentStores) => [newStore, ...currentStores])
     showNotification(
       `تم تسجيل متجر ${newStore.name}. الطلب صار عند الإدارة وبانتظار الموافقة حتى يظهر للزبائن.`,
       "success",
       "صاحب متجر",
     )
+    return true
   }
 
-  function approveStore(storeName) {
+  async function approveStore(storeName) {
+    const targetStore = stores.find((store) => store.name === storeName)
+    if (authSession && targetStore?.isSynced) {
+      try {
+        await updateMarketplaceStoreStatus(targetStore.id, "approved")
+      } catch (error) {
+        setStorageMessage(`تعذر قبول المتجر بقاعدة البيانات: ${error.message}`)
+        return
+      }
+    }
     setStores((currentStores) =>
       currentStores.map((store) =>
         store.name === storeName ? { ...store, rejectionReason: "", status: "approved" } : store,
@@ -913,7 +1266,16 @@ function App() {
     )
   }
 
-  function rejectStore(storeName, reason = "بيانات المتجر تحتاج توضيح أكثر.") {
+  async function rejectStore(storeName, reason = "بيانات المتجر تحتاج توضيح أكثر.") {
+    const targetStore = stores.find((store) => store.name === storeName)
+    if (authSession && targetStore?.isSynced) {
+      try {
+        await updateMarketplaceStoreStatus(targetStore.id, "rejected", reason)
+      } catch (error) {
+        setStorageMessage(`تعذر رفض المتجر بقاعدة البيانات: ${error.message}`)
+        return
+      }
+    }
     setStores((currentStores) =>
       currentStores.map((store) =>
         store.name === storeName ? { ...store, rejectionReason: reason, status: "rejected" } : store,
@@ -926,7 +1288,16 @@ function App() {
     )
   }
 
-  function reviewStoreAgain(storeName) {
+  async function reviewStoreAgain(storeName) {
+    const targetStore = stores.find((store) => store.name === storeName)
+    if (authSession && targetStore?.isSynced) {
+      try {
+        await updateMarketplaceStoreStatus(targetStore.id, "pending")
+      } catch (error) {
+        setStorageMessage(`تعذر إعادة المتجر للمراجعة: ${error.message}`)
+        return
+      }
+    }
     setStores((currentStores) =>
       currentStores.map((store) =>
         store.name === storeName ? { ...store, status: "pending" } : store,
@@ -950,14 +1321,27 @@ function App() {
     )
   }
 
-  function addProductToStore(storeName, product) {
+  async function addProductToStore(storeName, product) {
     const storeCategory = stores.find((store) => store.name === storeName)?.category
-    const newProduct = {
+    const targetStore = stores.find((store) => store.name === storeName)
+    let newProduct = {
       name: product.name,
       price: `${Number(product.price).toLocaleString("en-US")} د.ع`,
       quantity: product.quantity,
       image: product.image || categoryImages[storeCategory],
       status: Number(product.quantity) === 0 ? "نفد" : product.status || "متوفر",
+    }
+
+    if (authSession && targetStore?.isSynced) {
+      try {
+        newProduct = await createMarketplaceProduct(targetStore.id, {
+          ...product,
+          image: product.image || categoryImages[storeCategory],
+        })
+      } catch (error) {
+        setStorageMessage(`تعذر حفظ المنتج بقاعدة البيانات: ${error.message}`)
+        return false
+      }
     }
 
     setStores((currentStores) =>
@@ -979,16 +1363,31 @@ function App() {
       "success",
       "صاحب متجر",
     )
+    return true
   }
 
-  function updateProductInStore(storeName, oldProductName, product) {
+  async function updateProductInStore(storeName, oldProductName, product) {
     const storeCategory = stores.find((store) => store.name === storeName)?.category
-    const updatedProduct = {
+    const targetStore = stores.find((store) => store.name === storeName)
+    const targetProduct = targetStore?.products.find((item) => item.name === oldProductName)
+    let updatedProduct = {
       name: product.name,
       price: `${Number(product.price).toLocaleString("en-US")} د.ع`,
       quantity: product.quantity,
       image: product.image || categoryImages[storeCategory],
       status: Number(product.quantity) === 0 ? "نفد" : product.status || "متوفر",
+    }
+
+    if (authSession && targetStore?.isSynced && targetProduct?.id) {
+      try {
+        updatedProduct = await updateMarketplaceProduct(targetProduct.id, targetStore.id, {
+          ...product,
+          image: product.image || categoryImages[storeCategory],
+        })
+      } catch (error) {
+        setStorageMessage(`تعذر تعديل المنتج بقاعدة البيانات: ${error.message}`)
+        return false
+      }
     }
 
     setStores((currentStores) =>
@@ -1032,9 +1431,20 @@ function App() {
       "success",
       "صاحب متجر",
     )
+    return true
   }
 
-  function deleteProductFromStore(storeName, productName) {
+  async function deleteProductFromStore(storeName, productName) {
+    const targetStore = stores.find((store) => store.name === storeName)
+    const targetProduct = targetStore?.products.find((product) => product.name === productName)
+    if (authSession && targetStore?.isSynced && targetProduct?.id) {
+      try {
+        await deleteMarketplaceProduct(targetProduct.id)
+      } catch (error) {
+        setStorageMessage(`تعذر حذف المنتج من قاعدة البيانات: ${error.message}`)
+        return false
+      }
+    }
     setStores((currentStores) =>
       currentStores.map((store) =>
         store.name === storeName
@@ -1061,6 +1471,7 @@ function App() {
       "warning",
       "صاحب متجر",
     )
+    return true
   }
 
   return (
@@ -1068,7 +1479,21 @@ function App() {
       {currentView === "login" ? (
         <LoginScreen
           accountType={accountType}
+          authEmail={authEmail}
+          authPassword={authPassword}
+          authLoading={authLoading}
+          authSession={authSession}
+          isOnlineAuthEnabled={isSupabaseConfigured}
           onAccountChange={chooseAccountType}
+          onAuthEmailChange={setAuthEmail}
+          onAuthPasswordChange={setAuthPassword}
+          onEmailLogin={sendEmailLoginLink}
+          onPasswordLogin={signInWithPassword}
+          onPasswordReset={sendPasswordReset}
+          onPasswordSignUp={signUpWithPassword}
+          onRecoveredPasswordSave={updateRecoveredPassword}
+          onPhoneLogin={signInWithPhone}
+          isPasswordRecovery={isPasswordRecovery}
           loginInfo={loginInfo}
           loginMessage={loginMessage}
           onEnter={enterDashboard}
@@ -1582,14 +2007,28 @@ function normalizeImportedAppData(backupData) {
 
 function normalizeStore(store) {
   const categoryImage = categoryImages[store.category]
+  const defaultStore = customerStores.find((item) => item.name === store.name)
 
   return {
     ...store,
+    area: store.area || defaultStore?.area || "",
+    phone: store.phone || defaultStore?.phone || "",
+    ownerName: store.ownerName || defaultStore?.ownerName || "",
+    ownerPhone: store.ownerPhone || defaultStore?.ownerPhone || "",
+    status: store.status || defaultStore?.status || "approved",
     image: normalizeMarketplaceImage(store.image, categoryImage),
     products: Array.isArray(store.products)
       ? store.products.map((product) => normalizeProduct(product, categoryImage))
       : [],
   }
+}
+
+function mergeMarketplaceStores(currentStores, databaseStores) {
+  const databaseNames = new Set(databaseStores.map((store) => store.name))
+  return [
+    ...databaseStores.map(normalizeStore),
+    ...currentStores.filter((store) => !databaseNames.has(store.name)),
+  ]
 }
 
 function normalizeProduct(product, fallbackImage) {
@@ -1657,6 +2096,22 @@ function isNotificationForAccount(notification, accountType) {
 
 function isValidIraqiPhone(phone) {
   return /^07\d{9}$/.test(phone.trim())
+}
+
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+}
+
+function getPublicAccountType(accountType) {
+  return ["زبون", "صاحب متجر", "سائق", "الإدارة"].includes(accountType)
+    ? accountType
+    : "زبون"
+}
+
+function getDatabaseRole(accountType) {
+  return { زبون: "customer", "صاحب متجر": "merchant", سائق: "driver", الإدارة: "admin" }[
+    accountType
+  ]
 }
 
 export default App

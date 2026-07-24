@@ -26,9 +26,23 @@ const accountPermissions = {
 
 export function LoginScreen({
   accountType,
+  authEmail,
+  authPassword,
+  authLoading,
+  authSession,
+  isPasswordRecovery,
+  isOnlineAuthEnabled,
   loginInfo,
   loginMessage,
   onAccountChange,
+  onAuthEmailChange,
+  onAuthPasswordChange,
+  onEmailLogin,
+  onPasswordLogin,
+  onPasswordReset,
+  onPasswordSignUp,
+  onRecoveredPasswordSave,
+  onPhoneLogin,
   onEnter,
   onForgetAccount,
   onLoginInfoChange,
@@ -142,22 +156,104 @@ export function LoginScreen({
               placeholder="مثال: 07XXXXXXXXX"
             />
           </label>
-          {accountType === "الإدارة" && (
-            <label>
-              رمز الإدارة
-              <input
-                value={loginInfo.adminCode}
-                onChange={(event) => updateLoginInfo("adminCode", event.target.value)}
-                placeholder="الرمز التجريبي: 1234"
-                type="password"
-              />
-            </label>
+          {["صاحب متجر", "الإدارة"].includes(accountType) && (
+            <>
+              <label>
+                الإيميل
+                <input
+                  autoComplete="email"
+                  inputMode="email"
+                  value={authEmail}
+                  onChange={(event) => onAuthEmailChange(event.target.value)}
+                  placeholder="name@example.com"
+                  type="email"
+                />
+              </label>
+              <label>
+                كلمة المرور
+                <input
+                  autoComplete="current-password"
+                  value={authPassword}
+                  onChange={(event) => onAuthPasswordChange(event.target.value)}
+                  placeholder="8 أحرف أو أكثر"
+                  type="password"
+                />
+              </label>
+            </>
           )}
         </div>
 
-        <button className="enter-button" onClick={onEnter}>
-          دخول
-        </button>
+        {["زبون", "سائق"].includes(accountType) && (
+          <div className="online-auth-card customer-phone-auth-card">
+            <div>
+              <strong>دخول {accountType} برقم الهاتف</strong>
+              <span>
+                ما تحتاج إيميل أو كلمة مرور. الاسم ورقم الهاتف يكفون
+                {accountType === "زبون" ? " للطلب والمتابعة." : " لاستلام مهام التوصيل."}
+              </span>
+            </div>
+            <button
+              disabled={!isOnlineAuthEnabled || authLoading}
+              onClick={onPhoneLogin}
+              type="button"
+            >
+              {authLoading ? "جاري الدخول..." : `دخول ${accountType}`}
+            </button>
+          </div>
+        )}
+
+        {["صاحب متجر", "الإدارة"].includes(accountType) && (
+          <div className="online-auth-card">
+            <div>
+              <strong>
+                {accountType === "الإدارة" ? "دخول الإدارة الآمن" : "دخول حقيقي عبر الإيميل"}
+              </strong>
+              <span>
+                {accountType === "الإدارة"
+                  ? "حساب الإدارة يحتاج موافقة يدوية أول مرة، وبعدها يدخل بالإيميل وكلمة المرور."
+                  : isOnlineAuthEnabled
+                    ? "استخدم الإيميل وكلمة المرور، أو أرسل رابط دخول عند الحاجة."
+                    : "اتصال Supabase غير مفعّل، استخدم الدخول التجريبي مؤقتًا."}
+              </span>
+            </div>
+            {accountType === "صاحب متجر" && (
+              <button disabled={!isOnlineAuthEnabled || authLoading} onClick={onEmailLogin} type="button">
+                {authLoading ? "جاري الإرسال..." : authSession ? "الحساب مؤكد" : "إرسال رابط الدخول"}
+              </button>
+            )}
+            <div className="password-auth-actions">
+              {isPasswordRecovery ? (
+                <button
+                  disabled={!isOnlineAuthEnabled || authLoading}
+                  onClick={onRecoveredPasswordSave}
+                  type="button"
+                >
+                  حفظ كلمة المرور الجديدة
+                </button>
+              ) : (
+                <>
+                  <button disabled={!isOnlineAuthEnabled || authLoading} onClick={onPasswordLogin} type="button">
+                    دخول بكلمة المرور
+                  </button>
+                  <button disabled={!isOnlineAuthEnabled || authLoading} onClick={onPasswordSignUp} type="button">
+                    {accountType === "الإدارة" ? "إنشاء أول حساب إدارة" : "إنشاء حساب جديد"}
+                  </button>
+                  {accountType === "الإدارة" && (
+                    <button disabled={!isOnlineAuthEnabled || authLoading} onClick={onPasswordReset} type="button">
+                      نسيت كلمة المرور
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
+        {accountType === "صاحب متجر" && (
+          <button className="enter-button" onClick={onEnter}>
+            دخول تجريبي
+          </button>
+        )}
         {loginMessage && <div className="order-message">{loginMessage}</div>}
       </div>
     </section>

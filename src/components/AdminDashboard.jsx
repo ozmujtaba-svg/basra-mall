@@ -96,19 +96,6 @@ export function AdminDashboard({
     [stores],
   )
   const topStore = useMemo(() => getTopStore(nonCanceledOrders), [nonCanceledOrders])
-  const totalSales = useMemo(
-    () => nonCanceledOrders.reduce((total, order) => total + order.subtotal, 0),
-    [nonCanceledOrders],
-  )
-  const salesCommission = useMemo(
-    () => nonCanceledOrders.reduce((total, order) => total + order.subtotal * commissionRate, 0),
-    [commissionRate, nonCanceledOrders],
-  )
-  const deliveryRevenue = useMemo(
-    () => deliveredOrders.reduce((total, order) => total + order.deliveryFee, 0),
-    [deliveredOrders],
-  )
-  const averageOrderValue = nonCanceledOrders.length > 0 ? totalSales / nonCanceledOrders.length : 0
   const revenuePeriodOrders = useMemo(
     () => filterOrdersByRevenuePeriod(allOrders, revenuePeriodFilter),
     [allOrders, revenuePeriodFilter],
