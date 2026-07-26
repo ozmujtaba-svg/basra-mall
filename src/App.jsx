@@ -408,6 +408,21 @@ function App() {
     setAuthSession(null)
   }
 
+  async function changeAdminPassword(newPassword) {
+    if (!supabase || !authSession) {
+      return { success: false, message: "جلسة الإدارة غير متصلة. سجل دخول مرة ثانية." }
+    }
+    if (newPassword.length < 8) {
+      return { success: false, message: "كلمة المرور الجديدة لازم تكون 8 أحرف أو أكثر." }
+    }
+
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+
+    return error
+      ? { success: false, message: `تعذر تغيير كلمة المرور: ${error.message}` }
+      : { success: true, message: "تم تغيير كلمة مرور الإدارة بنجاح." }
+  }
+
   async function signUpWithPassword() {
     const email = authEmail.trim().toLowerCase()
 
@@ -531,6 +546,17 @@ function App() {
       ...info,
       adminCode: type === "الإدارة" ? info.adminCode : "",
     }))
+  }
+
+  async function logoutCurrentSession() {
+    if (authSession && supabase) {
+      await supabase.auth.signOut()
+    }
+
+    setAuthSession(null)
+    setAuthPassword("")
+    setLoginMessage("تم تسجيل الخروج. اكتب الإيميل وكلمة المرور حتى تدخل مرة ثانية.")
+    setCurrentView("login")
   }
 
   async function forgetSavedAccount() {
@@ -1525,7 +1551,7 @@ function App() {
           }
           stats={activeStats}
           user={activeUser}
-          onBack={() => setCurrentView("login")}
+          onBack={logoutCurrentSession}
           onForgetAccount={forgetSavedAccount}
         >
           {accountType === "زبون" && (
@@ -1585,6 +1611,7 @@ function App() {
               allOrders={allOrders}
               commissionRate={platformSettings.commissionRate}
               onApproveStore={approveStore}
+              onChangePassword={changeAdminPassword}
               onExportBackup={exportDataBackup}
               onImportBackup={importDataBackup}
               lastSaveTime={lastSaveTime}

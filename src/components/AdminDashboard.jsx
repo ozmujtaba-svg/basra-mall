@@ -43,6 +43,7 @@ export function AdminDashboard({
   estimatedRevenue,
   lastSaveTime,
   onApproveStore,
+  onChangePassword,
   onExportBackup,
   onImportBackup,
   onRejectStore,
@@ -66,6 +67,10 @@ export function AdminDashboard({
   const [pendingResetData, setPendingResetData] = useState(false)
   const [pendingImportFile, setPendingImportFile] = useState(null)
   const [pendingRejectStoreName, setPendingRejectStoreName] = useState("")
+  const [newAdminPassword, setNewAdminPassword] = useState("")
+  const [confirmAdminPassword, setConfirmAdminPassword] = useState("")
+  const [passwordMessage, setPasswordMessage] = useState("")
+  const [passwordLoading, setPasswordLoading] = useState(false)
   const pendingStores = useMemo(() => stores.filter((store) => store.status === "pending"), [stores])
   const rejectedStores = useMemo(() => stores.filter((store) => store.status === "rejected"), [stores])
   const approvedStores = useMemo(
@@ -232,6 +237,28 @@ export function AdminDashboard({
     setOrderSearch("")
     setOrderStatusFilter(orderStatusFilters[0])
     setOrderDateFilter(orderDateFilters[0])
+  }
+
+  async function saveAdminPassword() {
+    if (newAdminPassword.length < 8) {
+      setPasswordMessage("كلمة المرور الجديدة لازم تكون 8 أحرف أو أكثر.")
+      return
+    }
+    if (newAdminPassword !== confirmAdminPassword) {
+      setPasswordMessage("كلمتا المرور غير متطابقتين.")
+      return
+    }
+
+    setPasswordLoading(true)
+    setPasswordMessage("")
+    const result = await onChangePassword(newAdminPassword)
+    setPasswordLoading(false)
+    setPasswordMessage(result.message)
+
+    if (result.success) {
+      setNewAdminPassword("")
+      setConfirmAdminPassword("")
+    }
   }
 
   return (
@@ -798,6 +825,41 @@ export function AdminDashboard({
             </div>
           </label>
         </div>
+      </section>
+
+      <section className="admin-section" id="admin-password">
+        <h3>تغيير كلمة مرور الإدارة</h3>
+        <p>اختار كلمة خاصة بيك من 8 أحرف أو أكثر، ولا تشاركها ويا أي شخص.</p>
+        <div className="settings-grid">
+          <label>
+            كلمة المرور الجديدة
+            <div className="setting-control">
+              <input
+                autoComplete="new-password"
+                onChange={(event) => setNewAdminPassword(event.target.value)}
+                placeholder="8 أحرف أو أكثر"
+                type="password"
+                value={newAdminPassword}
+              />
+            </div>
+          </label>
+          <label>
+            تأكيد كلمة المرور
+            <div className="setting-control">
+              <input
+                autoComplete="new-password"
+                onChange={(event) => setConfirmAdminPassword(event.target.value)}
+                placeholder="اكتبها مرة ثانية"
+                type="password"
+                value={confirmAdminPassword}
+              />
+            </div>
+          </label>
+        </div>
+        <button disabled={passwordLoading} onClick={saveAdminPassword} type="button">
+          {passwordLoading ? "جاري الحفظ..." : "حفظ كلمة المرور الجديدة"}
+        </button>
+        {passwordMessage && <div className="order-message">{passwordMessage}</div>}
       </section>
 
       <section className="admin-section danger-zone" id="admin-data">
