@@ -9,6 +9,7 @@ import { MerchantDashboard } from "./components/MerchantDashboard"
 import { Shell } from "./components/Shell"
 import { isSupabaseConfigured, supabase } from "./lib/supabase"
 import {
+  cancelMarketplaceOrder,
   createMarketplaceOrders,
   fetchMarketplaceOrders,
   updateMarketplaceOrder,
@@ -1016,7 +1017,7 @@ function App() {
 
     if (authSession) {
       try {
-        newOrders = await createMarketplaceOrders(newOrders, stores, authSession.user.id)
+        newOrders = await createMarketplaceOrders(newOrders)
         setStorageMessage("")
       } catch (error) {
         setOrderMessage(`تعذر حفظ الطلب بقاعدة البيانات: ${error.message}`)
@@ -1210,7 +1211,16 @@ function App() {
       return
     }
 
-    if (!(await persistSyncedOrderChange(orderToCancel, { status: "ملغي" }))) return
+    if (authSession && orderToCancel.isSynced) {
+      try {
+        await cancelMarketplaceOrder(orderId)
+        setStorageMessage("")
+      } catch (error) {
+        setStorageMessage(`تعذر إلغاء الطلب بقاعدة البيانات: ${error.message}`)
+        showNotification("ما انلغى الطلب لأن قاعدة البيانات رفضت العملية.", "warning", accountType)
+        return
+      }
+    }
 
     const canceledOrder = { ...orderToCancel, status: "ملغي" }
 

@@ -23,36 +23,35 @@ export async function fetchMarketplaceOrders() {
   return data.map(fromDatabaseOrder)
 }
 
-export async function createMarketplaceOrders(orders, stores, customerId) {
-  const rows = orders.map((order) => {
-    const storeName = order.items[0]?.store ?? ""
-    const store = stores.find((item) => item.name === storeName)
+export async function createMarketplaceOrders(orders) {
+  const createdOrders = []
 
-    return {
-      customer_id: customerId,
-      customer_name: order.customer,
-      customer_phone: order.phone,
-      merchant_phone: store?.ownerPhone || store?.phone || "",
-      store_name: storeName,
-      area: order.area,
-      landmark: order.landmark,
-      notes: order.notes,
-      payment_method: order.paymentMethod,
-      status: statusToDatabase[order.status] ?? "new",
-      items: order.items,
-      subtotal: order.subtotal,
-      delivery_fee: order.deliveryFee,
-      internal_note: order.internalNote,
-    }
+  for (const order of orders) {
+    const { data, error } = await supabase.rpc("create_marketplace_order_with_stock", {
+      p_area: order.area,
+      p_customer_name: order.customer,
+      p_customer_phone: order.phone,
+      p_delivery_fee: order.deliveryFee,
+      p_items: order.items,
+      p_landmark: order.landmark,
+      p_notes: order.notes,
+      p_payment_method: order.paymentMethod,
+    })
+
+    if (error) throw error
+    createdOrders.push(fromDatabaseOrder(data))
+  }
+
+  return createdOrders
+}
+
+export async function cancelMarketplaceOrder(orderId) {
+  const { data, error } = await supabase.rpc("cancel_marketplace_order_with_stock", {
+    p_order_id: orderId,
   })
 
-  const { data, error } = await supabase
-    .from("marketplace_orders")
-    .insert(rows)
-    .select("*")
-
   if (error) throw error
-  return data.map(fromDatabaseOrder)
+  return fromDatabaseOrder(data)
 }
 
 export async function updateMarketplaceOrder(orderId, changes) {
