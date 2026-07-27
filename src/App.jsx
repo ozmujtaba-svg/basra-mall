@@ -96,7 +96,7 @@ function App() {
   const approvedStores = stores.filter(
     (store) => store.status !== "pending" && store.status !== "rejected",
   )
-  const activeSelectedStore = approvedStores.some((store) => store.name === selectedStore.name)
+  const activeSelectedStore = approvedStores.some((store) => store.name === selectedStore?.name)
     ? selectedStore
     : approvedStores[0]
   const visibleMerchantOrders = merchantOrders.filter((order) =>
@@ -157,7 +157,7 @@ function App() {
       merchantOrders,
       nextOrderId,
       savedCustomerAddress,
-      selectedStoreName: selectedStore.name,
+      selectedStoreName: selectedStore?.name ?? "",
       stores,
     }
     const saved = saveToStorage(APP_DATA_STORAGE_KEY, appDataSnapshot)
@@ -227,12 +227,13 @@ function App() {
           setMerchantOrders(orders)
           setDeliveryOrders(orders.filter((order) => order.status !== "طلب جديد"))
         }
-        setStores((currentStores) => {
-          const mergedStores = mergeMarketplaceStores(currentStores, databaseStores)
+        setStores(() => {
+          const marketplaceStores = databaseStores.map(normalizeStore)
           setSelectedStore((currentStore) =>
-            mergedStores.find((store) => store.name === currentStore.name) ?? mergedStores[0],
+            marketplaceStores.find((store) => store.name === currentStore?.name) ??
+              marketplaceStores[0],
           )
-          return mergedStores
+          return marketplaceStores
         })
         setStorageMessage("")
       })
@@ -637,7 +638,7 @@ function App() {
         merchantOrders,
         nextOrderId,
         savedCustomerAddress,
-        selectedStoreName: selectedStore.name,
+        selectedStoreName: selectedStore?.name ?? "",
         stores,
       },
     }
@@ -1048,7 +1049,7 @@ function App() {
         }),
       }))
 
-      const updatedSelectedStore = updatedStores.find((store) => store.name === selectedStore.name)
+      const updatedSelectedStore = updatedStores.find((store) => store.name === selectedStore?.name)
 
       if (updatedSelectedStore) {
         setSelectedStore(updatedSelectedStore)
@@ -1244,7 +1245,7 @@ function App() {
           }
         }),
       }))
-      const updatedSelectedStore = updatedStores.find((store) => store.name === selectedStore.name)
+      const updatedSelectedStore = updatedStores.find((store) => store.name === selectedStore?.name)
 
       if (updatedSelectedStore) {
         setSelectedStore(updatedSelectedStore)
@@ -1412,7 +1413,7 @@ function App() {
       ),
     )
 
-    if (selectedStore.name === storeName) {
+    if (selectedStore?.name === storeName) {
       setSelectedStore((store) => ({
         ...store,
         products: [...store.products, newProduct],
@@ -1463,7 +1464,7 @@ function App() {
       ),
     )
 
-    if (selectedStore.name === storeName) {
+    if (selectedStore?.name === storeName) {
       setSelectedStore((store) => ({
         ...store,
         products: store.products.map((storeProduct) =>
@@ -1516,7 +1517,7 @@ function App() {
       ),
     )
 
-    if (selectedStore.name === storeName) {
+    if (selectedStore?.name === storeName) {
       setSelectedStore((store) => ({
         ...store,
         products: store.products.filter((product) => product.name !== productName),
@@ -1971,8 +1972,8 @@ function loadAppData() {
       landmark: "",
       notes: "",
     },
-    selectedStore: customerStores[0],
-    stores: customerStores,
+    selectedStore: isSupabaseConfigured ? undefined : customerStores[0],
+    stores: isSupabaseConfigured ? [] : customerStores,
   }
 
   const savedData = readStoredData(APP_DATA_STORAGE_KEY)
@@ -2004,8 +2005,9 @@ function loadAppData() {
         storedData.savedCustomerAddress,
         defaultAppData.savedCustomerAddress,
       ),
-      stores:
-        Array.isArray(storedData.stores) && storedData.stores.length > 0
+      stores: isSupabaseConfigured
+        ? []
+        : Array.isArray(storedData.stores) && storedData.stores.length > 0
           ? storedData.stores.map(normalizeStore)
           : customerStores,
     }
@@ -2083,14 +2085,6 @@ function normalizeStore(store) {
       ? store.products.map((product) => normalizeProduct(product, categoryImage))
       : [],
   }
-}
-
-function mergeMarketplaceStores(currentStores, databaseStores) {
-  const databaseNames = new Set(databaseStores.map((store) => store.name))
-  return [
-    ...databaseStores.map(normalizeStore),
-    ...currentStores.filter((store) => !databaseNames.has(store.name)),
-  ]
 }
 
 function normalizeProduct(product, fallbackImage) {
