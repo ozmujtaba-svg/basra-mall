@@ -66,6 +66,30 @@ export async function deleteMarketplaceProduct(productId) {
   if (error) throw error
 }
 
+export async function uploadMarketplaceProductImage(storeId, imageDataUrl) {
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+  if (userError) throw userError
+
+  const userId = userData.user?.id
+  if (!userId) throw new Error("لا توجد جلسة متجر فعّالة")
+
+  const imageBlob = await fetch(imageDataUrl).then((response) => response.blob())
+  const extension = getImageExtension(imageBlob.type)
+  const filePath = `${userId}/${storeId}/${crypto.randomUUID()}.${extension}`
+  const { error } = await supabase.storage
+    .from("product-images")
+    .upload(filePath, imageBlob, {
+      cacheControl: "31536000",
+      contentType: imageBlob.type || "image/jpeg",
+      upsert: false,
+    })
+
+  if (error) throw error
+
+  const { data } = supabase.storage.from("product-images").getPublicUrl(filePath)
+  return data.publicUrl
+}
+
 function fromDatabaseStore(store, owner = {}) {
   return {
     id: store.id,
@@ -106,4 +130,10 @@ function toDatabaseProduct(storeId, product) {
     image_url: product.image || null,
     is_visible: product.status !== "مخفي مؤقتًا",
   }
+}
+
+function getImageExtension(contentType) {
+  if (contentType === "image/png") return "png"
+  if (contentType === "image/webp") return "webp"
+  return "jpg"
 }

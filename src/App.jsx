@@ -21,6 +21,7 @@ import {
   fetchMarketplaceStores,
   updateMarketplaceProduct,
   updateMarketplaceStoreStatus,
+  uploadMarketplaceProductImage,
 } from "./lib/storeRepository"
 
 const DELIVERY_FEE = 5000
@@ -1395,9 +1396,12 @@ function App() {
 
     if (authSession && targetStore?.isSynced) {
       try {
+        const uploadedImage = product.image?.startsWith("data:image/")
+          ? await uploadMarketplaceProductImage(targetStore.id, product.image)
+          : product.image
         newProduct = await createMarketplaceProduct(targetStore.id, {
           ...product,
-          image: product.image || categoryImages[storeCategory],
+          image: uploadedImage || categoryImages[storeCategory],
         })
       } catch (error) {
         setStorageMessage(`تعذر حفظ المنتج بقاعدة البيانات: ${error.message}`)
@@ -1441,9 +1445,12 @@ function App() {
 
     if (authSession && targetStore?.isSynced && targetProduct?.id) {
       try {
+        const uploadedImage = product.image?.startsWith("data:image/")
+          ? await uploadMarketplaceProductImage(targetStore.id, product.image)
+          : product.image
         updatedProduct = await updateMarketplaceProduct(targetProduct.id, targetStore.id, {
           ...product,
-          image: product.image || categoryImages[storeCategory],
+          image: uploadedImage || categoryImages[storeCategory],
         })
       } catch (error) {
         setStorageMessage(`تعذر تعديل المنتج بقاعدة البيانات: ${error.message}`)

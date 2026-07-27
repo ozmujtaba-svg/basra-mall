@@ -494,7 +494,7 @@ export function MerchantDashboard({
           </label>
 
           <label>
-            اختيار صورة من اللابتوب
+            اختيار صورة من الهاتف أو الكمبيوتر
             <input
               accept="image/*"
               disabled={!hasStores}
