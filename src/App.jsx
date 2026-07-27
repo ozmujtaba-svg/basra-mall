@@ -217,33 +217,64 @@ function App() {
     if (!authSession || currentView !== "dashboard") return undefined
 
     let ignore = false
-    Promise.all([fetchMarketplaceOrders(), fetchMarketplaceStores()])
-      .then(([orders, databaseStores]) => {
-        if (ignore) return
+    let refreshTimer
 
-        if (accountType === "زبون") setCustomerOrders(orders)
-        if (accountType === "صاحب متجر") setMerchantOrders(orders)
-        if (accountType === "سائق") setDeliveryOrders(orders)
-        if (accountType === "الإدارة") {
-          setMerchantOrders(orders)
-          setDeliveryOrders(orders.filter((order) => order.status !== "طلب جديد"))
-        }
-        setStores(() => {
-          const marketplaceStores = databaseStores.map(normalizeStore)
-          setSelectedStore((currentStore) =>
-            marketplaceStores.find((store) => store.name === currentStore?.name) ??
-              marketplaceStores[0],
-          )
-          return marketplaceStores
+    const loadMarketplaceData = () => {
+      Promise.all([fetchMarketplaceOrders(), fetchMarketplaceStores()])
+        .then(([orders, databaseStores]) => {
+          if (ignore) return
+
+          if (accountType === "زبون") setCustomerOrders(orders)
+          if (accountType === "صاحب متجر") setMerchantOrders(orders)
+          if (accountType === "سائق") setDeliveryOrders(orders)
+          if (accountType === "الإدارة") {
+            setMerchantOrders(orders)
+            setDeliveryOrders(orders.filter((order) => order.status !== "طلب جديد"))
+          }
+          setStores(() => {
+            const marketplaceStores = databaseStores.map(normalizeStore)
+            setSelectedStore((currentStore) =>
+              marketplaceStores.find((store) => store.name === currentStore?.name) ??
+                marketplaceStores[0],
+            )
+            return marketplaceStores
+          })
+          setStorageMessage("")
         })
-        setStorageMessage("")
-      })
-      .catch((error) => {
-        if (!ignore) setStorageMessage(`تعذر جلب بيانات قاعدة البيانات: ${error.message}`)
-      })
+        .catch((error) => {
+          if (!ignore) setStorageMessage(`تعذر جلب بيانات قاعدة البيانات: ${error.message}`)
+        })
+    }
+
+    const scheduleMarketplaceRefresh = () => {
+      clearTimeout(refreshTimer)
+      refreshTimer = setTimeout(loadMarketplaceData, 250)
+    }
+
+    loadMarketplaceData()
+    const realtimeChannel = supabase
+      .channel(`marketplace-live-${authSession.user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "marketplace_orders" },
+        scheduleMarketplaceRefresh,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "stores" },
+        scheduleMarketplaceRefresh,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "products" },
+        scheduleMarketplaceRefresh,
+      )
+      .subscribe()
 
     return () => {
       ignore = true
+      clearTimeout(refreshTimer)
+      supabase.removeChannel(realtimeChannel)
     }
   }, [accountType, authSession, currentView])
 
