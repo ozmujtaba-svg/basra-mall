@@ -1103,6 +1103,30 @@ function App() {
     )
   }
 
+  async function updateAdminOrderStatus(orderId, status) {
+    const targetOrder = allOrders.find((order) => order.id === orderId)
+    if (!(await persistSyncedOrderChange(targetOrder, { status }))) return
+
+    const updateOrder = (order) => (order.id === orderId ? { ...order, status } : order)
+    setCustomerOrders((orders) => orders.map(updateOrder))
+    setMerchantOrders((orders) => orders.map(updateOrder))
+    setDeliveryOrders((orders) => {
+      const updatedOrder = { ...targetOrder, status }
+      const exists = orders.some((order) => order.id === orderId)
+
+      if (status === "جاهز للتوصيل" && !exists) {
+        return [updatedOrder, ...orders]
+      }
+
+      return orders.map(updateOrder)
+    })
+    showNotification(
+      `تم تحديث طلب رقم ${orderId} إلى: ${status}.`,
+      "success",
+      "الإدارة",
+    )
+  }
+
   async function prepareOrder(orderId) {
     const orderToPrepare = merchantOrders.find((order) => order.id === orderId)
 
@@ -1621,6 +1645,7 @@ function App() {
               deliveredOrders={deliveredOrders}
               estimatedRevenue={estimatedRevenue}
               onSettingsChange={updatePlatformSettings}
+              onUpdateOrderStatus={updateAdminOrderStatus}
               settings={platformSettings}
               stores={stores}
             />

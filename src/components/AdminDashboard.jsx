@@ -50,6 +50,7 @@ export function AdminDashboard({
   onReviewStoreAgain,
   onResetData,
   onSettingsChange,
+  onUpdateOrderStatus,
   settings,
   stores,
 }) {
@@ -1278,6 +1279,22 @@ export function AdminDashboard({
                       <> + توصيل: {formatMoney(order.deliveryFee)}</>
                     )}
                   </div>
+                )}
+                {order.status !== "تم التسليم" && order.status !== "ملغي" && (
+                  <label className="order-status-control">
+                    تحديث حالة الطلب
+                    <select
+                      onChange={(event) => onUpdateOrderStatus(order.id, event.target.value)}
+                      value={order.status}
+                    >
+                      <option value="طلب جديد">طلب جديد</option>
+                      <option value="قيد التجهيز">قيد التجهيز</option>
+                      <option value="جاهز للتوصيل">جاهز للتوصيل</option>
+                      <option value="قيد التوصيل">قيد التوصيل</option>
+                      <option value="تم التسليم">تم التسليم</option>
+                      <option value="ملغي">ملغي</option>
+                    </select>
+                  </label>
                 )}
               </div>
             ))}
