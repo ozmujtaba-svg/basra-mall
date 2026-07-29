@@ -25,6 +25,10 @@ import {
   updateDriverApproval,
 } from "./lib/profileRepository"
 import {
+  fetchPlatformSettings,
+  savePlatformSettings,
+} from "./lib/settingsRepository"
+import {
   cancelMarketplaceOrder,
   createMarketplaceOrders,
   fetchMarketplaceOrders,
@@ -74,6 +78,8 @@ function App() {
   const [appNotification, setAppNotification] = useState(null)
   const [notificationHistory, setNotificationHistory] = useState([])
   const notificationTimer = useRef(null)
+  const settingsSaveQueue = useRef(Promise.resolve())
+  const settingsSaveVersion = useRef(0)
   const receivedRealtimeNotifications = useRef(new Set())
   const knownOrderStatuses = useRef(new Map())
   const notificationAudienceContext = useRef({ phone: "", storeNames: [] })
@@ -246,6 +252,42 @@ function App() {
 
     return () => subscription.unsubscribe()
   }, [])
+
+  useEffect(() => {
+    if (!supabase || !authSession) return undefined
+
+    let ignore = false
+
+    const loadCentralSettings = () => {
+      fetchPlatformSettings()
+        .then((settings) => {
+          if (!ignore) {
+            setPlatformSettings(normalizePlatformSettings(settings))
+            setStorageMessage("")
+          }
+        })
+        .catch((error) => {
+          if (!ignore) {
+            setStorageMessage(`تعذر جلب إعدادات الأسعار المركزية: ${error.message}`)
+          }
+        })
+    }
+
+    loadCentralSettings()
+    const settingsChannel = supabase
+      .channel(`platform-settings-${authSession.user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "platform_settings" },
+        loadCentralSettings,
+      )
+      .subscribe()
+
+    return () => {
+      ignore = true
+      supabase.removeChannel(settingsChannel)
+    }
+  }, [authSession])
 
   useEffect(() => {
     if (!authSession || currentView !== "dashboard") return undefined
@@ -1592,15 +1634,48 @@ function App() {
     )
   }
 
-  function updatePlatformSettings(nextSettings) {
-    setPlatformSettings((currentSettings) =>
-      typeof nextSettings === "function" ? nextSettings(currentSettings) : nextSettings,
+  async function updatePlatformSettings(nextSettings) {
+    const previousSettings = platformSettings
+    const saveVersion = settingsSaveVersion.current + 1
+    settingsSaveVersion.current = saveVersion
+    const resolvedSettings = normalizePlatformSettings(
+      typeof nextSettings === "function" ? nextSettings(platformSettings) : nextSettings,
     )
-    showNotification(
-      "تم تحديث إعدادات العمولة والتوصيل. الحسابات الجديدة راح تعتمد هذه القيم فورًا.",
-      "success",
-      "الإدارة",
-    )
+
+    setPlatformSettings(resolvedSettings)
+
+    if (!authSession) {
+      showNotification(
+        "تم تحديث الإعدادات على هذا الجهاز. اربط الحساب حتى تنحفظ لكل الأجهزة.",
+        "info",
+        "الإدارة",
+      )
+      return
+    }
+
+    settingsSaveQueue.current = settingsSaveQueue.current
+      .catch(() => {})
+      .then(() => savePlatformSettings(resolvedSettings))
+
+    try {
+      const savedSettings = await settingsSaveQueue.current
+
+      if (settingsSaveVersion.current === saveVersion) {
+        setPlatformSettings(normalizePlatformSettings(savedSettings))
+        setStorageMessage("")
+        showNotification(
+          "تم حفظ العمولة وأجور المناطق لكل الأجهزة بنجاح.",
+          "success",
+          "الإدارة",
+        )
+      }
+    } catch (error) {
+      if (settingsSaveVersion.current === saveVersion) {
+        setPlatformSettings(previousSettings)
+        setStorageMessage(`تعذر حفظ إعدادات الأسعار بقاعدة البيانات: ${error.message}`)
+        showNotification("ما تم حفظ الأسعار. رجعنا القيم السابقة لحمايتها.", "warning", "الإدارة")
+      }
+    }
   }
 
   async function addProductToStore(storeName, product) {
