@@ -54,6 +54,11 @@ import {
   createOrderReview,
   fetchOrderReviews,
 } from "./lib/reviewRepository"
+import {
+  createReturnRequest,
+  fetchReturnRequests,
+  updateReturnRequest,
+} from "./lib/returnRepository"
 
 const DELIVERY_FEE = 5000
 const ADMIN_COMMISSION_RATE = 0.05
@@ -82,6 +87,7 @@ function App() {
   const [drivers, setDrivers] = useState([])
   const [coupons, setCoupons] = useState([])
   const [reviews, setReviews] = useState([])
+  const [returnRequests, setReturnRequests] = useState([])
   const [driverApprovalStatus, setDriverApprovalStatus] = useState("pending")
   const [favoriteStoreNames, setFavoriteStoreNames] = useState(savedAppData.favoriteStoreNames)
   const [savedCustomerAddress, setSavedCustomerAddress] = useState(savedAppData.savedCustomerAddress)
@@ -315,8 +321,16 @@ function App() {
         accountType === "الإدارة" ? fetchDriverProfiles() : Promise.resolve([]),
         ["الإدارة", "زبون"].includes(accountType) ? fetchCoupons() : Promise.resolve([]),
         fetchOrderReviews(),
+        fetchReturnRequests(),
       ])
-        .then(([orders, databaseStores, databaseDrivers, databaseCoupons, databaseReviews]) => {
+        .then(([
+          orders,
+          databaseStores,
+          databaseDrivers,
+          databaseCoupons,
+          databaseReviews,
+          databaseReturns,
+        ]) => {
           if (ignore) return
 
           knownOrderStatuses.current = new Map(orders.map((order) => [String(order.id), order.status]))
@@ -330,6 +344,7 @@ function App() {
           }
           setCoupons(databaseCoupons)
           setReviews(databaseReviews)
+          setReturnRequests(databaseReturns)
           setStores(() => {
             const marketplaceStores = databaseStores.map(normalizeStore)
             setSelectedStore((currentStore) =>
@@ -423,6 +438,11 @@ function App() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "order_reviews" },
+        scheduleMarketplaceRefresh,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "return_requests" },
         scheduleMarketplaceRefresh,
       )
       .subscribe()
@@ -1391,6 +1411,32 @@ function App() {
     }
   }
 
+  async function submitReturnRequest(request) {
+    try {
+      const savedRequest = await createReturnRequest(request)
+      setReturnRequests((current) => [savedRequest, ...current])
+      setStorageMessage("")
+      return true
+    } catch (error) {
+      setStorageMessage(`تعذر حفظ طلب الاستبدال أو الاسترجاع: ${error.message}`)
+      return false
+    }
+  }
+
+  async function changeReturnRequest(requestId, changes) {
+    try {
+      const savedRequest = await updateReturnRequest(requestId, changes)
+      setReturnRequests((current) =>
+        current.map((request) => (request.id === requestId ? savedRequest : request)),
+      )
+      setStorageMessage("")
+      return true
+    } catch (error) {
+      setStorageMessage(`تعذر تحديث طلب الاستبدال أو الاسترجاع: ${error.message}`)
+      return false
+    }
+  }
+
   async function persistSyncedOrderChange(order, changes) {
     if (!authSession || !order?.isSynced) return true
 
@@ -2039,6 +2085,7 @@ function App() {
               cartItems={cartItems}
               coupons={coupons}
               reviews={reviews}
+              returnRequests={returnRequests}
               customerInfo={customerInfo}
               customerOrders={visibleCustomerOrders}
               deliveryFee={activeDeliveryFee}
@@ -2055,6 +2102,7 @@ function App() {
               onSaveCustomerAddress={saveCustomerAddress}
               onSendOrder={sendOrder}
               onSubmitReview={submitOrderReview}
+              onSubmitReturnRequest={submitReturnRequest}
               onToggleFavoriteStore={toggleFavoriteStore}
               onUseSavedCustomerAddress={useSavedCustomerAddress}
               orderMessage={orderMessage}
@@ -2069,11 +2117,13 @@ function App() {
               commissionRate={platformSettings.commissionRate}
               merchant={activeUser}
               reviews={reviews}
+              returnRequests={returnRequests}
               onAddProduct={addProductToStore}
               onDeleteProduct={deleteProductFromStore}
               onRegisterStore={registerStore}
               onCancelOrder={cancelOrder}
               onUpdateProduct={updateProductInStore}
+              onUpdateReturnRequest={changeReturnRequest}
               onUpdateOrderStatus={updateMerchantOrderStatus}
               onUpdateOrderNote={updateOrderNote}
               orders={visibleMerchantOrders}
@@ -2090,6 +2140,7 @@ function App() {
               onUpdateStatus={updateDeliveryStatus}
               stores={stores}
               reviews={reviews}
+              returnRequests={returnRequests}
             />
           )}
 
@@ -2105,6 +2156,7 @@ function App() {
               onImportBackup={importDataBackup}
               onAddCoupon={addCoupon}
               onUpdateCoupon={changeCoupon}
+              onUpdateReturnRequest={changeReturnRequest}
               lastSaveTime={lastSaveTime}
               onRejectStore={rejectStore}
               onReviewStoreAgain={reviewStoreAgain}
@@ -2290,6 +2342,7 @@ function getDashboardNavItems(accountType) {
       { label: "حالة المتجر", targetId: "merchant-status" },
       { label: "تسجيل المتجر", targetId: "merchant-register" },
       { label: "المنتجات", targetId: "merchant-products" },
+      { label: "الاستبدال", targetId: "merchant-returns" },
       { label: "الأرباح", targetId: "merchant-earnings" },
       { label: "الطلبات", targetId: "merchant-orders" },
     ]
@@ -2314,6 +2367,7 @@ function getDashboardNavItems(accountType) {
       { label: "العروض", targetId: "admin-offers" },
       { label: "الكوبونات", targetId: "admin-coupons" },
       { label: "التقييمات", targetId: "admin-reviews" },
+      { label: "الاستبدال", targetId: "admin-returns" },
       { label: "الإعدادات", targetId: "admin-settings" },
       { label: "البيانات", targetId: "admin-data" },
       { label: "المتاجر", targetId: "admin-stores" },

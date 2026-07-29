@@ -58,7 +58,9 @@ export function AdminDashboard({
   onUpdateDriverApproval,
   onUpdateCoupon,
   onUpdateOrderStatus,
+  onUpdateReturnRequest,
   reviews = [],
+  returnRequests = [],
   settings,
   stores,
 }) {
@@ -87,6 +89,7 @@ export function AdminDashboard({
   const [couponMaxUses, setCouponMaxUses] = useState("100")
   const [couponExpiresAt, setCouponExpiresAt] = useState("")
   const [couponMessage, setCouponMessage] = useState("")
+  const [returnAdminMessage, setReturnAdminMessage] = useState("")
   const pendingStores = useMemo(() => stores.filter((store) => store.status === "pending"), [stores])
   const rejectedStores = useMemo(() => stores.filter((store) => store.status === "rejected"), [stores])
   const approvedStores = useMemo(
@@ -1258,6 +1261,38 @@ export function AdminDashboard({
         </div>
       </section>
 
+      <section className="admin-section" id="admin-returns">
+        <div className="admin-monitor-header">
+          <div>
+            <h3>الاستبدال والاسترجاع</h3>
+            <p>تابع قرارات المتاجر وأغلق الطلب بعد إكمال المعالجة.</p>
+          </div>
+          <span>{returnRequests.filter((request) => request.status === "pending").length} قيد المراجعة</span>
+        </div>
+        {returnRequests.length === 0 ? (
+          <div className="empty-search">ماكو طلبات استبدال أو استرجاع بعد.</div>
+        ) : (
+          <div className="admin-return-list">
+            {returnRequests.map((request) => (
+              <article key={request.id}>
+                <div>
+                  <strong>طلب رقم {request.orderId} — {request.productName}</strong>
+                  <span>{request.storeName}</span>
+                </div>
+                <span>{request.requestType === "exchange" ? "استبدال" : "استرجاع"} | الكمية {request.quantity}</span>
+                <span>السبب: {request.reason}</span>
+                <b>{getReturnStatusLabel(request.status)}</b>
+                {request.merchantResponse && <small>رد المتجر: {request.merchantResponse}</small>}
+                {request.status === "approved" && (
+                  <button onClick={() => completeReturn(request)} type="button">تسجيل إكمال المعالجة</button>
+                )}
+              </article>
+            ))}
+          </div>
+        )}
+        {returnAdminMessage && <div className="order-message">{returnAdminMessage}</div>}
+      </section>
+
       <section className="admin-section" id="admin-reviews">
         <div className="admin-monitor-header">
           <div>
@@ -1951,6 +1986,14 @@ export function AdminDashboard({
   async function toggleCoupon(coupon) {
     const saved = await onUpdateCoupon(coupon.id, { isActive: !coupon.isActive })
     setCouponMessage(saved ? "تم تحديث حالة الكوبون." : "تعذر تحديث حالة الكوبون.")
+  }
+
+  async function completeReturn(request) {
+    const saved = await onUpdateReturnRequest(request.id, {
+      status: "completed",
+      merchantResponse: request.merchantResponse || "تمت المعالجة بإشراف الإدارة.",
+    })
+    setReturnAdminMessage(saved ? "تم إغلاق الطلب بعد اكتمال المعالجة." : "تعذر تحديث الطلب.")
   }
 }
 
@@ -2931,6 +2974,15 @@ function formatReviewAverage(reviews, field) {
 
 function renderReviewStars(rating) {
   return "★".repeat(Number(rating)) + "☆".repeat(5 - Number(rating))
+}
+
+function getReturnStatusLabel(status) {
+  return {
+    pending: "قيد المراجعة",
+    approved: "مقبول",
+    rejected: "مرفوض",
+    completed: "مكتمل",
+  }[status] ?? status
 }
 
 function getPriceNumber(price) {

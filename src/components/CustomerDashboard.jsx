@@ -30,10 +30,12 @@ export function CustomerDashboard({
   onSelectStore,
   onSendOrder,
   onSubmitReview,
+  onSubmitReturnRequest,
   onToggleFavoriteStore,
   onUseSavedCustomerAddress,
   orderMessage,
   reviews,
+  returnRequests,
   selectedStore,
   stores,
 }) {
@@ -50,6 +52,8 @@ export function CustomerDashboard({
   const [couponMessage, setCouponMessage] = useState("")
   const [reviewDrafts, setReviewDrafts] = useState({})
   const [reviewMessage, setReviewMessage] = useState("")
+  const [returnDrafts, setReturnDrafts] = useState({})
+  const [returnMessage, setReturnMessage] = useState("")
   const safeSelectedStore = useMemo(
     () =>
       selectedStore ?? stores[0] ?? {
@@ -698,13 +702,23 @@ export function CustomerDashboard({
                 ))}
               </div>
               {order.status === "تم التسليم" && (
-                <OrderReviewForm
-                  draft={reviewDrafts[order.id]}
-                  existingReview={reviews.find((review) => review.orderId === order.id)}
-                  message={reviewMessage}
-                  onChange={(changes) => updateReviewDraft(order.id, changes)}
-                  onSubmit={() => submitReview(order)}
-                />
+                <>
+                  <OrderReviewForm
+                    draft={reviewDrafts[order.id]}
+                    existingReview={reviews.find((review) => review.orderId === order.id)}
+                    message={reviewMessage}
+                    onChange={(changes) => updateReviewDraft(order.id, changes)}
+                    onSubmit={() => submitReview(order)}
+                  />
+                  <ReturnRequestForm
+                    draft={returnDrafts[order.id]}
+                    message={returnMessage}
+                    onChange={(changes) => updateReturnDraft(order, changes)}
+                    onSubmit={() => submitReturn(order)}
+                    order={order}
+                    requests={returnRequests.filter((request) => request.orderId === order.id)}
+                  />
+                </>
               )}
               {order.status === "ملغي" && <div className="canceled-order-note">تم إلغاء الطلب</div>}
               {order.status === "طلب جديد" && (
@@ -836,6 +850,41 @@ export function CustomerDashboard({
       comment: draft.comment ?? "",
     })
     setReviewMessage(saved ? "شكرًا، تم حفظ تقييمك." : "تعذر حفظ التقييم أو تم تقييم الطلب سابقًا.")
+  }
+
+  function updateReturnDraft(order, changes) {
+    setReturnDrafts((current) => ({
+      ...current,
+      [order.id]: {
+        productName: order.items[0]?.name ?? "",
+        quantity: 1,
+        requestType: "exchange",
+        reason: "المقاس غير مناسب",
+        customerNote: "",
+        ...current[order.id],
+        ...changes,
+      },
+    }))
+    setReturnMessage("")
+  }
+
+  async function submitReturn(order) {
+    const draft = {
+      productName: order.items[0]?.name ?? "",
+      quantity: 1,
+      requestType: "exchange",
+      reason: "المقاس غير مناسب",
+      customerNote: "",
+      ...returnDrafts[order.id],
+    }
+    const item = order.items.find((orderItem) => orderItem.name === draft.productName)
+    if (!item || draft.quantity < 1 || draft.quantity > item.quantity) {
+      setReturnMessage("اختار المنتج والكمية بصورة صحيحة.")
+      return
+    }
+
+    const saved = await onSubmitReturnRequest({ orderId: order.id, ...draft })
+    setReturnMessage(saved ? "تم إرسال الطلب للمتجر والإدارة." : "تعذر الحفظ أو يوجد طلب سابق لهذا المنتج.")
   }
 
   function confirmCancelOrder(orderId) {
@@ -1061,6 +1110,74 @@ function RatingButtons({ label, onChange, value }) {
       </div>
     </div>
   )
+}
+
+function ReturnRequestForm({ draft = {}, message, onChange, onSubmit, order, requests }) {
+  const selectedProductName = draft.productName ?? order.items[0]?.name ?? ""
+  const selectedItem = order.items.find((item) => item.name === selectedProductName)
+
+  return (
+    <div className="return-request-form">
+      <strong>استبدال أو استرجاع</strong>
+      <div className="existing-return-list">
+        {requests.map((request) => (
+          <div key={request.id}>
+            <span>{request.productName} — {getReturnStatusLabel(request.status)}</span>
+            {request.merchantResponse && <small>رد المتجر: {request.merchantResponse}</small>}
+          </div>
+        ))}
+      </div>
+      <label>
+        المنتج
+        <select value={selectedProductName} onChange={(event) => onChange({ productName: event.target.value, quantity: 1 })}>
+          {order.items.map((item) => <option key={item.name}>{item.name}</option>)}
+        </select>
+      </label>
+      <label>
+        المطلوب
+        <select value={draft.requestType ?? "exchange"} onChange={(event) => onChange({ requestType: event.target.value })}>
+          <option value="exchange">استبدال</option>
+          <option value="refund">استرجاع</option>
+        </select>
+      </label>
+      <label>
+        الكمية
+        <input
+          max={selectedItem?.quantity ?? 1}
+          min="1"
+          onChange={(event) => onChange({ quantity: Number(event.target.value) })}
+          type="number"
+          value={draft.quantity ?? 1}
+        />
+      </label>
+      <label>
+        السبب
+        <select value={draft.reason ?? "المقاس غير مناسب"} onChange={(event) => onChange({ reason: event.target.value })}>
+          <option>المقاس غير مناسب</option>
+          <option>المنتج مختلف عن الوصف</option>
+          <option>المنتج تالف</option>
+          <option>سبب آخر</option>
+        </select>
+      </label>
+      <textarea
+        maxLength="300"
+        onChange={(event) => onChange({ customerNote: event.target.value })}
+        placeholder="ملاحظة إضافية اختيارية"
+        value={draft.customerNote ?? ""}
+      />
+      <button onClick={onSubmit} type="button">إرسال الطلب</button>
+      {message && <small>{message}</small>}
+    </div>
+  )
+}
+
+function getReturnStatusLabel(status) {
+  return {
+    pending: "قيد المراجعة",
+    approved: "مقبول",
+    rejected: "مرفوض",
+    completed: "مكتمل",
+  }[status] ?? status
 }
 
 function renderStars(rating) {

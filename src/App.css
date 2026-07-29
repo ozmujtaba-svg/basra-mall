@@ -3622,6 +3622,60 @@ button span {
   color: #56615c;
 }
 
+.return-request-form,
+.merchant-return-list article,
+.admin-return-list article {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #d8e3df;
+  border-radius: 14px;
+  background: #f8fbfa;
+}
+
+.return-request-form {
+  margin-top: 14px;
+}
+
+.return-request-form label {
+  display: grid;
+  gap: 6px;
+}
+
+.existing-return-list,
+.merchant-return-list,
+.admin-return-list {
+  display: grid;
+  gap: 10px;
+}
+
+.existing-return-list > div {
+  display: grid;
+  gap: 4px;
+  padding: 9px;
+  border-radius: 10px;
+  background: #eef6f3;
+}
+
+.merchant-return-list article > div:first-child,
+.admin-return-list article > div:first-child,
+.return-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.merchant-return-list textarea {
+  min-height: 75px;
+}
+
+.return-actions button,
+.admin-return-list button {
+  flex: 1;
+  font-weight: 800;
+}
+
 .merchant-order-alert {
   display: grid;
   grid-template-columns: 1fr auto;

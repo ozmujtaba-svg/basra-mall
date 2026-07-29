@@ -36,8 +36,10 @@ export function MerchantDashboard({
   onUpdateOrderStatus,
   onUpdateOrderNote,
   onUpdateProduct,
+  onUpdateReturnRequest,
   orders,
   reviews = [],
+  returnRequests = [],
   stores,
 }) {
   const [storeName, setStoreName] = useState("")
@@ -63,6 +65,8 @@ export function MerchantDashboard({
   const [copiedOrderId, setCopiedOrderId] = useState("")
   const [rejectConfirmOrderId, setRejectConfirmOrderId] = useState("")
   const [pendingDeleteProductName, setPendingDeleteProductName] = useState("")
+  const [returnResponses, setReturnResponses] = useState({})
+  const [returnMessage, setReturnMessage] = useState("")
   const selectedStore = useMemo(
     () => stores.find((store) => store.name === selectedStoreName) ?? stores[0],
     [selectedStoreName, stores],
@@ -332,6 +336,16 @@ export function MerchantDashboard({
     setRejectConfirmOrderId("")
   }
 
+  async function decideReturn(requestId, status) {
+    const merchantResponse = (returnResponses[requestId] ?? "").trim()
+    if (!merchantResponse) {
+      setReturnMessage("اكتب رد للزبون قبل اتخاذ القرار.")
+      return
+    }
+    const saved = await onUpdateReturnRequest(requestId, { status, merchantResponse })
+    setReturnMessage(saved ? "تم تحديث الطلب وإبلاغ الزبون." : "تعذر تحديث الطلب.")
+  }
+
   function resetMerchantOrderFilters() {
     setOrderSearch("")
     setOrderStatusFilter("الكل")
@@ -362,6 +376,56 @@ export function MerchantDashboard({
         </div>
         <b>{merchantRating ? renderStars(Math.round(merchantRating)) : "☆☆☆☆☆"}</b>
         <small>{merchantReviews.length} تقييم للطلبات المسلّمة</small>
+      </section>
+
+      <section className="merchant-form-card" id="merchant-returns">
+        <div className="merchant-section-top">
+          <div>
+            <h2>طلبات الاستبدال والاسترجاع</h2>
+            <p>راجع طلب الزبون واكتب رد واضح قبل القبول أو الرفض.</p>
+          </div>
+          <span className="status-pill">
+            {returnRequests.filter((request) => request.status === "pending").length} قيد المراجعة
+          </span>
+        </div>
+        {returnRequests.length === 0 ? (
+          <div className="empty-search">ماكو طلبات استبدال أو استرجاع حاليًا.</div>
+        ) : (
+          <div className="merchant-return-list">
+            {returnRequests.map((request) => (
+              <article key={request.id}>
+                <div>
+                  <strong>{request.requestType === "exchange" ? "استبدال" : "استرجاع"} — {request.productName}</strong>
+                  <span>طلب رقم {request.orderId} | الكمية {request.quantity}</span>
+                </div>
+                <span>السبب: {request.reason}</span>
+                {request.customerNote && <small>ملاحظة الزبون: {request.customerNote}</small>}
+                {request.status === "pending" ? (
+                  <>
+                    <textarea
+                      maxLength="300"
+                      onChange={(event) =>
+                        setReturnResponses((current) => ({
+                          ...current,
+                          [request.id]: event.target.value,
+                        }))
+                      }
+                      placeholder="اكتب رد المتجر"
+                      value={returnResponses[request.id] ?? ""}
+                    />
+                    <div className="return-actions">
+                      <button onClick={() => decideReturn(request.id, "approved")} type="button">قبول</button>
+                      <button className="danger-button" onClick={() => decideReturn(request.id, "rejected")} type="button">رفض</button>
+                    </div>
+                  </>
+                ) : (
+                  <strong>{getReturnStatusLabel(request.status)} — {request.merchantResponse || "بدون ملاحظة"}</strong>
+                )}
+              </article>
+            ))}
+          </div>
+        )}
+        {returnMessage && <div className="order-message">{returnMessage}</div>}
       </section>
 
       {hasStores && (
@@ -1428,6 +1492,15 @@ function getAverageRating(reviews, field) {
 
 function renderStars(rating) {
   return "★".repeat(Number(rating)) + "☆".repeat(5 - Number(rating))
+}
+
+function getReturnStatusLabel(status) {
+  return {
+    pending: "قيد المراجعة",
+    approved: "مقبول",
+    rejected: "مرفوض",
+    completed: "مكتمل",
+  }[status] ?? status
 }
 
 function isDiscountActive(product) {
