@@ -34,7 +34,7 @@ const rejectionReasons = [
   "رقم الهاتف غير صحيح",
   "المنطقة غير محددة",
 ]
-const revenuePeriodFilters = ["اليوم", "آخر 7 أيام", "كل الوقت"]
+const revenuePeriodFilters = ["اليوم", "آخر 7 أيام", "آخر 30 يوم", "كل الوقت"]
 
 export function AdminDashboard({
   allOrders,
@@ -111,8 +111,8 @@ export function AdminDashboard({
     [allOrders, revenuePeriodFilter],
   )
   const revenuePeriodStats = useMemo(
-    () => getRevenuePeriodStats(revenuePeriodOrders, commissionRate),
-    [commissionRate, revenuePeriodOrders],
+    () => getFinancialReportStats(revenuePeriodOrders),
+    [revenuePeriodOrders],
   )
   const monitoringStats = useMemo(
     () =>
@@ -1099,13 +1099,18 @@ export function AdminDashboard({
         )}
       </section>
 
-      <section className="admin-section" id="admin-revenue">
+      <section className="admin-section" id="admin-financial-reports">
         <div className="revenue-section-header">
           <div>
-            <h3>تفصيل الأرباح</h3>
-            <p>اختار الفترة حتى تشوف المبيعات والعمولة وأجور التوصيل حسب الوقت.</p>
+            <h3>التقارير المالية</h3>
+            <p>حسابات فعلية من الطلبات المسلّمة، مع متابعة المدفوع والمتبقي.</p>
           </div>
-          <span>{getRevenuePeriodLabel(revenuePeriodFilter)}</span>
+          <div className="financial-report-actions">
+            <span>{getRevenuePeriodLabel(revenuePeriodFilter)}</span>
+            <button onClick={exportFinancialReport} type="button">
+              تنزيل التقرير CSV
+            </button>
+          </div>
         </div>
         <div className="revenue-period-filter">
           {revenuePeriodFilters.map((filter) => (
@@ -1121,28 +1126,44 @@ export function AdminDashboard({
         </div>
         <div className="revenue-grid">
           <div className="revenue-row">
-            <span>مبيعات الفترة</span>
+            <span>مبيعات الطلبات المسلّمة</span>
             <strong>{formatMoney(revenuePeriodStats.sales)}</strong>
           </div>
           <div className="revenue-row">
-            <span>متوسط قيمة الطلب</span>
-            <strong>{formatMoney(revenuePeriodStats.averageOrderValue)}</strong>
+            <span>عدد الطلبات المسلّمة</span>
+            <strong>{revenuePeriodStats.deliveredCount}</strong>
           </div>
           <div className="revenue-row">
-            <span>عمولة الإدارة ({formatPercent(commissionRate)})</span>
+            <span>عمولة الإدارة</span>
             <strong>{formatMoney(revenuePeriodStats.commission)}</strong>
           </div>
           <div className="revenue-row">
-            <span>أجور التوصيل المسلّمة</span>
-            <strong>{formatMoney(revenuePeriodStats.delivery)}</strong>
+            <span>صافي مستحقات المتاجر</span>
+            <strong>{formatMoney(revenuePeriodStats.merchantNet)}</strong>
           </div>
-          <div className="revenue-row muted">
-            <span>طلبات ملغية بالفترة</span>
-            <strong>{revenuePeriodStats.canceled}</strong>
+          <div className="revenue-row">
+            <span>المدفوع للمتاجر</span>
+            <strong>{formatMoney(revenuePeriodStats.merchantPaid)}</strong>
+          </div>
+          <div className="revenue-row due">
+            <span>المتبقي للمتاجر</span>
+            <strong>{formatMoney(revenuePeriodStats.merchantRemaining)}</strong>
+          </div>
+          <div className="revenue-row">
+            <span>أجور السائقين</span>
+            <strong>{formatMoney(revenuePeriodStats.driverFees)}</strong>
+          </div>
+          <div className="revenue-row">
+            <span>المدفوع للسائقين</span>
+            <strong>{formatMoney(revenuePeriodStats.driverPaid)}</strong>
+          </div>
+          <div className="revenue-row due">
+            <span>المتبقي للسائقين</span>
+            <strong>{formatMoney(revenuePeriodStats.driverRemaining)}</strong>
           </div>
           <div className="revenue-row total">
-            <span>صافي ربح الإدارة للفترة</span>
-            <strong>{formatMoney(revenuePeriodStats.netRevenue)}</strong>
+            <span>دخل المنصة من العمولة</span>
+            <strong>{formatMoney(revenuePeriodStats.commission)}</strong>
           </div>
         </div>
       </section>
@@ -1672,6 +1693,59 @@ export function AdminDashboard({
     URL.revokeObjectURL(url)
     setDataMessage("تم تجهيز ملف ملخص المشروع.")
   }
+
+  function exportFinancialReport() {
+    const deliveredPeriodOrders = revenuePeriodOrders.filter(
+      (order) => order.status === "تم التسليم",
+    )
+    const rows = [
+      ["تقرير Basra Mall المالي", getRevenuePeriodLabel(revenuePeriodFilter)],
+      ["عدد الطلبات المسلّمة", revenuePeriodStats.deliveredCount],
+      ["إجمالي المبيعات", revenuePeriodStats.sales],
+      ["عمولة الإدارة", revenuePeriodStats.commission],
+      ["صافي مستحقات المتاجر", revenuePeriodStats.merchantNet],
+      ["المدفوع للمتاجر", revenuePeriodStats.merchantPaid],
+      ["المتبقي للمتاجر", revenuePeriodStats.merchantRemaining],
+      ["أجور السائقين", revenuePeriodStats.driverFees],
+      ["المدفوع للسائقين", revenuePeriodStats.driverPaid],
+      ["المتبقي للسائقين", revenuePeriodStats.driverRemaining],
+      [],
+      [
+        "رقم الطلب",
+        "التاريخ",
+        "المتجر",
+        "الزبون",
+        "المنطقة",
+        "المبيعات",
+        "العمولة",
+        "صافي المتجر",
+        "تسوية المتجر",
+        "أجرة السائق",
+        "تسوية السائق",
+      ],
+      ...deliveredPeriodOrders.map((order) => {
+        const rate = Number(order.commissionRate ?? commissionRate)
+        const subtotal = Number(order.subtotal ?? 0)
+
+        return [
+          order.id,
+          formatOrderDate(order.createdAt),
+          order.storeName ?? getOrderStoreNames(order),
+          order.customer,
+          order.area,
+          subtotal,
+          subtotal * rate,
+          subtotal * (1 - rate),
+          order.merchantPayoutStatus === "paid" ? "مدفوع" : "متبقي",
+          Number(order.deliveryFee ?? 0),
+          order.driverPayoutStatus === "paid" ? "مدفوع" : "متبقي",
+        ]
+      }),
+    ]
+
+    downloadCsvFile(rows, `basra-mall-financial-${getReportFilePeriod(revenuePeriodFilter)}.csv`)
+    setDataMessage("تم تنزيل التقرير المالي للفترة المختارة.")
+  }
 }
 
 function formatOrderItems(items) {
@@ -1766,23 +1840,45 @@ function filterOrdersByRevenuePeriod(orders, period) {
     return orders.filter((order) => isWithinLastDays(order.createdAt, 7))
   }
 
+  if (period === "آخر 30 يوم") {
+    return orders.filter((order) => isWithinLastDays(order.createdAt, 30))
+  }
+
   return orders
 }
 
-function getRevenuePeriodStats(orders, commissionRate) {
-  const activeOrders = orders.filter((order) => order.status !== "ملغي")
+function getFinancialReportStats(orders) {
   const deliveredOrders = orders.filter((order) => order.status === "تم التسليم")
-  const sales = activeOrders.reduce((total, order) => total + Number(order.subtotal ?? 0), 0)
-  const delivery = deliveredOrders.reduce((total, order) => total + Number(order.deliveryFee ?? 0), 0)
-  const commission = sales * commissionRate
+  const totals = deliveredOrders.reduce(
+    (report, order) => {
+      const subtotal = Number(order.subtotal ?? 0)
+      const rate = Number(order.commissionRate ?? 0.05)
+      const merchantNet = subtotal * (1 - rate)
+      const driverFee = Number(order.deliveryFee ?? 0)
+
+      report.sales += subtotal
+      report.commission += subtotal * rate
+      report.merchantNet += merchantNet
+      report.driverFees += driverFee
+      if (order.merchantPayoutStatus === "paid") report.merchantPaid += merchantNet
+      if (order.driverPayoutStatus === "paid") report.driverPaid += driverFee
+      return report
+    },
+    {
+      commission: 0,
+      driverFees: 0,
+      driverPaid: 0,
+      merchantNet: 0,
+      merchantPaid: 0,
+      sales: 0,
+    },
+  )
 
   return {
-    averageOrderValue: activeOrders.length > 0 ? sales / activeOrders.length : 0,
-    canceled: orders.filter((order) => order.status === "ملغي").length,
-    commission,
-    delivery,
-    netRevenue: commission + delivery,
-    sales,
+    ...totals,
+    deliveredCount: deliveredOrders.length,
+    driverRemaining: Math.max(totals.driverFees - totals.driverPaid, 0),
+    merchantRemaining: Math.max(totals.merchantNet - totals.merchantPaid, 0),
   }
 }
 
@@ -1795,7 +1891,34 @@ function getRevenuePeriodLabel(period) {
     return "أرقام آخر أسبوع"
   }
 
+  if (period === "آخر 30 يوم") {
+    return "أرقام آخر شهر"
+  }
+
   return "كل بيانات الأرباح"
+}
+
+function getReportFilePeriod(period) {
+  if (period === "اليوم") return "daily"
+  if (period === "آخر 7 أيام") return "weekly"
+  if (period === "آخر 30 يوم") return "monthly"
+  return "all-time"
+}
+
+function getOrderStoreNames(order) {
+  return [...new Set((order.items ?? []).map((item) => item.store).filter(Boolean))].join("، ")
+}
+
+function downloadCsvFile(rows, fileName) {
+  const csvContent = rows.map((row) => row.map(formatCsvCell).join(",")).join("\n")
+  const blob = new Blob([`\uFEFF${csvContent}`], { type: "text/csv;charset=utf-8" })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement("a")
+
+  link.href = url
+  link.download = fileName
+  link.click()
+  URL.revokeObjectURL(url)
 }
 
 function getTodayStats(allOrders, commissionRate) {
@@ -2579,8 +2702,4 @@ function formatMoney(value) {
 
 function getPriceNumber(price) {
   return Number(String(price).replace(/[^\d]/g, ""))
-}
-
-function formatPercent(value) {
-  return `${Math.round(value * 100)}%`
 }

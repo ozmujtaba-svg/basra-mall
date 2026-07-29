@@ -2226,6 +2226,7 @@ function getDashboardNavItems(accountType) {
       { label: "المراقبة", targetId: "admin-monitor" },
       { label: "السائقين", targetId: "admin-drivers" },
       { label: "تسويات المتاجر", targetId: "admin-merchant-payouts" },
+      { label: "التقارير المالية", targetId: "admin-financial-reports" },
       { label: "الإعدادات", targetId: "admin-settings" },
       { label: "البيانات", targetId: "admin-data" },
       { label: "المتاجر", targetId: "admin-stores" },
