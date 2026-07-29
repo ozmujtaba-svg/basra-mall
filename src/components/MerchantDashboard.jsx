@@ -81,6 +81,10 @@ export function MerchantDashboard({
     () => calculateMerchantRevenue(revenuePeriodOrders, commissionRate),
     [commissionRate, revenuePeriodOrders],
   )
+  const merchantPayouts = useMemo(
+    () => calculateMerchantPayouts(orders),
+    [orders],
+  )
   const topMerchantProduct = useMemo(
     () => getTopMerchantProduct(orders, stores),
     [orders, stores],
@@ -647,6 +651,14 @@ export function MerchantDashboard({
           <div className="revenue-row total">
             <span>صافي مبلغ المتجر للفترة</span>
             <strong>{formatMoney(merchantRevenue.netPayout)}</strong>
+          </div>
+          <div className="revenue-row paid">
+            <span>مبالغ مستلمة من الإدارة</span>
+            <strong>{formatMoney(merchantPayouts.paid)}</strong>
+          </div>
+          <div className="revenue-row due">
+            <span>مستحقات تنتظر الدفع</span>
+            <strong>{formatMoney(merchantPayouts.remaining)}</strong>
           </div>
         </div>
         <div className="merchant-top-product-card">
@@ -1261,6 +1273,21 @@ function calculateMerchantRevenue(orders, commissionRate) {
     commission,
     netPayout: totalSales - commission,
     totalSales,
+  }
+}
+
+function calculateMerchantPayouts(orders) {
+  const deliveredOrders = orders.filter((order) => order.status === "تم التسليم")
+  const getNetPayout = (order) =>
+    Number(order.subtotal ?? 0) * (1 - Number(order.commissionRate ?? 0.05))
+  const total = deliveredOrders.reduce((sum, order) => sum + getNetPayout(order), 0)
+  const paid = deliveredOrders
+    .filter((order) => order.merchantPayoutStatus === "paid")
+    .reduce((sum, order) => sum + getNetPayout(order), 0)
+
+  return {
+    paid,
+    remaining: total - paid,
   }
 }
 

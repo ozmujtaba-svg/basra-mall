@@ -2562,6 +2562,15 @@ button span {
   background: #a3422e;
 }
 
+.payout-complete {
+  border-radius: 10px;
+  background: #eef7f5;
+  color: #0c6b66;
+  padding: 10px 12px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
 .driver-start-card span,
 .driver-start-card p {
   color: #65706b;

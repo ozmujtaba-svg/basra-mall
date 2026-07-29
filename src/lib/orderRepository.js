@@ -88,6 +88,23 @@ export async function settleDriverPayouts(driverId) {
   return data.map(fromDatabaseOrder)
 }
 
+export async function settleMerchantPayouts(storeName) {
+  const paidAt = new Date().toISOString()
+  const { data, error } = await supabase
+    .from("marketplace_orders")
+    .update({
+      merchant_paid_at: paidAt,
+      merchant_payout_status: "paid",
+    })
+    .eq("store_name", storeName)
+    .eq("status", "delivered")
+    .eq("merchant_payout_status", "pending")
+    .select("*")
+
+  if (error) throw error
+  return data.map(fromDatabaseOrder)
+}
+
 function fromDatabaseOrder(order) {
   return {
     id: order.id,
@@ -106,6 +123,10 @@ function fromDatabaseOrder(order) {
     driverId: order.driver_id,
     driverPaidAt: order.driver_paid_at,
     driverPayoutStatus: order.driver_payout_status ?? "pending",
+    commissionRate: Number(order.commission_rate ?? 0.05),
+    merchantPaidAt: order.merchant_paid_at,
+    merchantPayoutStatus: order.merchant_payout_status ?? "pending",
+    storeName: order.store_name,
     createdAt: order.created_at,
     isSynced: true,
   }

@@ -51,6 +51,7 @@ export function AdminDashboard({
   onReviewStoreAgain,
   onResetData,
   onSettleDriverEarnings,
+  onSettleMerchantEarnings,
   onSettingsChange,
   onUpdateDriverApproval,
   onUpdateOrderStatus,
@@ -856,6 +857,62 @@ export function AdminDashboard({
               </label>
             ))}
           </div>
+        </div>
+      </section>
+
+      <section className="admin-section" id="admin-merchant-payouts">
+        <div className="admin-driver-header">
+          <div>
+            <h3>تسويات مستحقات المتاجر</h3>
+            <p>الصافي محسوب من الطلبات المسلّمة بعد خصم عمولة Basra Mall.</p>
+          </div>
+          <span>
+            {stores.filter((store) => getMerchantPayoutSummary(store.name, allOrders).remaining > 0).length}
+            {" "}متاجر لها مستحقات
+          </span>
+        </div>
+        <div className="admin-driver-list">
+          {stores
+            .filter((store) => store.status !== "pending" && store.status !== "rejected")
+            .map((store) => {
+              const payout = getMerchantPayoutSummary(store.name, allOrders)
+
+              return (
+                <article className="admin-driver-card approved" key={`payout-${store.name}`}>
+                  <div className="admin-driver-identity">
+                    <span>{store.category}</span>
+                    <strong>{store.name}</strong>
+                    <small>{store.ownerName || store.phone}</small>
+                  </div>
+                  <div className="admin-driver-payout">
+                    <div>
+                      <span>صافي المستحق</span>
+                      <strong>{formatMoney(payout.total)}</strong>
+                    </div>
+                    <div>
+                      <span>تم دفعه</span>
+                      <strong>{formatMoney(payout.paid)}</strong>
+                    </div>
+                    <div className={payout.remaining > 0 ? "due" : ""}>
+                      <span>المتبقي</span>
+                      <strong>{formatMoney(payout.remaining)}</strong>
+                    </div>
+                  </div>
+                  <div className="admin-driver-actions">
+                    {payout.remaining > 0 ? (
+                      <button
+                        onClick={() => onSettleMerchantEarnings(store.name)}
+                        type="button"
+                      >
+                        تسجيل دفع المتجر
+                      </button>
+                    ) : (
+                      <span className="payout-complete">لا توجد مبالغ متبقية</span>
+                    )}
+                  </div>
+                </article>
+              )
+            })}
         </div>
       </section>
 
@@ -2386,6 +2443,24 @@ function getDriverPayoutSummary(driverId, orders) {
     (sum, order) => sum + Number(order.deliveryFee ?? 0),
     0,
   )
+
+  return {
+    paid,
+    remaining: total - paid,
+    total,
+  }
+}
+
+function getMerchantPayoutSummary(storeName, orders) {
+  const deliveredOrders = orders.filter(
+    (order) => order.storeName === storeName && order.status === "تم التسليم",
+  )
+  const getNetPayout = (order) =>
+    Number(order.subtotal ?? 0) * (1 - Number(order.commissionRate ?? 0.05))
+  const total = deliveredOrders.reduce((sum, order) => sum + getNetPayout(order), 0)
+  const paid = deliveredOrders
+    .filter((order) => order.merchantPayoutStatus === "paid")
+    .reduce((sum, order) => sum + getNetPayout(order), 0)
 
   return {
     paid,

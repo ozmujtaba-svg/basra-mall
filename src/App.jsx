@@ -33,6 +33,7 @@ import {
   createMarketplaceOrders,
   fetchMarketplaceOrders,
   settleDriverPayouts,
+  settleMerchantPayouts,
   updateMarketplaceOrder,
 } from "./lib/orderRepository"
 import {
@@ -1498,6 +1499,34 @@ function App() {
     }
   }
 
+  async function settleMerchantEarnings(storeName) {
+    try {
+      const settledOrders = await settleMerchantPayouts(storeName)
+      const settledOrdersById = new Map(settledOrders.map((order) => [order.id, order]))
+      const updateSettledOrders = (orders) =>
+        orders.map((order) => settledOrdersById.get(order.id) ?? order)
+
+      setCustomerOrders(updateSettledOrders)
+      setMerchantOrders(updateSettledOrders)
+      setDeliveryOrders(updateSettledOrders)
+
+      const settledTotal = settledOrders.reduce(
+        (total, order) =>
+          total + order.subtotal * (1 - Number(order.commissionRate ?? ADMIN_COMMISSION_RATE)),
+        0,
+      )
+      showNotification(
+        settledOrders.length > 0
+          ? `تم تسجيل دفع ${Math.round(settledTotal).toLocaleString("en-US")} د.ع لمتجر ${storeName}.`
+          : "ماكو مستحقات جديدة غير مدفوعة لهذا المتجر.",
+        settledOrders.length > 0 ? "success" : "info",
+        "الإدارة",
+      )
+    } catch (error) {
+      showNotification(`تعذر تسجيل تسوية المتجر: ${error.message}`, "warning", "الإدارة")
+    }
+  }
+
   async function cancelOrder(orderId) {
     const orderToCancel =
       customerOrders.find((order) => order.id === orderId) ??
@@ -2001,6 +2030,7 @@ function App() {
               estimatedRevenue={estimatedRevenue}
               onSettingsChange={updatePlatformSettings}
               onSettleDriverEarnings={settleDriverEarnings}
+              onSettleMerchantEarnings={settleMerchantEarnings}
               onUpdateDriverApproval={changeDriverApproval}
               onUpdateOrderStatus={updateAdminOrderStatus}
               settings={platformSettings}
@@ -2195,6 +2225,7 @@ function getDashboardNavItems(accountType) {
       { label: "ملخص المشروع", targetId: "admin-summary" },
       { label: "المراقبة", targetId: "admin-monitor" },
       { label: "السائقين", targetId: "admin-drivers" },
+      { label: "تسويات المتاجر", targetId: "admin-merchant-payouts" },
       { label: "الإعدادات", targetId: "admin-settings" },
       { label: "البيانات", targetId: "admin-data" },
       { label: "المتاجر", targetId: "admin-stores" },

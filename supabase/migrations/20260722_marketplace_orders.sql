@@ -17,6 +17,9 @@ create table if not exists public.marketplace_orders (
   driver_id uuid references public.profiles(id) on delete set null,
   driver_payout_status public.driver_payout_status not null default 'pending',
   driver_paid_at timestamptz,
+  commission_rate numeric(5,4) not null default 0.05 check (commission_rate between 0 and 1),
+  merchant_payout_status public.merchant_payout_status not null default 'pending',
+  merchant_paid_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
