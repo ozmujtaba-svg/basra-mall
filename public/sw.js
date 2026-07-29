@@ -1,4 +1,4 @@
-const CACHE_NAME = "basra-mall-v1"
+const CACHE_NAME = "basra-mall-v2"
 const APP_SHELL = [
   "/",
   "/manifest.webmanifest",
@@ -54,5 +54,23 @@ self.addEventListener("fetch", (event) => {
           return response
         }),
     ),
+  )
+})
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close()
+  const targetUrl = event.notification.data?.url ?? self.location.origin
+
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      const existingClient = clients.find((client) => client.url.startsWith(self.location.origin))
+
+      if (existingClient) {
+        existingClient.navigate(targetUrl)
+        return existingClient.focus()
+      }
+
+      return self.clients.openWindow(targetUrl)
+    }),
   )
 })

@@ -9,6 +9,11 @@ import { MerchantDashboard } from "./components/MerchantDashboard"
 import { Shell } from "./components/Shell"
 import { isSupabaseConfigured, supabase } from "./lib/supabase"
 import {
+  getBrowserNotificationPermission,
+  requestBrowserNotificationPermission,
+  sendBrowserNotification,
+} from "./lib/browserNotifications"
+import {
   cancelMarketplaceOrder,
   createMarketplaceOrders,
   fetchMarketplaceOrders,
@@ -55,6 +60,9 @@ function App() {
   const [appNotification, setAppNotification] = useState(null)
   const [notificationHistory, setNotificationHistory] = useState([])
   const notificationTimer = useRef(null)
+  const receivedRealtimeNotifications = useRef(new Set())
+  const knownOrderStatuses = useRef(new Map())
+  const notificationAudienceContext = useRef({ phone: "", storeNames: [] })
   const completeSupabaseLoginRef = useRef(null)
   const [lastSaveTime, setLastSaveTime] = useState(loadLastSaveTime)
   const [nextOrderId, setNextOrderId] = useState(savedAppData.nextOrderId)
@@ -68,6 +76,9 @@ function App() {
   const [authPassword, setAuthPassword] = useState("")
   const [authLoading, setAuthLoading] = useState(false)
   const [authSession, setAuthSession] = useState(null)
+  const [browserNotificationPermission, setBrowserNotificationPermission] = useState(
+    getBrowserNotificationPermission,
+  )
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false)
   const [customerInfo, setCustomerInfo] = useState(savedAppData.customerInfo)
 
@@ -94,6 +105,10 @@ function App() {
   const visibleCustomerOrders = customerOrders.filter((order) => order.phone === activeUser.phone)
   const merchantStores = stores.filter((store) => store.ownerPhone === activeUser.phone)
   const merchantStoreNames = merchantStores.map((store) => store.name)
+  notificationAudienceContext.current = {
+    phone: activeUser.phone,
+    storeNames: merchantStoreNames,
+  }
   const approvedStores = stores.filter(
     (store) => store.status !== "pending" && store.status !== "rejected",
   )
@@ -224,6 +239,7 @@ function App() {
         .then(([orders, databaseStores]) => {
           if (ignore) return
 
+          knownOrderStatuses.current = new Map(orders.map((order) => [String(order.id), order.status]))
           if (accountType === "زبون") setCustomerOrders(orders)
           if (accountType === "صاحب متجر") setMerchantOrders(orders)
           if (accountType === "سائق") setDeliveryOrders(orders)
@@ -251,13 +267,55 @@ function App() {
       refreshTimer = setTimeout(loadMarketplaceData, 250)
     }
 
+    const handleOrderRealtimeChange = (payload) => {
+      scheduleMarketplaceRefresh()
+      const previousStatus = knownOrderStatuses.current.get(String(payload.new?.id))
+      const realtimeNotification = getRealtimeOrderNotification({
+        accountType,
+        activeUser: { phone: notificationAudienceContext.current.phone },
+        merchantStoreNames: notificationAudienceContext.current.storeNames,
+        payload,
+        previousStatus,
+      })
+      if (payload.new?.id && payload.new?.status) {
+        knownOrderStatuses.current.set(
+          String(payload.new.id),
+          getDatabaseStatusLabel(payload.new.status),
+        )
+      }
+
+      if (!realtimeNotification) return
+
+      const eventKey = [
+        payload.eventType,
+        payload.new?.id ?? payload.old?.id,
+        payload.new?.status ?? "",
+        accountType,
+      ].join("-")
+
+      if (receivedRealtimeNotifications.current.has(eventKey)) return
+      receivedRealtimeNotifications.current.add(eventKey)
+      setTimeout(() => receivedRealtimeNotifications.current.delete(eventKey), 15000)
+
+      showNotification(
+        realtimeNotification.message,
+        realtimeNotification.type,
+        realtimeNotification.audience,
+      )
+      sendBrowserNotification(realtimeNotification.title, {
+        body: realtimeNotification.message,
+        data: { url: window.location.origin },
+        tag: eventKey,
+      }).catch(() => {})
+    }
+
     loadMarketplaceData()
     const realtimeChannel = supabase
       .channel(`marketplace-live-${authSession.user.id}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "marketplace_orders" },
-        scheduleMarketplaceRefresh,
+        handleOrderRealtimeChange,
       )
       .on(
         "postgres_changes",
@@ -277,6 +335,32 @@ function App() {
       supabase.removeChannel(realtimeChannel)
     }
   }, [accountType, authSession, currentView])
+
+  async function enableBrowserNotifications() {
+    const permission = await requestBrowserNotificationPermission()
+    setBrowserNotificationPermission(permission)
+
+    if (permission === "granted") {
+      showNotification(
+        "تم تفعيل إشعارات الطلبات على هذا الجهاز بنجاح.",
+        "success",
+        accountType,
+      )
+      await sendBrowserNotification("تم تفعيل إشعارات Basra Mall", {
+        body: "راح نبلغك فورًا عند وصول تحديث يخص حسابك.",
+        tag: "basra-mall-notifications-enabled",
+      })
+      return
+    }
+
+    showNotification(
+      permission === "denied"
+        ? "الإشعارات مرفوضة من إعدادات الجهاز. تقدر تسمح بيها من إعدادات المتصفح."
+        : "هذا الجهاز ما يدعم إشعارات المتصفح.",
+      "warning",
+      accountType,
+    )
+  }
 
   function showNotification(message, type = "success", audience = accountType) {
     const notification = {
@@ -1607,6 +1691,8 @@ function App() {
           storageMessage={storageMessage}
           notification={visibleAppNotification}
           notifications={visibleNotificationHistory}
+          browserNotificationPermission={browserNotificationPermission}
+          onEnableBrowserNotifications={enableBrowserNotifications}
           onClearNotifications={() =>
             setNotificationHistory((history) =>
               history.filter((notification) => !isNotificationForAccount(notification, accountType)),
@@ -1703,6 +1789,85 @@ function App() {
       )}
     </main>
   )
+}
+
+function getRealtimeOrderNotification({
+  accountType,
+  activeUser,
+  merchantStoreNames,
+  payload,
+  previousStatus,
+}) {
+  const order = payload.new
+  if (!order?.id) return null
+
+  const status = getDatabaseStatusLabel(order.status)
+  const oldStatus = previousStatus ?? getDatabaseStatusLabel(payload.old?.status)
+  const isNewOrder = payload.eventType === "INSERT"
+  const statusChanged = payload.eventType === "UPDATE" && Boolean(oldStatus) && status !== oldStatus
+
+  if (accountType === "صاحب متجر" && isNewOrder) {
+    const orderStoreNames = Array.isArray(order.items)
+      ? order.items.map((item) => item.store)
+      : []
+
+    if (!orderStoreNames.some((storeName) => merchantStoreNames.includes(storeName))) return null
+
+    return {
+      audience: "صاحب متجر",
+      message: `وصلك طلب جديد رقم ${order.id}. افتح الطلب حتى تبدأ تجهيزه.`,
+      title: "طلب جديد للمتجر",
+      type: "warning",
+    }
+  }
+
+  if (accountType === "سائق" && statusChanged && status === "جاهز للتوصيل") {
+    return {
+      audience: "سائق",
+      message: `طلب رقم ${order.id} صار جاهزًا للتوصيل في منطقة ${order.area}.`,
+      title: "مهمة توصيل جديدة",
+      type: "warning",
+    }
+  }
+
+  if (
+    accountType === "زبون" &&
+    statusChanged &&
+    String(order.customer_phone ?? "") === activeUser.phone
+  ) {
+    return {
+      audience: "زبون",
+      message: `حالة طلبك رقم ${order.id} صارت: ${status}.`,
+      title: "تحديث على طلبك",
+      type: status === "تم التسليم" ? "success" : "info",
+    }
+  }
+
+  if (accountType === "الإدارة" && (isNewOrder || statusChanged)) {
+    return {
+      audience: "الإدارة",
+      message: isNewOrder
+        ? `وصل طلب جديد رقم ${order.id} من ${order.customer_name}.`
+        : `تغيرت حالة الطلب رقم ${order.id} إلى: ${status}.`,
+      title: isNewOrder ? "طلب جديد" : "تحديث طلب",
+      type: isNewOrder ? "warning" : "info",
+    }
+  }
+
+  return null
+}
+
+function getDatabaseStatusLabel(status) {
+  const labels = {
+    canceled: "ملغي",
+    delivered: "تم التسليم",
+    in_delivery: "قيد التوصيل",
+    new: "طلب جديد",
+    preparing: "قيد التجهيز",
+    ready_for_delivery: "جاهز للتوصيل",
+  }
+
+  return labels[status] ?? status ?? ""
 }
 
 function getActiveStats({

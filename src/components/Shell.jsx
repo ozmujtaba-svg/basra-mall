@@ -9,6 +9,7 @@ const notificationFilters = [
 ]
 
 export function Shell({
+  browserNotificationPermission,
   children,
   dashboard,
   navItems = [],
@@ -17,6 +18,7 @@ export function Shell({
   onBack,
   onClearNotifications,
   onDismissNotification,
+  onEnableBrowserNotifications,
   onForgetAccount,
   onReadNotifications,
   stats,
@@ -181,6 +183,23 @@ export function Shell({
           </div>
         )}
 
+        <div className={`device-notification-card ${browserNotificationPermission}`}>
+          <div>
+            <span>إشعارات الجهاز</span>
+            <strong>{getDeviceNotificationTitle(browserNotificationPermission)}</strong>
+            <small>{getDeviceNotificationDescription(browserNotificationPermission)}</small>
+          </div>
+          {browserNotificationPermission === "default" && (
+            <button onClick={onEnableBrowserNotifications} type="button">
+              تفعيل الإشعارات
+            </button>
+          )}
+          {browserNotificationPermission === "denied" && (
+            <b>مرفوضة من الجهاز</b>
+          )}
+          {browserNotificationPermission === "granted" && <b>مفعّلة</b>}
+        </div>
+
         {notification && (
           <div className={`app-notification ${notification.type}`}>
             <div>
@@ -334,6 +353,26 @@ export function Shell({
       </button>
     </section>
   )
+}
+
+function getDeviceNotificationTitle(permission) {
+  if (permission === "granted") return "راح توصلك تحديثات الطلب فورًا"
+  if (permission === "denied") return "الإشعارات متوقفة من إعدادات المتصفح"
+  if (permission === "unsupported") return "الإشعارات غير مدعومة بهذا الجهاز"
+  return "فعّلها حتى ما يفوتك أي طلب"
+}
+
+function getDeviceNotificationDescription(permission) {
+  if (permission === "granted") {
+    return "التنبيهات مخصصة حسب حسابك: زبون، متجر، سائق، أو إدارة."
+  }
+  if (permission === "denied") {
+    return "افتح إعدادات الموقع في المتصفح وغيّر إذن الإشعارات إلى سماح."
+  }
+  if (permission === "unsupported") {
+    return "يبقى مركز الإشعارات داخل التطبيق شغال بصورة طبيعية."
+  }
+  return "اضغط تفعيل مرة واحدة، وبعدها وافق من الرسالة التي تظهر بالجهاز."
 }
 
 function scrollToDashboardSection(sectionId) {

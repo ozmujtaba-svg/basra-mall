@@ -686,6 +686,65 @@ button span {
   color: #65706b;
 }
 
+.device-notification-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 18px;
+  padding: 16px;
+  border: 1px solid #c9ddd9;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #eef7f5, #ffffff);
+}
+
+.device-notification-card span,
+.device-notification-card strong,
+.device-notification-card small {
+  display: block;
+  line-height: 1.7;
+}
+
+.device-notification-card span,
+.device-notification-card small {
+  color: #65706b;
+}
+
+.device-notification-card strong {
+  color: #0c6b66;
+  font-size: 17px;
+}
+
+.device-notification-card button,
+.device-notification-card b {
+  min-width: 118px;
+  border-radius: 10px;
+  padding: 10px 14px;
+  text-align: center;
+}
+
+.device-notification-card button {
+  border: 0;
+  background: #0c6b66;
+  color: white;
+  font-weight: bold;
+}
+
+.device-notification-card b {
+  background: white;
+  color: #0c6b66;
+}
+
+.device-notification-card.denied {
+  border-color: #ead5a2;
+  background: #fff9e8;
+}
+
+.device-notification-card.denied strong,
+.device-notification-card.denied b {
+  color: #8a5d11;
+}
+
 .app-notification {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -5645,6 +5704,7 @@ button span {
   }
 
   .app-notification,
+  .device-notification-card,
   .notification-center-top,
   .session-confirm-card,
   .saved-account-card {
