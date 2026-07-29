@@ -39,11 +39,13 @@ const revenuePeriodFilters = ["اليوم", "آخر 7 أيام", "آخر 30 يو
 export function AdminDashboard({
   allOrders,
   commissionRate,
+  coupons,
   deliveredOrders,
   drivers,
   estimatedRevenue,
   lastSaveTime,
   onApproveStore,
+  onAddCoupon,
   onChangePassword,
   onExportBackup,
   onImportBackup,
@@ -54,6 +56,7 @@ export function AdminDashboard({
   onSettleMerchantEarnings,
   onSettingsChange,
   onUpdateDriverApproval,
+  onUpdateCoupon,
   onUpdateOrderStatus,
   settings,
   stores,
@@ -76,6 +79,13 @@ export function AdminDashboard({
   const [confirmAdminPassword, setConfirmAdminPassword] = useState("")
   const [passwordMessage, setPasswordMessage] = useState("")
   const [passwordLoading, setPasswordLoading] = useState(false)
+  const [couponCode, setCouponCode] = useState("")
+  const [couponType, setCouponType] = useState("percentage")
+  const [couponValue, setCouponValue] = useState("")
+  const [couponMinimum, setCouponMinimum] = useState("0")
+  const [couponMaxUses, setCouponMaxUses] = useState("100")
+  const [couponExpiresAt, setCouponExpiresAt] = useState("")
+  const [couponMessage, setCouponMessage] = useState("")
   const pendingStores = useMemo(() => stores.filter((store) => store.status === "pending"), [stores])
   const rejectedStores = useMemo(() => stores.filter((store) => store.status === "rejected"), [stores])
   const approvedStores = useMemo(
@@ -1177,6 +1187,76 @@ export function AdminDashboard({
         </div>
       </section>
 
+      <section className="admin-section" id="admin-coupons">
+        <div className="admin-monitor-header">
+          <div>
+            <h3>كوبونات الخصم</h3>
+            <p>أنشئ كود خصم وحدد قيمته وصلاحيته وعدد مرات استخدامه.</p>
+          </div>
+          <span>{coupons.filter(isCouponActive).length} كوبون فعال</span>
+        </div>
+        <form className="coupon-admin-form" onSubmit={submitCoupon}>
+          <label>
+            رمز الكوبون
+            <input
+              value={couponCode}
+              onChange={(event) => setCouponCode(event.target.value.toUpperCase())}
+              placeholder="BASRA10"
+            />
+          </label>
+          <label>
+            نوع الخصم
+            <select value={couponType} onChange={(event) => setCouponType(event.target.value)}>
+              <option value="percentage">نسبة مئوية</option>
+              <option value="fixed">مبلغ ثابت</option>
+            </select>
+          </label>
+          <label>
+            قيمة الخصم
+            <input min="1" type="number" value={couponValue} onChange={(event) => setCouponValue(event.target.value)} />
+          </label>
+          <label>
+            الحد الأدنى للطلب
+            <input min="0" type="number" value={couponMinimum} onChange={(event) => setCouponMinimum(event.target.value)} />
+          </label>
+          <label>
+            عدد مرات الاستخدام
+            <input min="1" type="number" value={couponMaxUses} onChange={(event) => setCouponMaxUses(event.target.value)} />
+          </label>
+          <label>
+            تاريخ الانتهاء
+            <input type="datetime-local" value={couponExpiresAt} onChange={(event) => setCouponExpiresAt(event.target.value)} />
+          </label>
+          <button type="submit">إنشاء الكوبون</button>
+        </form>
+        {couponMessage && <div className="order-message">{couponMessage}</div>}
+        <div className="coupon-admin-list">
+          {coupons.length === 0 ? (
+            <div className="empty-search">ماكو كوبونات منشأة بعد.</div>
+          ) : coupons.map((coupon) => (
+            <article className={isCouponActive(coupon) ? "active" : "inactive"} key={coupon.id}>
+              <div>
+                <strong>{coupon.code}</strong>
+                <span>
+                  {coupon.discountType === "percentage"
+                    ? `${coupon.discountValue}%`
+                    : formatMoney(coupon.discountValue)}
+                </span>
+              </div>
+              <small>الحد الأدنى: {formatMoney(coupon.minimumOrder)}</small>
+              <small>الاستخدام: {coupon.usedCount} من {coupon.maxUses}</small>
+              <small>الانتهاء: {formatOrderDate(coupon.expiresAt)}</small>
+              <button
+                onClick={() => toggleCoupon(coupon)}
+                type="button"
+              >
+                {coupon.isActive ? "إيقاف" : "تفعيل"}
+              </button>
+            </article>
+          ))}
+        </div>
+      </section>
+
       <section className="admin-section" id="admin-offers">
         <div className="admin-monitor-header">
           <div>
@@ -1783,6 +1863,56 @@ export function AdminDashboard({
 
     downloadCsvFile(rows, `basra-mall-financial-${getReportFilePeriod(revenuePeriodFilter)}.csv`)
     setDataMessage("تم تنزيل التقرير المالي للفترة المختارة.")
+  }
+
+  async function submitCoupon(event) {
+    event.preventDefault()
+    const value = Number(couponValue)
+    const minimumOrder = Number(couponMinimum)
+    const maxUses = Number(couponMaxUses)
+
+    if (
+      !couponCode.trim() ||
+      !Number.isFinite(value) ||
+      value <= 0 ||
+      (couponType === "percentage" && value > 100) ||
+      !Number.isFinite(minimumOrder) ||
+      minimumOrder < 0 ||
+      !Number.isInteger(maxUses) ||
+      maxUses <= 0 ||
+      !couponExpiresAt ||
+      new Date(couponExpiresAt).getTime() <= Date.now()
+    ) {
+      setCouponMessage("راجع بيانات الكوبون: الرمز والقيمة والصلاحية وعدد الاستخدامات مطلوبة.")
+      return
+    }
+
+    const saved = await onAddCoupon({
+      code: couponCode,
+      discountType: couponType,
+      discountValue: value,
+      minimumOrder,
+      maxUses,
+      expiresAt: new Date(couponExpiresAt).toISOString(),
+      isActive: true,
+    })
+
+    if (!saved) {
+      setCouponMessage("تعذر إنشاء الكوبون. يمكن الرمز مستخدم من قبل.")
+      return
+    }
+
+    setCouponCode("")
+    setCouponValue("")
+    setCouponMinimum("0")
+    setCouponMaxUses("100")
+    setCouponExpiresAt("")
+    setCouponMessage("تم إنشاء الكوبون وصار متاحًا للزبائن.")
+  }
+
+  async function toggleCoupon(coupon) {
+    const saved = await onUpdateCoupon(coupon.id, { isActive: !coupon.isActive })
+    setCouponMessage(saved ? "تم تحديث حالة الكوبون." : "تعذر تحديث حالة الكوبون.")
   }
 }
 
@@ -2743,6 +2873,14 @@ function isProductOfferActive(product) {
     Number(product.discountPercent) > 0 &&
     Boolean(product.discountEndsAt) &&
     new Date(product.discountEndsAt).getTime() > Date.now()
+  )
+}
+
+function isCouponActive(coupon) {
+  return (
+    coupon.isActive &&
+    coupon.usedCount < coupon.maxUses &&
+    new Date(coupon.expiresAt).getTime() > Date.now()
   )
 }
 

@@ -3440,6 +3440,87 @@ button span {
   color: #b42318;
 }
 
+.coupon-entry {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 8px;
+  align-items: end;
+}
+
+.coupon-entry label {
+  display: grid;
+  gap: 6px;
+}
+
+.coupon-entry small {
+  grid-column: 1 / -1;
+}
+
+.coupon-discount-row strong {
+  color: #087f5b;
+}
+
+.coupon-admin-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+  margin: 18px 0;
+}
+
+.coupon-admin-form label {
+  display: grid;
+  gap: 7px;
+  color: #52605a;
+  font-weight: 700;
+}
+
+.coupon-admin-form input,
+.coupon-admin-form select {
+  width: 100%;
+}
+
+.coupon-admin-form button {
+  align-self: end;
+  background: #0c6b66;
+  color: white;
+  font-weight: 800;
+}
+
+.coupon-admin-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(205px, 1fr));
+  gap: 12px;
+}
+
+.coupon-admin-list article {
+  display: grid;
+  gap: 8px;
+  padding: 15px;
+  border: 1px solid #d9e2df;
+  border-radius: 14px;
+  background: white;
+}
+
+.coupon-admin-list article.inactive {
+  opacity: 0.65;
+}
+
+.coupon-admin-list article > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+@media (max-width: 600px) {
+  .coupon-entry {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .coupon-entry label {
+    grid-column: 1 / -1;
+  }
+}
+
 .merchant-order-alert {
   display: grid;
   grid-template-columns: 1fr auto;

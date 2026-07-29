@@ -45,6 +45,11 @@ import {
   updateMarketplaceStoreStatus,
   uploadMarketplaceProductImage,
 } from "./lib/storeRepository"
+import {
+  createCoupon,
+  fetchCoupons,
+  updateCoupon,
+} from "./lib/couponRepository"
 
 const DELIVERY_FEE = 5000
 const ADMIN_COMMISSION_RATE = 0.05
@@ -71,6 +76,7 @@ function App() {
   const [merchantOrders, setMerchantOrders] = useState(savedAppData.merchantOrders)
   const [deliveryOrders, setDeliveryOrders] = useState(savedAppData.deliveryOrders)
   const [drivers, setDrivers] = useState([])
+  const [coupons, setCoupons] = useState([])
   const [driverApprovalStatus, setDriverApprovalStatus] = useState("pending")
   const [favoriteStoreNames, setFavoriteStoreNames] = useState(savedAppData.favoriteStoreNames)
   const [savedCustomerAddress, setSavedCustomerAddress] = useState(savedAppData.savedCustomerAddress)
@@ -302,8 +308,9 @@ function App() {
         fetchMarketplaceOrders(),
         fetchMarketplaceStores(),
         accountType === "الإدارة" ? fetchDriverProfiles() : Promise.resolve([]),
+        ["الإدارة", "زبون"].includes(accountType) ? fetchCoupons() : Promise.resolve([]),
       ])
-        .then(([orders, databaseStores, databaseDrivers]) => {
+        .then(([orders, databaseStores, databaseDrivers, databaseCoupons]) => {
           if (ignore) return
 
           knownOrderStatuses.current = new Map(orders.map((order) => [String(order.id), order.status]))
@@ -315,6 +322,7 @@ function App() {
             setDeliveryOrders(orders.filter((order) => order.status !== "طلب جديد"))
             setDrivers(databaseDrivers)
           }
+          setCoupons(databaseCoupons)
           setStores(() => {
             const marketplaceStores = databaseStores.map(normalizeStore)
             setSelectedStore((currentStore) =>
@@ -398,6 +406,11 @@ function App() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "profiles" },
+        scheduleMarketplaceRefresh,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "coupons" },
         scheduleMarketplaceRefresh,
       )
       .subscribe()
@@ -1189,7 +1202,7 @@ function App() {
     )
   }
 
-  async function sendOrder(paymentMethod = "الدفع عند الاستلام") {
+  async function sendOrder(paymentMethod = "الدفع عند الاستلام", couponCode = "") {
     if (cartItems.length === 0) {
       setOrderMessage("السلة فارغة. أضف منتج واحد على الأقل، وبعدها ارجع لتأكيد الطلب.")
       showNotification(
@@ -1245,7 +1258,10 @@ function App() {
         (total, item) => total + getPriceValue(item.price) * item.quantity,
         0,
       )
-      const total = subtotal + activeDeliveryFee
+      const coupon = getApplicableCoupon(coupons, couponCode, subtotal)
+      const discountAmount = calculateCouponDiscount(coupon, subtotal)
+      const discountedSubtotal = Math.max(subtotal - discountAmount, 0)
+      const total = discountedSubtotal + activeDeliveryFee
 
       return {
         id: nextOrderId + index,
@@ -1256,7 +1272,9 @@ function App() {
         notes: customerInfo.notes.trim(),
         paymentMethod,
         items,
-        subtotal,
+        subtotal: discountedSubtotal,
+        discountAmount,
+        couponCode: coupon?.code ?? "",
         deliveryFee: activeDeliveryFee,
         total,
         status: "طلب جديد",
@@ -1321,6 +1339,32 @@ function App() {
       "success",
       "زبون",
     )
+  }
+
+  async function addCoupon(coupon) {
+    try {
+      const savedCoupon = await createCoupon(coupon)
+      setCoupons((current) => [savedCoupon, ...current])
+      setStorageMessage("")
+      return true
+    } catch (error) {
+      setStorageMessage(`تعذر حفظ الكوبون: ${error.message}`)
+      return false
+    }
+  }
+
+  async function changeCoupon(couponId, changes) {
+    try {
+      const savedCoupon = await updateCoupon(couponId, changes)
+      setCoupons((current) =>
+        current.map((coupon) => (coupon.id === couponId ? savedCoupon : coupon)),
+      )
+      setStorageMessage("")
+      return true
+    } catch (error) {
+      setStorageMessage(`تعذر تحديث الكوبون: ${error.message}`)
+      return false
+    }
   }
 
   async function persistSyncedOrderChange(order, changes) {
@@ -1969,6 +2013,7 @@ function App() {
           {accountType === "زبون" && (
             <CustomerDashboard
               cartItems={cartItems}
+              coupons={coupons}
               customerInfo={customerInfo}
               customerOrders={visibleCustomerOrders}
               deliveryFee={activeDeliveryFee}
@@ -2022,11 +2067,14 @@ function App() {
           {accountType === "الإدارة" && (
             <AdminDashboard
               allOrders={allOrders}
+              coupons={coupons}
               commissionRate={platformSettings.commissionRate}
               onApproveStore={approveStore}
               onChangePassword={changeAdminPassword}
               onExportBackup={exportDataBackup}
               onImportBackup={importDataBackup}
+              onAddCoupon={addCoupon}
+              onUpdateCoupon={changeCoupon}
               lastSaveTime={lastSaveTime}
               onRejectStore={rejectStore}
               onReviewStoreAgain={reviewStoreAgain}
@@ -2234,6 +2282,7 @@ function getDashboardNavItems(accountType) {
       { label: "تسويات المتاجر", targetId: "admin-merchant-payouts" },
       { label: "التقارير المالية", targetId: "admin-financial-reports" },
       { label: "العروض", targetId: "admin-offers" },
+      { label: "الكوبونات", targetId: "admin-coupons" },
       { label: "الإعدادات", targetId: "admin-settings" },
       { label: "البيانات", targetId: "admin-data" },
       { label: "المتاجر", targetId: "admin-stores" },
@@ -2617,6 +2666,31 @@ function normalizeOrder(order) {
     ...order,
     createdAt: typeof order.createdAt === "string" ? order.createdAt : "",
   }
+}
+
+function getApplicableCoupon(coupons, code, subtotal) {
+  const normalizedCode = String(code).trim().toUpperCase()
+  if (!normalizedCode) return null
+  const coupon = coupons.find((item) => item.code === normalizedCode)
+  if (
+    !coupon ||
+    !coupon.isActive ||
+    coupon.usedCount >= coupon.maxUses ||
+    new Date(coupon.expiresAt).getTime() <= Date.now() ||
+    subtotal < coupon.minimumOrder
+  ) {
+    return null
+  }
+  return coupon
+}
+
+function calculateCouponDiscount(coupon, subtotal) {
+  if (!coupon) return 0
+  const discount =
+    coupon.discountType === "percentage"
+      ? Math.round(subtotal * coupon.discountValue / 100)
+      : coupon.discountValue
+  return Math.min(discount, subtotal)
 }
 
 function normalizeCustomerInfo(info, fallback) {

@@ -12,6 +12,7 @@ const paymentMethods = ["الدفع عند الاستلام", "دفع إلكتر
 
 export function CustomerDashboard({
   cartItems,
+  coupons,
   customerInfo,
   customerOrders,
   deliveryFee,
@@ -42,6 +43,9 @@ export function CustomerDashboard({
   const [trackingSearch, setTrackingSearch] = useState("")
   const [copiedOrderId, setCopiedOrderId] = useState("")
   const [pendingCancelOrderId, setPendingCancelOrderId] = useState("")
+  const [couponInput, setCouponInput] = useState("")
+  const [appliedCoupon, setAppliedCoupon] = useState(null)
+  const [couponMessage, setCouponMessage] = useState("")
   const safeSelectedStore = useMemo(
     () =>
       selectedStore ?? stores[0] ?? {
@@ -79,7 +83,11 @@ export function CustomerDashboard({
     () => cartItems.reduce((total, item) => total + getPriceValue(item.price) * item.quantity, 0),
     [cartItems],
   )
-  const finalTotal = cartItems.length > 0 ? subtotal + deliveryFee : 0
+  const couponDiscount = useMemo(
+    () => calculateCartCouponDiscount(cartItems, appliedCoupon),
+    [appliedCoupon, cartItems],
+  )
+  const finalTotal = cartItems.length > 0 ? Math.max(subtotal - couponDiscount, 0) + deliveryFee : 0
   const visibleProducts = useMemo(
     () => safeSelectedStore.products.filter((product) => product.status !== "مخفي مؤقتًا"),
     [safeSelectedStore.products],
@@ -511,6 +519,29 @@ export function CustomerDashboard({
             <strong>{cartItems.length > 0 ? formatMoney(deliveryFee) : "0 د.ع"}</strong>
             {customerInfo.area && <small>حسب منطقة {customerInfo.area}</small>}
           </div>
+          <div className="coupon-entry">
+            <label>
+              كوبون الخصم
+              <input
+                value={couponInput}
+                onChange={(event) => setCouponInput(event.target.value.toUpperCase())}
+                placeholder="مثال: BASRA10"
+              />
+            </label>
+            <button onClick={applyCoupon} type="button">تطبيق</button>
+            {appliedCoupon && (
+              <button className="remove-coupon-button" onClick={removeCoupon} type="button">
+                إلغاء الكوبون
+              </button>
+            )}
+            {couponMessage && <small>{couponMessage}</small>}
+          </div>
+          {couponDiscount > 0 && (
+            <div className="coupon-discount-row">
+              <span>خصم الكوبون {appliedCoupon?.code}</span>
+              <strong>- {formatMoney(couponDiscount)}</strong>
+            </div>
+          )}
           <div className="summary-total">
             <span>المبلغ النهائي</span>
             <strong>{formatMoney(finalTotal)}</strong>
@@ -733,8 +764,35 @@ export function CustomerDashboard({
   }
 
   function confirmSendOrder() {
-    onSendOrder(paymentMethod)
+    onSendOrder(paymentMethod, appliedCoupon?.code ?? "")
     setShowOrderReview(false)
+  }
+
+  function applyCoupon() {
+    const normalizedCode = couponInput.trim().toUpperCase()
+    const coupon = coupons.find((item) => item.code === normalizedCode)
+
+    if (!coupon || !isCouponAvailable(coupon)) {
+      setAppliedCoupon(null)
+      setCouponMessage("الكوبون غير صحيح أو منتهي أو وصل حد الاستخدام.")
+      return
+    }
+
+    const discount = calculateCartCouponDiscount(cartItems, coupon)
+    if (discount <= 0) {
+      setAppliedCoupon(null)
+      setCouponMessage(`الحد الأدنى لهذا الكوبون ${formatMoney(coupon.minimumOrder)} لكل متجر.`)
+      return
+    }
+
+    setAppliedCoupon(coupon)
+    setCouponMessage(`تم تطبيق الكوبون وخصم ${formatMoney(discount)}.`)
+  }
+
+  function removeCoupon() {
+    setAppliedCoupon(null)
+    setCouponInput("")
+    setCouponMessage("تم إلغاء الكوبون.")
   }
 
   function confirmCancelOrder(orderId) {
@@ -894,6 +952,35 @@ function isDiscountActive(product) {
     Boolean(product.discountEndsAt) &&
     new Date(product.discountEndsAt).getTime() > Date.now()
   )
+}
+
+function isCouponAvailable(coupon) {
+  return (
+    coupon.isActive &&
+    coupon.usedCount < coupon.maxUses &&
+    new Date(coupon.expiresAt).getTime() > Date.now()
+  )
+}
+
+function calculateCartCouponDiscount(items, coupon) {
+  if (!coupon || !isCouponAvailable(coupon)) return 0
+  const storeSubtotals = new Map()
+
+  items.forEach((item) => {
+    storeSubtotals.set(
+      item.store,
+      (storeSubtotals.get(item.store) ?? 0) + getPriceValue(item.price) * item.quantity,
+    )
+  })
+
+  return [...storeSubtotals.values()].reduce((total, storeSubtotal) => {
+    if (storeSubtotal < coupon.minimumOrder) return total
+    const discount =
+      coupon.discountType === "percentage"
+        ? Math.round(storeSubtotal * coupon.discountValue / 100)
+        : coupon.discountValue
+    return total + Math.min(discount, storeSubtotal)
+  }, 0)
 }
 
 function formatMoney(value) {
