@@ -1,0 +1,28 @@
+{
+  "name": "Basra Mall - مول البصرة",
+  "short_name": "Basra Mall",
+  "description": "مول إلكتروني للزبائن والمتاجر والسائقين داخل البصرة.",
+  "lang": "ar",
+  "dir": "rtl",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#071d3d",
+  "theme_color": "#071d3d",
+  "icons": [
+    {
+      "src": "/app-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/app-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
