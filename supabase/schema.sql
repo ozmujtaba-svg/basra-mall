@@ -11,6 +11,7 @@ create type public.order_status as enum (
   'delivered',
   'canceled'
 );
+create type public.driver_payout_status as enum ('pending', 'paid');
 
 create table public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,

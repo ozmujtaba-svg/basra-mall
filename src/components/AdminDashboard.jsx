@@ -50,6 +50,7 @@ export function AdminDashboard({
   onRejectStore,
   onReviewStoreAgain,
   onResetData,
+  onSettleDriverEarnings,
   onSettingsChange,
   onUpdateDriverApproval,
   onUpdateOrderStatus,
@@ -870,34 +871,60 @@ export function AdminDashboard({
           <div className="empty-search">ماكو حسابات سائقين مسجلة حاليًا.</div>
         ) : (
           <div className="admin-driver-list">
-            {drivers.map((driver) => (
-              <article className={`admin-driver-card ${driver.status}`} key={driver.id}>
-                <div>
-                  <span>{getDriverApprovalLabel(driver.status)}</span>
-                  <strong>{driver.name}</strong>
-                  <small>{driver.phone}</small>
-                </div>
-                <div className="admin-driver-actions">
-                  {driver.status !== "approved" && (
-                    <button
-                      onClick={() => onUpdateDriverApproval(driver.id, "approved")}
-                      type="button"
-                    >
-                      قبول السائق
-                    </button>
-                  )}
-                  {driver.status !== "rejected" && (
-                    <button
-                      className="reject"
-                      onClick={() => onUpdateDriverApproval(driver.id, "rejected")}
-                      type="button"
-                    >
-                      رفض
-                    </button>
-                  )}
-                </div>
-              </article>
-            ))}
+            {drivers.map((driver) => {
+              const payout = getDriverPayoutSummary(driver.id, allOrders)
+
+              return (
+                <article className={`admin-driver-card ${driver.status}`} key={driver.id}>
+                  <div className="admin-driver-identity">
+                    <span>{getDriverApprovalLabel(driver.status)}</span>
+                    <strong>{driver.name}</strong>
+                    <small>{driver.phone}</small>
+                  </div>
+                  <div className="admin-driver-payout">
+                    <div>
+                      <span>إجمالي المستحق</span>
+                      <strong>{formatMoney(payout.total)}</strong>
+                    </div>
+                    <div>
+                      <span>تم دفعه</span>
+                      <strong>{formatMoney(payout.paid)}</strong>
+                    </div>
+                    <div className={payout.remaining > 0 ? "due" : ""}>
+                      <span>المتبقي</span>
+                      <strong>{formatMoney(payout.remaining)}</strong>
+                    </div>
+                  </div>
+                  <div className="admin-driver-actions">
+                    {payout.remaining > 0 && (
+                      <button
+                        onClick={() => onSettleDriverEarnings(driver.id)}
+                        type="button"
+                      >
+                        تسجيل دفع المستحق
+                      </button>
+                    )}
+                    {driver.status !== "approved" && (
+                      <button
+                        onClick={() => onUpdateDriverApproval(driver.id, "approved")}
+                        type="button"
+                      >
+                        قبول السائق
+                      </button>
+                    )}
+                    {driver.status !== "rejected" && (
+                      <button
+                        className="reject"
+                        onClick={() => onUpdateDriverApproval(driver.id, "rejected")}
+                        type="button"
+                      >
+                        رفض
+                      </button>
+                    )}
+                  </div>
+                </article>
+              )
+            })}
           </div>
         )}
       </section>
@@ -2344,6 +2371,27 @@ function getDriverApprovalLabel(status) {
   if (status === "approved") return "معتمد"
   if (status === "rejected") return "مرفوض"
   return "بانتظار الموافقة"
+}
+
+function getDriverPayoutSummary(driverId, orders) {
+  const deliveredOrders = orders.filter(
+    (order) => order.driverId === driverId && order.status === "تم التسليم",
+  )
+  const paidOrders = deliveredOrders.filter((order) => order.driverPayoutStatus === "paid")
+  const total = deliveredOrders.reduce(
+    (sum, order) => sum + Number(order.deliveryFee ?? 0),
+    0,
+  )
+  const paid = paidOrders.reduce(
+    (sum, order) => sum + Number(order.deliveryFee ?? 0),
+    0,
+  )
+
+  return {
+    paid,
+    remaining: total - paid,
+    total,
+  }
 }
 
 function getStoreStatusNote(status) {

@@ -71,6 +71,23 @@ export async function updateMarketplaceOrder(orderId, changes) {
   return fromDatabaseOrder(data)
 }
 
+export async function settleDriverPayouts(driverId) {
+  const paidAt = new Date().toISOString()
+  const { data, error } = await supabase
+    .from("marketplace_orders")
+    .update({
+      driver_paid_at: paidAt,
+      driver_payout_status: "paid",
+    })
+    .eq("driver_id", driverId)
+    .eq("status", "delivered")
+    .eq("driver_payout_status", "pending")
+    .select("*")
+
+  if (error) throw error
+  return data.map(fromDatabaseOrder)
+}
+
 function fromDatabaseOrder(order) {
   return {
     id: order.id,
@@ -87,6 +104,8 @@ function fromDatabaseOrder(order) {
     status: statusFromDatabase[order.status] ?? "طلب جديد",
     internalNote: order.internal_note,
     driverId: order.driver_id,
+    driverPaidAt: order.driver_paid_at,
+    driverPayoutStatus: order.driver_payout_status ?? "pending",
     createdAt: order.created_at,
     isSynced: true,
   }

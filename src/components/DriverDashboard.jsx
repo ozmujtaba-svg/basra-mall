@@ -49,6 +49,14 @@ export function DriverDashboard({ onUpdateOrderNote, onUpdateStatus, orders, sto
     () => deliveredOrders.reduce((total, order) => total + order.deliveryFee, 0),
     [deliveredOrders],
   )
+  const paidDeliveryEarnings = useMemo(
+    () =>
+      getDeliveryFees(
+        deliveredOrders.filter((order) => order.driverPayoutStatus === "paid"),
+      ),
+    [deliveredOrders],
+  )
+  const pendingDeliveryEarnings = deliveryEarnings - paidDeliveryEarnings
   const todayDeliveredOrders = useMemo(
     () => deliveredOrders.filter((order) => isToday(order.createdAt)),
     [deliveredOrders],
@@ -244,6 +252,14 @@ export function DriverDashboard({ onUpdateOrderNote, onUpdateStatus, orders, sto
           <div className="revenue-row total">
             <span>أجور التوصيل للفترة</span>
             <strong>{formatMoney(revenuePeriodDeliveryEarnings)}</strong>
+          </div>
+          <div className="revenue-row paid">
+            <span>مبالغ مستلمة من الإدارة</span>
+            <strong>{formatMoney(paidDeliveryEarnings)}</strong>
+          </div>
+          <div className="revenue-row due">
+            <span>مستحقات تنتظر الدفع</span>
+            <strong>{formatMoney(pendingDeliveryEarnings)}</strong>
           </div>
           <div className="revenue-row">
             <span>أجرة الطلبات الجاهزة</span>

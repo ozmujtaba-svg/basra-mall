@@ -32,6 +32,7 @@ import {
   cancelMarketplaceOrder,
   createMarketplaceOrders,
   fetchMarketplaceOrders,
+  settleDriverPayouts,
   updateMarketplaceOrder,
 } from "./lib/orderRepository"
 import {
@@ -1466,6 +1467,37 @@ function App() {
     }
   }
 
+  async function settleDriverEarnings(driverId) {
+    try {
+      const settledOrders = await settleDriverPayouts(driverId)
+      const settledOrderIds = new Set(settledOrders.map((order) => order.id))
+      const updateSettledOrders = (orders) =>
+        orders.map((order) =>
+          settledOrderIds.has(order.id)
+            ? settledOrders.find((settledOrder) => settledOrder.id === order.id)
+            : order,
+        )
+
+      setCustomerOrders(updateSettledOrders)
+      setMerchantOrders(updateSettledOrders)
+      setDeliveryOrders(updateSettledOrders)
+
+      const settledTotal = settledOrders.reduce(
+        (total, order) => total + order.deliveryFee,
+        0,
+      )
+      showNotification(
+        settledOrders.length > 0
+          ? `تم تسجيل دفع ${settledTotal.toLocaleString("en-US")} د.ع للسائق.`
+          : "ماكو مستحقات جديدة غير مدفوعة لهذا السائق.",
+        settledOrders.length > 0 ? "success" : "info",
+        "الإدارة",
+      )
+    } catch (error) {
+      showNotification(`تعذر تسجيل تسوية السائق: ${error.message}`, "warning", "الإدارة")
+    }
+  }
+
   async function cancelOrder(orderId) {
     const orderToCancel =
       customerOrders.find((order) => order.id === orderId) ??
@@ -1968,6 +2000,7 @@ function App() {
               drivers={drivers}
               estimatedRevenue={estimatedRevenue}
               onSettingsChange={updatePlatformSettings}
+              onSettleDriverEarnings={settleDriverEarnings}
               onUpdateDriverApproval={changeDriverApproval}
               onUpdateOrderStatus={updateAdminOrderStatus}
               settings={platformSettings}

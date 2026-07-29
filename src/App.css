@@ -2511,9 +2511,44 @@ button span {
   font-size: 18px;
 }
 
+.admin-driver-payout {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(110px, 1fr));
+  gap: 8px;
+  flex: 1;
+}
+
+.admin-driver-payout div {
+  padding: 10px;
+  border-radius: 10px;
+  background: white;
+}
+
+.admin-driver-payout div.due {
+  background: #fff2ec;
+}
+
+.admin-driver-payout div.due strong {
+  color: #a3422e;
+}
+
+.admin-driver-payout strong {
+  font-size: 15px;
+}
+
 .admin-driver-actions {
   display: flex;
   gap: 8px;
+}
+
+.revenue-row.paid {
+  border-color: #c9ddd9;
+  background: #eef7f5;
+}
+
+.revenue-row.due {
+  border-color: #ead5a2;
+  background: #fff9e8;
 }
 
 .admin-driver-actions button {
@@ -6460,5 +6495,25 @@ button span {
     min-height: 44px;
     padding: 10px 13px;
     font-size: 13px;
+  }
+}
+
+@media (max-width: 760px) {
+  .admin-driver-header,
+  .admin-driver-card {
+    display: grid;
+  }
+
+  .admin-driver-payout {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-driver-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .admin-driver-actions button {
+    width: 100%;
   }
 }
