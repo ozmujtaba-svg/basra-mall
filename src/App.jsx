@@ -14,6 +14,11 @@ import {
   sendBrowserNotification,
 } from "./lib/browserNotifications"
 import {
+  BASRA_DELIVERY_ZONES,
+  DEFAULT_DELIVERY_FEES,
+  getDeliveryFeeForArea,
+} from "./lib/deliveryZones"
+import {
   cancelMarketplaceOrder,
   createMarketplaceOrders,
   fetchMarketplaceOrders,
@@ -39,6 +44,7 @@ const LAST_SAVE_STORAGE_KEY = "basra-mall-last-save"
 const defaultPlatformSettings = {
   commissionRate: ADMIN_COMMISSION_RATE,
   deliveryFee: DELIVERY_FEE,
+  deliveryFees: DEFAULT_DELIVERY_FEES,
 }
 
 function App() {
@@ -102,6 +108,11 @@ function App() {
     name: loginInfo.name.trim(),
     phone: loginInfo.phone.trim(),
   }
+  const activeDeliveryFee = getDeliveryFeeForArea(
+    customerInfo.area,
+    platformSettings.deliveryFees,
+    platformSettings.deliveryFee,
+  )
   const visibleCustomerOrders = customerOrders.filter((order) => order.phone === activeUser.phone)
   const merchantStores = stores.filter((store) => store.ownerPhone === activeUser.phone)
   const merchantStoreNames = merchantStores.map((store) => store.name)
@@ -1112,7 +1123,7 @@ function App() {
         (total, item) => total + getPriceValue(item.price) * item.quantity,
         0,
       )
-      const total = subtotal + platformSettings.deliveryFee
+      const total = subtotal + activeDeliveryFee
 
       return {
         id: nextOrderId + index,
@@ -1124,7 +1135,7 @@ function App() {
         paymentMethod,
         items,
         subtotal,
-        deliveryFee: platformSettings.deliveryFee,
+        deliveryFee: activeDeliveryFee,
         total,
         status: "طلب جديد",
         internalNote: "",
@@ -1718,7 +1729,8 @@ function App() {
               cartItems={cartItems}
               customerInfo={customerInfo}
               customerOrders={visibleCustomerOrders}
-              deliveryFee={platformSettings.deliveryFee}
+              deliveryFee={activeDeliveryFee}
+              deliveryZones={BASRA_DELIVERY_ZONES}
               favoriteStoreNames={favoriteStoreNames}
               savedCustomerAddress={savedCustomerAddress}
               onAddToCart={addToCart}
@@ -2030,6 +2042,7 @@ function loadPlatformSettings() {
       return {
         commissionRate: savedSettings.commissionRate,
         deliveryFee: savedSettings.deliveryFee,
+        deliveryFees: normalizeDeliveryFees(savedSettings.deliveryFees),
       }
     }
   } catch {
@@ -2048,10 +2061,20 @@ function normalizePlatformSettings(settings) {
     return {
       commissionRate: settings.commissionRate,
       deliveryFee: settings.deliveryFee,
+      deliveryFees: normalizeDeliveryFees(settings.deliveryFees),
     }
   }
 
   return defaultPlatformSettings
+}
+
+function normalizeDeliveryFees(deliveryFees) {
+  return Object.fromEntries(
+    BASRA_DELIVERY_ZONES.map((area) => {
+      const fee = Number(deliveryFees?.[area])
+      return [area, Number.isFinite(fee) && fee >= 0 ? fee : DEFAULT_DELIVERY_FEES[area]]
+    }),
+  )
 }
 
 function loadSavedAccount() {

@@ -794,7 +794,7 @@ export function AdminDashboard({
 
       <section className="admin-section" id="admin-settings">
         <h3>إعدادات العمولة والتوصيل</h3>
-        <p>هذه الإعدادات محفوظة داخل المتصفح وتبقى بعد تحديث الصفحة.</p>
+        <p>غيّر أجرة كل منطقة، والطلب الجديد ينحسب تلقائيًا حسب عنوان الزبون.</p>
         <div className="settings-grid">
           <label>
             نسبة عمولة الإدارة
@@ -825,6 +825,34 @@ export function AdminDashboard({
               <span>د.ع</span>
             </div>
           </label>
+        </div>
+        <div className="delivery-zone-settings">
+          <div className="delivery-zone-settings-header">
+            <div>
+              <span>تسعيرة مناطق البصرة</span>
+              <strong>{Object.keys(settings.deliveryFees ?? {}).length} منطقة</strong>
+            </div>
+            <small>السعر الاحتياطي أعلاه يُستخدم لأي منطقة قديمة غير موجودة بالقائمة.</small>
+          </div>
+          <div className="delivery-zone-settings-grid">
+            {Object.entries(settings.deliveryFees ?? {}).map(([area, fee]) => (
+              <label key={area}>
+                {area}
+                <div className="setting-control">
+                  <input
+                    min="0"
+                    step="500"
+                    type="number"
+                    value={fee}
+                    onChange={(event) =>
+                      updateDeliveryZoneFee(area, Number(event.target.value))
+                    }
+                  />
+                  <span>د.ع</span>
+                </div>
+              </label>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -1312,6 +1340,18 @@ export function AdminDashboard({
     onSettingsChange((currentSettings) => ({
       ...currentSettings,
       [field]: value,
+    }))
+  }
+
+  function updateDeliveryZoneFee(area, value) {
+    if (!Number.isFinite(value) || value < 0) return
+
+    onSettingsChange((currentSettings) => ({
+      ...currentSettings,
+      deliveryFees: {
+        ...currentSettings.deliveryFees,
+        [area]: value,
+      },
     }))
   }
 

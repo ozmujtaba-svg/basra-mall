@@ -2075,6 +2075,7 @@ button span {
 }
 
 .customer-info-grid input,
+.customer-info-grid select,
 .customer-info-grid textarea {
   width: 100%;
   border: 1px solid #ded8cc;
@@ -2141,6 +2142,10 @@ button span {
 
 .order-summary strong {
   color: #0c6b66;
+}
+
+.order-summary small {
+  color: #65706b;
 }
 
 .order-summary .summary-total {
@@ -5287,6 +5292,51 @@ button span {
   font-weight: bold;
 }
 
+.delivery-zone-settings {
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid #c9ddd9;
+  border-radius: 14px;
+  background: #eef7f5;
+}
+
+.delivery-zone-settings-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.delivery-zone-settings-header span,
+.delivery-zone-settings-header strong,
+.delivery-zone-settings-header small {
+  display: block;
+  line-height: 1.7;
+}
+
+.delivery-zone-settings-header span,
+.delivery-zone-settings-header small {
+  color: #65706b;
+}
+
+.delivery-zone-settings-header strong {
+  color: #0c6b66;
+  font-size: 20px;
+}
+
+.delivery-zone-settings-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.delivery-zone-settings-grid label {
+  display: grid;
+  gap: 7px;
+  font-weight: bold;
+}
+
 .revenue-section-header {
   display: flex;
   align-items: center;
@@ -5797,6 +5847,7 @@ button span {
   .route-contact-actions,
   .approval-actions,
   .settings-grid,
+  .delivery-zone-settings-grid,
   .saved-address-card,
   .tracking-steps {
     grid-template-columns: 1fr;
@@ -6076,6 +6127,7 @@ button span {
 
   .login-form input,
   .customer-info-grid input,
+  .customer-info-grid select,
   .customer-info-grid textarea,
   .merchant-form input,
   .merchant-form select,

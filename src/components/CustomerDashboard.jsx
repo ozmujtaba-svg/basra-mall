@@ -15,6 +15,7 @@ export function CustomerDashboard({
   customerInfo,
   customerOrders,
   deliveryFee,
+  deliveryZones,
   favoriteStoreNames,
   savedCustomerAddress,
   onAddToCart,
@@ -449,11 +450,20 @@ export function CustomerDashboard({
             </label>
             <label>
               المنطقة
-              <input
+              <select
                 value={customerInfo.area}
                 onChange={(event) => updateCustomerInfo("area", event.target.value)}
-                placeholder="مثال: العشار"
-              />
+              >
+                <option value="">اختار منطقة التوصيل</option>
+                {customerInfo.area && !deliveryZones.includes(customerInfo.area) && (
+                  <option value={customerInfo.area}>{customerInfo.area}</option>
+                )}
+                {deliveryZones.map((area) => (
+                  <option key={area} value={area}>
+                    {area}
+                  </option>
+                ))}
+              </select>
             </label>
             <label>
               أقرب نقطة دلالة
@@ -491,6 +501,7 @@ export function CustomerDashboard({
           <div>
             <span>أجرة التوصيل</span>
             <strong>{cartItems.length > 0 ? formatMoney(deliveryFee) : "0 د.ع"}</strong>
+            {customerInfo.area && <small>حسب منطقة {customerInfo.area}</small>}
           </div>
           <div className="summary-total">
             <span>المبلغ النهائي</span>
