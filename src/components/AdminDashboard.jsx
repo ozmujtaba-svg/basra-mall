@@ -58,6 +58,7 @@ export function AdminDashboard({
   onUpdateDriverApproval,
   onUpdateCoupon,
   onUpdateOrderStatus,
+  reviews = [],
   settings,
   stores,
 }) {
@@ -1255,6 +1256,43 @@ export function AdminDashboard({
             </article>
           ))}
         </div>
+      </section>
+
+      <section className="admin-section" id="admin-reviews">
+        <div className="admin-monitor-header">
+          <div>
+            <h3>تقييمات الزبائن</h3>
+            <p>متابعة تقييم المتاجر والسائقين وملاحظات الطلبات المسلّمة.</p>
+          </div>
+          <span>{reviews.length} تقييم</span>
+        </div>
+        <div className="review-summary-grid">
+          <div>
+            <span>متوسط المتاجر</span>
+            <strong>{formatReviewAverage(reviews, "storeRating")}</strong>
+          </div>
+          <div>
+            <span>متوسط السائقين</span>
+            <strong>{formatReviewAverage(reviews, "driverRating")}</strong>
+          </div>
+        </div>
+        {reviews.length === 0 ? (
+          <div className="empty-search">ماكو تقييمات بعد. تظهر هنا بعد تسليم الطلب.</div>
+        ) : (
+          <div className="admin-review-list">
+            {reviews.map((review) => (
+              <article key={review.id}>
+                <div>
+                  <strong>طلب رقم {review.orderId}</strong>
+                  <span>{review.storeName}</span>
+                </div>
+                <span>المتجر: {renderReviewStars(review.storeRating)}</span>
+                <span>السائق: {renderReviewStars(review.driverRating)}</span>
+                {review.comment && <p>{review.comment}</p>}
+              </article>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="admin-section" id="admin-offers">
@@ -2882,6 +2920,17 @@ function isCouponActive(coupon) {
     coupon.usedCount < coupon.maxUses &&
     new Date(coupon.expiresAt).getTime() > Date.now()
   )
+}
+
+function formatReviewAverage(reviews, field) {
+  if (reviews.length === 0) return "لا يوجد بعد"
+  const average =
+    reviews.reduce((total, review) => total + Number(review[field] ?? 0), 0) / reviews.length
+  return `${average.toFixed(1)} من 5`
+}
+
+function renderReviewStars(rating) {
+  return "★".repeat(Number(rating)) + "☆".repeat(5 - Number(rating))
 }
 
 function getPriceNumber(price) {

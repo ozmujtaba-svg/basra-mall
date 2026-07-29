@@ -17,7 +17,14 @@ const quickDriverNotes = [
 ]
 const revenuePeriodFilters = ["اليوم", "آخر 7 أيام", "كل الوقت"]
 
-export function DriverDashboard({ onUpdateOrderNote, onUpdateStatus, orders, stores = [] }) {
+export function DriverDashboard({
+  driverId,
+  onUpdateOrderNote,
+  onUpdateStatus,
+  orders,
+  reviews = [],
+  stores = [],
+}) {
   const [orderSearch, setOrderSearch] = useState("")
   const [deliveryStatusFilter, setDeliveryStatusFilter] = useState(deliveryStatusFilters[0])
   const [deliverySort, setDeliverySort] = useState(deliverySortOptions[0])
@@ -57,6 +64,11 @@ export function DriverDashboard({ onUpdateOrderNote, onUpdateStatus, orders, sto
     [deliveredOrders],
   )
   const pendingDeliveryEarnings = deliveryEarnings - paidDeliveryEarnings
+  const driverReviews = useMemo(
+    () => reviews.filter((review) => review.driverId === driverId),
+    [driverId, reviews],
+  )
+  const driverRating = getAverageRating(driverReviews)
   const todayDeliveredOrders = useMemo(
     () => deliveredOrders.filter((order) => isToday(order.createdAt)),
     [deliveredOrders],
@@ -143,6 +155,15 @@ export function DriverDashboard({ onUpdateOrderNote, onUpdateStatus, orders, sto
             <span>أرباح اليوم</span>
           </div>
         </div>
+      </section>
+
+      <section className="driver-rating-card">
+        <div>
+          <span>تقييم الزبائن</span>
+          <strong>{driverRating ? `${driverRating} من 5` : "لا يوجد تقييم بعد"}</strong>
+        </div>
+        <b>{driverRating ? renderStars(Math.round(driverRating)) : "☆☆☆☆☆"}</b>
+        <small>{driverReviews.length} تقييم للتوصيلات المسلّمة</small>
       </section>
 
       <section className="driver-priority-card" id="driver-priority">
@@ -685,6 +706,18 @@ function formatOrderDate(createdAt) {
 
 function getDeliveryFees(orders) {
   return orders.reduce((total, order) => total + Number(order.deliveryFee ?? 0), 0)
+}
+
+function getAverageRating(reviews) {
+  if (reviews.length === 0) return 0
+  return (
+    reviews.reduce((total, review) => total + Number(review.driverRating ?? 0), 0) /
+    reviews.length
+  ).toFixed(1)
+}
+
+function renderStars(rating) {
+  return "★".repeat(Number(rating)) + "☆".repeat(5 - Number(rating))
 }
 
 function filterOrdersByRevenuePeriod(orders, period) {

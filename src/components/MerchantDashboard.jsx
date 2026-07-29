@@ -37,6 +37,7 @@ export function MerchantDashboard({
   onUpdateOrderNote,
   onUpdateProduct,
   orders,
+  reviews = [],
   stores,
 }) {
   const [storeName, setStoreName] = useState("")
@@ -67,6 +68,11 @@ export function MerchantDashboard({
     [selectedStoreName, stores],
   )
   const hasStores = stores.length > 0
+  const merchantReviews = useMemo(
+    () => reviews.filter((review) => stores.some((store) => store.name === review.storeName)),
+    [reviews, stores],
+  )
+  const merchantRating = getAverageRating(merchantReviews, "storeRating")
   const filteredStoresByStatus = useMemo(
     () => stores.filter((store) => matchesStoreStatusFilter(store, storeStatusFilter)),
     [storeStatusFilter, stores],
@@ -347,6 +353,15 @@ export function MerchantDashboard({
           </p>
         </div>
         <strong>{hasStores ? `${stores.length} متجر` : "لا يوجد متجر"}</strong>
+      </section>
+
+      <section className="merchant-rating-card">
+        <div>
+          <span>تقييم الزبائن</span>
+          <strong>{merchantRating ? `${merchantRating} من 5` : "لا يوجد تقييم بعد"}</strong>
+        </div>
+        <b>{merchantRating ? renderStars(Math.round(merchantRating)) : "☆☆☆☆☆"}</b>
+        <small>{merchantReviews.length} تقييم للطلبات المسلّمة</small>
       </section>
 
       {hasStores && (
@@ -1402,6 +1417,17 @@ function getPriceNumber(price) {
   }
 
   return Number(String(price).replace(/[^\d.]/g, ""))
+}
+
+function getAverageRating(reviews, field) {
+  if (reviews.length === 0) return 0
+  return (
+    reviews.reduce((total, review) => total + Number(review[field] ?? 0), 0) / reviews.length
+  ).toFixed(1)
+}
+
+function renderStars(rating) {
+  return "★".repeat(Number(rating)) + "☆".repeat(5 - Number(rating))
 }
 
 function isDiscountActive(product) {

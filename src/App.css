@@ -3521,6 +3521,107 @@ button span {
   }
 }
 
+.order-rating-form,
+.completed-review {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid #ead9ae;
+  border-radius: 14px;
+  background: #fffaf0;
+}
+
+.rating-buttons {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+}
+
+.rating-buttons div {
+  display: flex;
+  direction: ltr;
+}
+
+.rating-buttons button {
+  border: 0;
+  padding: 2px;
+  background: transparent;
+  color: #c8c4b8;
+  font-size: 1.7rem;
+}
+
+.rating-buttons button.active {
+  color: #f5a623;
+}
+
+.order-rating-form textarea {
+  min-height: 80px;
+}
+
+.merchant-rating-card,
+.driver-rating-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  padding: 18px;
+  border: 1px solid #ead9ae;
+  border-radius: 16px;
+  background: #fffaf0;
+}
+
+.merchant-rating-card div,
+.driver-rating-card div {
+  display: grid;
+  gap: 5px;
+}
+
+.merchant-rating-card b,
+.driver-rating-card b {
+  color: #f5a623;
+  font-size: 1.35rem;
+  letter-spacing: 2px;
+}
+
+.review-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.review-summary-grid div,
+.admin-review-list article {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid #e4ddd0;
+  border-radius: 14px;
+  background: white;
+}
+
+.admin-review-list {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-review-list article > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.admin-review-list article > span {
+  color: #ad7200;
+}
+
+.admin-review-list p {
+  margin: 0;
+  color: #56615c;
+}
+
 .merchant-order-alert {
   display: grid;
   grid-template-columns: 1fr auto;

@@ -50,6 +50,10 @@ import {
   fetchCoupons,
   updateCoupon,
 } from "./lib/couponRepository"
+import {
+  createOrderReview,
+  fetchOrderReviews,
+} from "./lib/reviewRepository"
 
 const DELIVERY_FEE = 5000
 const ADMIN_COMMISSION_RATE = 0.05
@@ -77,6 +81,7 @@ function App() {
   const [deliveryOrders, setDeliveryOrders] = useState(savedAppData.deliveryOrders)
   const [drivers, setDrivers] = useState([])
   const [coupons, setCoupons] = useState([])
+  const [reviews, setReviews] = useState([])
   const [driverApprovalStatus, setDriverApprovalStatus] = useState("pending")
   const [favoriteStoreNames, setFavoriteStoreNames] = useState(savedAppData.favoriteStoreNames)
   const [savedCustomerAddress, setSavedCustomerAddress] = useState(savedAppData.savedCustomerAddress)
@@ -309,8 +314,9 @@ function App() {
         fetchMarketplaceStores(),
         accountType === "الإدارة" ? fetchDriverProfiles() : Promise.resolve([]),
         ["الإدارة", "زبون"].includes(accountType) ? fetchCoupons() : Promise.resolve([]),
+        fetchOrderReviews(),
       ])
-        .then(([orders, databaseStores, databaseDrivers, databaseCoupons]) => {
+        .then(([orders, databaseStores, databaseDrivers, databaseCoupons, databaseReviews]) => {
           if (ignore) return
 
           knownOrderStatuses.current = new Map(orders.map((order) => [String(order.id), order.status]))
@@ -323,6 +329,7 @@ function App() {
             setDrivers(databaseDrivers)
           }
           setCoupons(databaseCoupons)
+          setReviews(databaseReviews)
           setStores(() => {
             const marketplaceStores = databaseStores.map(normalizeStore)
             setSelectedStore((currentStore) =>
@@ -411,6 +418,11 @@ function App() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "coupons" },
+        scheduleMarketplaceRefresh,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "order_reviews" },
         scheduleMarketplaceRefresh,
       )
       .subscribe()
@@ -1367,6 +1379,18 @@ function App() {
     }
   }
 
+  async function submitOrderReview(review) {
+    try {
+      const savedReview = await createOrderReview(review)
+      setReviews((current) => [savedReview, ...current])
+      setStorageMessage("")
+      return true
+    } catch (error) {
+      setStorageMessage(`تعذر حفظ التقييم: ${error.message}`)
+      return false
+    }
+  }
+
   async function persistSyncedOrderChange(order, changes) {
     if (!authSession || !order?.isSynced) return true
 
@@ -2014,6 +2038,7 @@ function App() {
             <CustomerDashboard
               cartItems={cartItems}
               coupons={coupons}
+              reviews={reviews}
               customerInfo={customerInfo}
               customerOrders={visibleCustomerOrders}
               deliveryFee={activeDeliveryFee}
@@ -2029,6 +2054,7 @@ function App() {
               onReorder={reorderCustomerOrder}
               onSaveCustomerAddress={saveCustomerAddress}
               onSendOrder={sendOrder}
+              onSubmitReview={submitOrderReview}
               onToggleFavoriteStore={toggleFavoriteStore}
               onUseSavedCustomerAddress={useSavedCustomerAddress}
               orderMessage={orderMessage}
@@ -2042,6 +2068,7 @@ function App() {
             <MerchantDashboard
               commissionRate={platformSettings.commissionRate}
               merchant={activeUser}
+              reviews={reviews}
               onAddProduct={addProductToStore}
               onDeleteProduct={deleteProductFromStore}
               onRegisterStore={registerStore}
@@ -2057,10 +2084,12 @@ function App() {
 
           {accountType === "سائق" && (
             <DriverDashboard
+              driverId={authSession?.user?.id}
               orders={deliveryOrders}
               onUpdateOrderNote={updateOrderNote}
               onUpdateStatus={updateDeliveryStatus}
               stores={stores}
+              reviews={reviews}
             />
           )}
 
@@ -2068,6 +2097,7 @@ function App() {
             <AdminDashboard
               allOrders={allOrders}
               coupons={coupons}
+              reviews={reviews}
               commissionRate={platformSettings.commissionRate}
               onApproveStore={approveStore}
               onChangePassword={changeAdminPassword}
@@ -2283,6 +2313,7 @@ function getDashboardNavItems(accountType) {
       { label: "التقارير المالية", targetId: "admin-financial-reports" },
       { label: "العروض", targetId: "admin-offers" },
       { label: "الكوبونات", targetId: "admin-coupons" },
+      { label: "التقييمات", targetId: "admin-reviews" },
       { label: "الإعدادات", targetId: "admin-settings" },
       { label: "البيانات", targetId: "admin-data" },
       { label: "المتاجر", targetId: "admin-stores" },

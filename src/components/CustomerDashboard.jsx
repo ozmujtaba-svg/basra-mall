@@ -29,9 +29,11 @@ export function CustomerDashboard({
   onSaveCustomerAddress,
   onSelectStore,
   onSendOrder,
+  onSubmitReview,
   onToggleFavoriteStore,
   onUseSavedCustomerAddress,
   orderMessage,
+  reviews,
   selectedStore,
   stores,
 }) {
@@ -46,6 +48,8 @@ export function CustomerDashboard({
   const [couponInput, setCouponInput] = useState("")
   const [appliedCoupon, setAppliedCoupon] = useState(null)
   const [couponMessage, setCouponMessage] = useState("")
+  const [reviewDrafts, setReviewDrafts] = useState({})
+  const [reviewMessage, setReviewMessage] = useState("")
   const safeSelectedStore = useMemo(
     () =>
       selectedStore ?? stores[0] ?? {
@@ -693,6 +697,15 @@ export function CustomerDashboard({
                   </div>
                 ))}
               </div>
+              {order.status === "تم التسليم" && (
+                <OrderReviewForm
+                  draft={reviewDrafts[order.id]}
+                  existingReview={reviews.find((review) => review.orderId === order.id)}
+                  message={reviewMessage}
+                  onChange={(changes) => updateReviewDraft(order.id, changes)}
+                  onSubmit={() => submitReview(order)}
+                />
+              )}
               {order.status === "ملغي" && <div className="canceled-order-note">تم إلغاء الطلب</div>}
               {order.status === "طلب جديد" && (
                 <>
@@ -793,6 +806,36 @@ export function CustomerDashboard({
     setAppliedCoupon(null)
     setCouponInput("")
     setCouponMessage("تم إلغاء الكوبون.")
+  }
+
+  function updateReviewDraft(orderId, changes) {
+    setReviewDrafts((current) => ({
+      ...current,
+      [orderId]: {
+        storeRating: 0,
+        driverRating: 0,
+        comment: "",
+        ...current[orderId],
+        ...changes,
+      },
+    }))
+    setReviewMessage("")
+  }
+
+  async function submitReview(order) {
+    const draft = reviewDrafts[order.id] ?? {}
+    if (!draft.storeRating || !draft.driverRating) {
+      setReviewMessage("اختار تقييم المتجر والسائق قبل الحفظ.")
+      return
+    }
+
+    const saved = await onSubmitReview({
+      orderId: order.id,
+      storeRating: draft.storeRating,
+      driverRating: draft.driverRating,
+      comment: draft.comment ?? "",
+    })
+    setReviewMessage(saved ? "شكرًا، تم حفظ تقييمك." : "تعذر حفظ التقييم أو تم تقييم الطلب سابقًا.")
   }
 
   function confirmCancelOrder(orderId) {
@@ -960,6 +1003,68 @@ function isCouponAvailable(coupon) {
     coupon.usedCount < coupon.maxUses &&
     new Date(coupon.expiresAt).getTime() > Date.now()
   )
+}
+
+function OrderReviewForm({ draft = {}, existingReview, message, onChange, onSubmit }) {
+  if (existingReview) {
+    return (
+      <div className="completed-review">
+        <strong>تم تقييم الطلب</strong>
+        <span>المتجر: {renderStars(existingReview.storeRating)}</span>
+        <span>السائق: {renderStars(existingReview.driverRating)}</span>
+        {existingReview.comment && <small>{existingReview.comment}</small>}
+      </div>
+    )
+  }
+
+  return (
+    <div className="order-rating-form">
+      <strong>قيّم تجربتك</strong>
+      <RatingButtons
+        label="تقييم المتجر"
+        value={draft.storeRating ?? 0}
+        onChange={(storeRating) => onChange({ storeRating })}
+      />
+      <RatingButtons
+        label="تقييم السائق"
+        value={draft.driverRating ?? 0}
+        onChange={(driverRating) => onChange({ driverRating })}
+      />
+      <textarea
+        maxLength="300"
+        onChange={(event) => onChange({ comment: event.target.value })}
+        placeholder="ملاحظة قصيرة اختيارية"
+        value={draft.comment ?? ""}
+      />
+      <button onClick={onSubmit} type="button">حفظ التقييم</button>
+      {message && <small>{message}</small>}
+    </div>
+  )
+}
+
+function RatingButtons({ label, onChange, value }) {
+  return (
+    <div className="rating-buttons">
+      <span>{label}</span>
+      <div>
+        {[1, 2, 3, 4, 5].map((rating) => (
+          <button
+            aria-label={`${label} ${rating} من 5`}
+            className={rating <= value ? "active" : ""}
+            key={rating}
+            onClick={() => onChange(rating)}
+            type="button"
+          >
+            ★
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function renderStars(rating) {
+  return "★".repeat(Number(rating)) + "☆".repeat(5 - Number(rating))
 }
 
 function calculateCartCouponDiscount(items, coupon) {
