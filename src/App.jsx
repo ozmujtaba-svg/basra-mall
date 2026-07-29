@@ -4,6 +4,7 @@ import { categoryImages, customerStores, dashboardData } from "./data"
 import { AdminDashboard } from "./components/AdminDashboard"
 import { CustomerDashboard } from "./components/CustomerDashboard"
 import { DriverDashboard } from "./components/DriverDashboard"
+import { DriverApprovalScreen } from "./components/DriverApprovalScreen"
 import { LoginScreen } from "./components/LoginScreen"
 import { MerchantDashboard } from "./components/MerchantDashboard"
 import { Shell } from "./components/Shell"
@@ -18,6 +19,11 @@ import {
   DEFAULT_DELIVERY_FEES,
   getDeliveryFeeForArea,
 } from "./lib/deliveryZones"
+import {
+  ensurePublicProfile,
+  fetchDriverProfiles,
+  updateDriverApproval,
+} from "./lib/profileRepository"
 import {
   cancelMarketplaceOrder,
   createMarketplaceOrders,
@@ -58,6 +64,8 @@ function App() {
   const [customerOrders, setCustomerOrders] = useState(savedAppData.customerOrders)
   const [merchantOrders, setMerchantOrders] = useState(savedAppData.merchantOrders)
   const [deliveryOrders, setDeliveryOrders] = useState(savedAppData.deliveryOrders)
+  const [drivers, setDrivers] = useState([])
+  const [driverApprovalStatus, setDriverApprovalStatus] = useState("pending")
   const [favoriteStoreNames, setFavoriteStoreNames] = useState(savedAppData.favoriteStoreNames)
   const [savedCustomerAddress, setSavedCustomerAddress] = useState(savedAppData.savedCustomerAddress)
   const [platformSettings, setPlatformSettings] = useState(loadPlatformSettings)
@@ -246,8 +254,12 @@ function App() {
     let refreshTimer
 
     const loadMarketplaceData = () => {
-      Promise.all([fetchMarketplaceOrders(), fetchMarketplaceStores()])
-        .then(([orders, databaseStores]) => {
+      Promise.all([
+        fetchMarketplaceOrders(),
+        fetchMarketplaceStores(),
+        accountType === "الإدارة" ? fetchDriverProfiles() : Promise.resolve([]),
+      ])
+        .then(([orders, databaseStores, databaseDrivers]) => {
           if (ignore) return
 
           knownOrderStatuses.current = new Map(orders.map((order) => [String(order.id), order.status]))
@@ -257,6 +269,7 @@ function App() {
           if (accountType === "الإدارة") {
             setMerchantOrders(orders)
             setDeliveryOrders(orders.filter((order) => order.status !== "طلب جديد"))
+            setDrivers(databaseDrivers)
           }
           setStores(() => {
             const marketplaceStores = databaseStores.map(normalizeStore)
@@ -338,6 +351,11 @@ function App() {
         { event: "*", schema: "public", table: "products" },
         scheduleMarketplaceRefresh,
       )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "profiles" },
+        scheduleMarketplaceRefresh,
+      )
       .subscribe()
 
     return () => {
@@ -346,6 +364,50 @@ function App() {
       supabase.removeChannel(realtimeChannel)
     }
   }, [accountType, authSession, currentView])
+
+  useEffect(() => {
+    if (!supabase || !authSession || currentView !== "driver-approval") return undefined
+
+    let ignore = false
+
+    const refreshDriverApproval = async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("driver_status")
+        .eq("id", authSession.user.id)
+        .single()
+
+      if (ignore || error || !data) return
+
+      const status = data.driver_status ?? "pending"
+      setDriverApprovalStatus(status)
+
+      if (status === "approved") {
+        setCurrentView("dashboard")
+        showNotification("تم قبول حساب السائق. هسه تقدر تستلم مهام التوصيل.", "success", "سائق")
+      }
+    }
+
+    refreshDriverApproval()
+    const approvalChannel = supabase
+      .channel(`driver-approval-${authSession.user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          filter: `id=eq.${authSession.user.id}`,
+          schema: "public",
+          table: "profiles",
+        },
+        refreshDriverApproval,
+      )
+      .subscribe()
+
+    return () => {
+      ignore = true
+      supabase.removeChannel(approvalChannel)
+    }
+  }, [authSession, currentView])
 
   async function enableBrowserNotifications() {
     const permission = await requestBrowserNotificationPermission()
@@ -640,13 +702,29 @@ function App() {
         return
       }
     } else {
-      const result = await supabase.from("profiles").upsert({
-        id: user.id,
-        full_name: nextName,
-        phone: nextPhone,
-        role: getDatabaseRole(nextAccountType),
-      }, { onConflict: "id" })
-      error = result.error
+      try {
+        const profile = await ensurePublicProfile({
+          accountType: nextAccountType,
+          fullName: nextName,
+          phone: nextPhone,
+          userId: user.id,
+        })
+
+        if (nextAccountType === "سائق") {
+          const approvalStatus = profile.driver_status ?? "pending"
+          setAuthSession(session)
+          setAuthEmail(user.email ?? "")
+          setAccountType(nextAccountType)
+          setLoginInfo((info) => ({ ...info, name: nextName, phone: nextPhone }))
+          setSavedAccount({ accountType: nextAccountType, name: nextName, phone: nextPhone })
+          setDriverApprovalStatus(approvalStatus)
+          setCurrentView(approvalStatus === "approved" ? "dashboard" : "driver-approval")
+          setLoginMessage("")
+          return
+        }
+      } catch (profileError) {
+        error = profileError
+      }
     }
 
     if (error) {
@@ -1330,6 +1408,22 @@ function App() {
     )
   }
 
+  async function changeDriverApproval(driverId, status) {
+    try {
+      const updatedDriver = await updateDriverApproval(driverId, status)
+      setDrivers((currentDrivers) =>
+        currentDrivers.map((driver) => (driver.id === driverId ? updatedDriver : driver)),
+      )
+      showNotification(
+        `تم ${status === "approved" ? "قبول" : "رفض"} حساب السائق ${updatedDriver.name}.`,
+        "success",
+        "الإدارة",
+      )
+    } catch (error) {
+      showNotification(`تعذر تحديث حساب السائق: ${error.message}`, "warning", "الإدارة")
+    }
+  }
+
   async function cancelOrder(orderId) {
     const orderToCancel =
       customerOrders.find((order) => order.id === orderId) ??
@@ -1695,6 +1789,12 @@ function App() {
           onLoginInfoChange={setLoginInfo}
           savedAccountWarning={savedAccountWarning}
         />
+      ) : currentView === "driver-approval" ? (
+        <DriverApprovalScreen
+          name={activeUser.name}
+          onBack={logoutCurrentSession}
+          status={driverApprovalStatus}
+        />
       ) : (
         <Shell
           dashboard={dashboard}
@@ -1790,8 +1890,10 @@ function App() {
               onReviewStoreAgain={reviewStoreAgain}
               onResetData={resetDemoData}
               deliveredOrders={deliveredOrders}
+              drivers={drivers}
               estimatedRevenue={estimatedRevenue}
               onSettingsChange={updatePlatformSettings}
+              onUpdateDriverApproval={changeDriverApproval}
               onUpdateOrderStatus={updateAdminOrderStatus}
               settings={platformSettings}
               stores={stores}
@@ -1984,6 +2086,7 @@ function getDashboardNavItems(accountType) {
     return [
       { label: "ملخص المشروع", targetId: "admin-summary" },
       { label: "المراقبة", targetId: "admin-monitor" },
+      { label: "السائقين", targetId: "admin-drivers" },
       { label: "الإعدادات", targetId: "admin-settings" },
       { label: "البيانات", targetId: "admin-data" },
       { label: "المتاجر", targetId: "admin-stores" },
@@ -2388,12 +2491,6 @@ function getPublicAccountType(accountType) {
   return ["زبون", "صاحب متجر", "سائق", "الإدارة"].includes(accountType)
     ? accountType
     : "زبون"
-}
-
-function getDatabaseRole(accountType) {
-  return { زبون: "customer", "صاحب متجر": "merchant", سائق: "driver", الإدارة: "admin" }[
-    accountType
-  ]
 }
 
 export default App

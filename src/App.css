@@ -2374,6 +2374,159 @@ button span {
   background: #eef7f5;
 }
 
+.driver-approval-screen {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: linear-gradient(145deg, #071d3d, #0c6b66);
+}
+
+.driver-approval-card {
+  width: min(560px, 100%);
+  box-sizing: border-box;
+  padding: 30px;
+  border-radius: 22px;
+  background: white;
+  box-shadow: 0 24px 70px rgba(7, 29, 61, 0.28);
+  text-align: center;
+}
+
+.driver-approval-card > span {
+  color: #0c6b66;
+  font-weight: bold;
+}
+
+.driver-approval-card h1 {
+  margin: 10px 0;
+  color: #071d3d;
+}
+
+.driver-approval-card p {
+  color: #65706b;
+  line-height: 1.9;
+}
+
+.driver-approval-status {
+  display: grid;
+  gap: 5px;
+  margin: 20px 0;
+  padding: 16px;
+  border: 1px solid #ead5a2;
+  border-radius: 14px;
+  background: #fff9e8;
+}
+
+.driver-approval-status strong {
+  color: #8a5d11;
+  font-size: 20px;
+}
+
+.driver-approval-status small {
+  color: #65706b;
+}
+
+.driver-approval-card button {
+  width: 100%;
+  border: 0;
+  background: #071d3d;
+  color: white;
+  font-weight: bold;
+}
+
+.driver-approval-screen.rejected .driver-approval-status {
+  border-color: #e3b7aa;
+  background: #fff2ec;
+}
+
+.driver-approval-screen.rejected .driver-approval-status strong {
+  color: #a3422e;
+}
+
+.admin-driver-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+}
+
+.admin-driver-header h3 {
+  margin: 0;
+}
+
+.admin-driver-header p {
+  margin-bottom: 0;
+}
+
+.admin-driver-header > span {
+  border-radius: 999px;
+  background: #fff9e8;
+  color: #8a5d11;
+  padding: 9px 12px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.admin-driver-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.admin-driver-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  padding: 15px;
+  border: 1px solid #ead5a2;
+  border-radius: 14px;
+  background: #fff9e8;
+}
+
+.admin-driver-card.approved {
+  border-color: #c9ddd9;
+  background: #eef7f5;
+}
+
+.admin-driver-card.rejected {
+  border-color: #e3b7aa;
+  background: #fff2ec;
+}
+
+.admin-driver-card span,
+.admin-driver-card strong,
+.admin-driver-card small {
+  display: block;
+  line-height: 1.7;
+}
+
+.admin-driver-card span,
+.admin-driver-card small {
+  color: #65706b;
+}
+
+.admin-driver-card strong {
+  color: #071d3d;
+  font-size: 18px;
+}
+
+.admin-driver-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.admin-driver-actions button {
+  border: 0;
+  background: #0c6b66;
+  color: white;
+  font-weight: bold;
+}
+
+.admin-driver-actions button.reject {
+  background: #a3422e;
+}
+
 .driver-start-card span,
 .driver-start-card p {
   color: #65706b;

@@ -1,6 +1,7 @@
 create extension if not exists pgcrypto;
 
 create type public.account_role as enum ('customer', 'merchant', 'driver', 'admin');
+create type public.driver_approval_status as enum ('pending', 'approved', 'rejected');
 create type public.store_status as enum ('pending', 'approved', 'rejected');
 create type public.order_status as enum (
   'new',
@@ -16,6 +17,7 @@ create table public.profiles (
   role public.account_role not null default 'customer',
   full_name text not null,
   phone text not null unique,
+  driver_status public.driver_approval_status not null default 'approved',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -172,7 +174,7 @@ begin
 end;
 $$;
 
-create or replace function public.protect_profile_role()
+create or replace function public.protect_profile_access()
 returns trigger
 language plpgsql
 as $$
@@ -180,14 +182,17 @@ begin
   if new.role is distinct from old.role and not public.is_admin() then
     raise exception 'Only an administrator can change an account role';
   end if;
+  if new.driver_status is distinct from old.driver_status and not public.is_admin() then
+    raise exception 'Only an administrator can change driver approval';
+  end if;
   return new;
 end;
 $$;
 
 create trigger profiles_set_updated_at before update on public.profiles
 for each row execute function public.set_updated_at();
-create trigger profiles_protect_role before update on public.profiles
-for each row execute function public.protect_profile_role();
+create trigger profiles_protect_access before update on public.profiles
+for each row execute function public.protect_profile_access();
 create trigger stores_set_updated_at before update on public.stores
 for each row execute function public.set_updated_at();
 create trigger products_set_updated_at before update on public.products
@@ -210,7 +215,11 @@ alter table public.platform_settings enable row level security;
 create policy "profiles_read_own_or_admin" on public.profiles
 for select to authenticated using (id = auth.uid() or public.is_admin());
 create policy "profiles_insert_own" on public.profiles
-for insert to authenticated with check (id = auth.uid() and role <> 'admin');
+for insert to authenticated with check (
+  id = auth.uid()
+  and role <> 'admin'
+  and (role <> 'driver' or driver_status = 'pending')
+);
 create policy "profiles_update_own_or_admin" on public.profiles
 for update to authenticated using (id = auth.uid() or public.is_admin())
 with check (id = auth.uid() or public.is_admin());

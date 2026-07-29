@@ -40,6 +40,7 @@ export function AdminDashboard({
   allOrders,
   commissionRate,
   deliveredOrders,
+  drivers,
   estimatedRevenue,
   lastSaveTime,
   onApproveStore,
@@ -50,6 +51,7 @@ export function AdminDashboard({
   onReviewStoreAgain,
   onResetData,
   onSettingsChange,
+  onUpdateDriverApproval,
   onUpdateOrderStatus,
   settings,
   stores,
@@ -854,6 +856,50 @@ export function AdminDashboard({
             ))}
           </div>
         </div>
+      </section>
+
+      <section className="admin-section" id="admin-drivers">
+        <div className="admin-driver-header">
+          <div>
+            <h3>اعتماد حسابات السائقين</h3>
+            <p>السائق الجديد ما يشوف مهام التوصيل إلا بعد موافقة الإدارة.</p>
+          </div>
+          <span>{drivers.filter((driver) => driver.status === "pending").length} بانتظار القرار</span>
+        </div>
+        {drivers.length === 0 ? (
+          <div className="empty-search">ماكو حسابات سائقين مسجلة حاليًا.</div>
+        ) : (
+          <div className="admin-driver-list">
+            {drivers.map((driver) => (
+              <article className={`admin-driver-card ${driver.status}`} key={driver.id}>
+                <div>
+                  <span>{getDriverApprovalLabel(driver.status)}</span>
+                  <strong>{driver.name}</strong>
+                  <small>{driver.phone}</small>
+                </div>
+                <div className="admin-driver-actions">
+                  {driver.status !== "approved" && (
+                    <button
+                      onClick={() => onUpdateDriverApproval(driver.id, "approved")}
+                      type="button"
+                    >
+                      قبول السائق
+                    </button>
+                  )}
+                  {driver.status !== "rejected" && (
+                    <button
+                      className="reject"
+                      onClick={() => onUpdateDriverApproval(driver.id, "rejected")}
+                      type="button"
+                    >
+                      رفض
+                    </button>
+                  )}
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="admin-section" id="admin-password">
@@ -2292,6 +2338,12 @@ function getStoreStatusLabel(status) {
   }
 
   return "موافق عليه"
+}
+
+function getDriverApprovalLabel(status) {
+  if (status === "approved") return "معتمد"
+  if (status === "rejected") return "مرفوض"
+  return "بانتظار الموافقة"
 }
 
 function getStoreStatusNote(status) {
