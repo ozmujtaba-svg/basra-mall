@@ -110,10 +110,22 @@ function fromDatabaseStore(store, owner = {}) {
 
 function fromDatabaseProduct(product) {
   const quantity = Number(product.quantity)
+  const basePrice = Number(product.price)
+  const discountPercent = Number(product.discount_percent ?? 0)
+  const discountEndsAt = product.discount_ends_at ?? ""
+  const hasActiveDiscount =
+    discountPercent > 0 && Boolean(discountEndsAt) && new Date(discountEndsAt).getTime() > Date.now()
+  const effectivePrice = hasActiveDiscount
+    ? Math.round(basePrice * (1 - discountPercent / 100))
+    : basePrice
+
   return {
     id: product.id,
     name: product.name,
-    price: `${Number(product.price).toLocaleString("en-US")} د.ع`,
+    price: `${effectivePrice.toLocaleString("en-US")} د.ع`,
+    originalPrice: `${basePrice.toLocaleString("en-US")} د.ع`,
+    discountPercent,
+    discountEndsAt,
     quantity,
     image: product.image_url,
     status: !product.is_visible ? "مخفي مؤقتًا" : quantity === 0 ? "نفد" : "متوفر",
@@ -126,6 +138,8 @@ function toDatabaseProduct(storeId, product) {
     store_id: storeId,
     name: product.name,
     price: Number(product.price),
+    discount_percent: Number(product.discountPercent ?? 0),
+    discount_ends_at: product.discountEndsAt || null,
     quantity: Number(product.quantity),
     image_url: product.image || null,
     is_visible: product.status !== "مخفي مؤقتًا",

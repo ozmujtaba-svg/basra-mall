@@ -1744,7 +1744,10 @@ function App() {
     const targetStore = stores.find((store) => store.name === storeName)
     let newProduct = {
       name: product.name,
-      price: `${Number(product.price).toLocaleString("en-US")} د.ع`,
+      price: formatEffectiveProductPrice(product),
+      originalPrice: `${Number(product.price).toLocaleString("en-US")} د.ع`,
+      discountPercent: Number(product.discountPercent ?? 0),
+      discountEndsAt: product.discountEndsAt ?? "",
       quantity: product.quantity,
       image: product.image || categoryImages[storeCategory],
       status: Number(product.quantity) === 0 ? "نفد" : product.status || "متوفر",
@@ -1793,7 +1796,10 @@ function App() {
     const targetProduct = targetStore?.products.find((item) => item.name === oldProductName)
     let updatedProduct = {
       name: product.name,
-      price: `${Number(product.price).toLocaleString("en-US")} د.ع`,
+      price: formatEffectiveProductPrice(product),
+      originalPrice: `${Number(product.price).toLocaleString("en-US")} د.ع`,
+      discountPercent: Number(product.discountPercent ?? 0),
+      discountEndsAt: product.discountEndsAt ?? "",
       quantity: product.quantity,
       image: product.image || categoryImages[storeCategory],
       status: Number(product.quantity) === 0 ? "نفد" : product.status || "متوفر",
@@ -2227,6 +2233,7 @@ function getDashboardNavItems(accountType) {
       { label: "السائقين", targetId: "admin-drivers" },
       { label: "تسويات المتاجر", targetId: "admin-merchant-payouts" },
       { label: "التقارير المالية", targetId: "admin-financial-reports" },
+      { label: "العروض", targetId: "admin-offers" },
       { label: "الإعدادات", targetId: "admin-settings" },
       { label: "البيانات", targetId: "admin-data" },
       { label: "المتاجر", targetId: "admin-stores" },
@@ -2557,10 +2564,37 @@ function normalizeStore(store) {
 }
 
 function normalizeProduct(product, fallbackImage) {
+  const originalPrice = product.originalPrice ?? product.price
+  const discountActive =
+    Number(product.discountPercent) > 0 &&
+    Boolean(product.discountEndsAt) &&
+    new Date(product.discountEndsAt).getTime() > Date.now()
+
   return {
     ...product,
+    originalPrice,
+    price: discountActive
+      ? formatEffectiveProductPrice({
+          price: getPriceValue(originalPrice),
+          discountPercent: product.discountPercent,
+          discountEndsAt: product.discountEndsAt,
+        })
+      : originalPrice,
     image: normalizeMarketplaceImage(product.image, fallbackImage),
   }
+}
+
+function formatEffectiveProductPrice(product) {
+  const basePrice = Number(product.price)
+  const discountActive =
+    Number(product.discountPercent) > 0 &&
+    Boolean(product.discountEndsAt) &&
+    new Date(product.discountEndsAt).getTime() > Date.now()
+  const price = discountActive
+    ? Math.round(basePrice * (1 - Number(product.discountPercent) / 100))
+    : basePrice
+
+  return `${price.toLocaleString("en-US")} د.ع`
 }
 
 function normalizeMarketplaceImage(image, fallbackImage) {

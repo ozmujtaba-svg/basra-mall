@@ -105,6 +105,15 @@ export function AdminDashboard({
     () => stores.reduce((total, store) => total + store.products.length, 0),
     [stores],
   )
+  const activeOffers = useMemo(
+    () =>
+      stores.flatMap((store) =>
+        store.products
+          .filter(isProductOfferActive)
+          .map((product) => ({ ...product, storeName: store.name })),
+      ),
+    [stores],
+  )
   const topStore = useMemo(() => getTopStore(nonCanceledOrders), [nonCanceledOrders])
   const revenuePeriodOrders = useMemo(
     () => filterOrdersByRevenuePeriod(allOrders, revenuePeriodFilter),
@@ -1166,6 +1175,35 @@ export function AdminDashboard({
             <strong>{formatMoney(revenuePeriodStats.commission)}</strong>
           </div>
         </div>
+      </section>
+
+      <section className="admin-section" id="admin-offers">
+        <div className="admin-monitor-header">
+          <div>
+            <h3>العروض النشطة</h3>
+            <p>متابعة خصومات المتاجر وأسعارها ووقت انتهائها من مكان واحد.</p>
+          </div>
+          <span>{activeOffers.length} عرض نشط</span>
+        </div>
+        {activeOffers.length === 0 ? (
+          <div className="empty-search">ماكو عروض نشطة حاليًا.</div>
+        ) : (
+          <div className="admin-offers-grid">
+            {activeOffers.map((product) => (
+              <article key={`${product.storeName}-${product.name}`}>
+                <span>{product.storeName}</span>
+                <strong>{product.name}</strong>
+                <div>
+                  <del>{product.originalPrice}</del>
+                  <b>{product.price}</b>
+                </div>
+                <small>
+                  خصم {product.discountPercent}% — ينتهي {formatOrderDate(product.discountEndsAt)}
+                </small>
+              </article>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="admin-section" id="admin-stores">
@@ -2698,6 +2736,14 @@ function isWithinLastDays(createdAt, days) {
 
 function formatMoney(value) {
   return `${Math.round(Number(value)).toLocaleString("en-US")} د.ع`
+}
+
+function isProductOfferActive(product) {
+  return (
+    Number(product.discountPercent) > 0 &&
+    Boolean(product.discountEndsAt) &&
+    new Date(product.discountEndsAt).getTime() > Date.now()
+  )
 }
 
 function getPriceNumber(price) {

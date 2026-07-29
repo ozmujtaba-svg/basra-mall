@@ -3382,6 +3382,64 @@ button span {
   gap: 10px;
 }
 
+.merchant-offer-price,
+.customer-offer-price {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.merchant-offer-price del,
+.customer-offer-price del {
+  color: #8b8f8d;
+}
+
+.merchant-offer-price b,
+.customer-offer-price strong {
+  color: #b42318;
+  font-size: 1.05rem;
+}
+
+.merchant-offer-price small,
+.customer-offer-price small {
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: #fee4e2;
+  color: #b42318;
+  font-weight: 800;
+}
+
+.admin-offers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+}
+
+.admin-offers-grid article {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid #ead5d1;
+  border-radius: 14px;
+  background: #fff8f7;
+}
+
+.admin-offers-grid article > span,
+.admin-offers-grid small {
+  color: #66706c;
+}
+
+.admin-offers-grid article div {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.admin-offers-grid b {
+  color: #b42318;
+}
+
 .merchant-order-alert {
   display: grid;
   grid-template-columns: 1fr auto;

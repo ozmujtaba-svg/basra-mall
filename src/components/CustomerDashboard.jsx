@@ -332,7 +332,15 @@ export function CustomerDashboard({
                   )}
                   <div>
                     <h3>{product.name}</h3>
-                    <span>{product.price}</span>
+                    {isDiscountActive(product) ? (
+                      <span className="customer-offer-price">
+                        <del>{product.originalPrice}</del>
+                        <strong>{product.price}</strong>
+                        <small>خصم {product.discountPercent}%</small>
+                      </span>
+                    ) : (
+                      <span>{product.originalPrice ?? product.price}</span>
+                    )}
                     <small className={`product-status ${isSoldOut ? "sold-out" : "available"}`}>
                       {isSoldOut ? "نفد" : "متوفر"}
                     </small>
@@ -878,6 +886,14 @@ function copyTextFallback(text) {
 
 function getPriceValue(price) {
   return Number(String(price).replace(/[^\d]/g, ""))
+}
+
+function isDiscountActive(product) {
+  return (
+    Number(product.discountPercent) > 0 &&
+    Boolean(product.discountEndsAt) &&
+    new Date(product.discountEndsAt).getTime() > Date.now()
+  )
 }
 
 function formatMoney(value) {

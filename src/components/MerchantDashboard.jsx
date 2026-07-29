@@ -49,6 +49,8 @@ export function MerchantDashboard({
   const [productQuantity, setProductQuantity] = useState("")
   const [productImage, setProductImage] = useState("")
   const [productStatus, setProductStatus] = useState(productStatuses[0])
+  const [productDiscount, setProductDiscount] = useState("")
+  const [productDiscountEndsAt, setProductDiscountEndsAt] = useState("")
   const [editingProductName, setEditingProductName] = useState("")
   const [orderSearch, setOrderSearch] = useState("")
   const [orderStatusFilter, setOrderStatusFilter] = useState("الكل")
@@ -167,6 +169,7 @@ export function MerchantDashboard({
 
     const numericPrice = Number(productPrice)
     const numericQuantity = Number(productQuantity)
+    const numericDiscount = Number(productDiscount || 0)
 
     if (!Number.isFinite(numericPrice) || numericPrice <= 0) {
       setProductMessage("السعر غير صحيح. اكتب رقم فقط بدون حروف، مثال: 25000")
@@ -178,12 +181,28 @@ export function MerchantDashboard({
       return
     }
 
+    if (!Number.isFinite(numericDiscount) || numericDiscount < 0 || numericDiscount > 90) {
+      setProductMessage("نسبة الخصم لازم تكون بين 0 و90.")
+      return
+    }
+
+    if (
+      numericDiscount > 0 &&
+      (!productDiscountEndsAt || new Date(productDiscountEndsAt).getTime() <= Date.now())
+    ) {
+      setProductMessage("اختار وقت انتهاء للعرض يكون بعد الوقت الحالي.")
+      return
+    }
+
     const productData = {
       name: productName.trim(),
       price: numericPrice,
       quantity: numericQuantity,
       image: productImage.trim(),
       status: numericQuantity === 0 ? "نفد" : productStatus,
+      discountPercent: numericDiscount,
+      discountEndsAt:
+        numericDiscount > 0 ? new Date(productDiscountEndsAt).toISOString() : "",
     }
 
     if (editingProductName) {
@@ -246,6 +265,8 @@ export function MerchantDashboard({
     setProductQuantity(String(product.quantity))
     setProductImage(product.image ?? "")
     setProductStatus(product.status ?? productStatuses[0])
+    setProductDiscount(product.discountPercent ? String(product.discountPercent) : "")
+    setProductDiscountEndsAt(formatDateTimeLocal(product.discountEndsAt))
     setEditingProductName(product.name)
     setProductMessage("عدّل البيانات بالنموذج، وبعدها اضغط حفظ التعديل.")
   }
@@ -271,6 +292,8 @@ export function MerchantDashboard({
     setProductQuantity("")
     setProductImage("")
     setProductStatus(productStatuses[0])
+    setProductDiscount("")
+    setProductDiscountEndsAt("")
     setEditingProductName("")
   }
 
@@ -475,6 +498,30 @@ export function MerchantDashboard({
           </label>
 
           <label>
+            نسبة الخصم
+            <input
+              disabled={!hasStores}
+              max="90"
+              min="0"
+              type="number"
+              value={productDiscount}
+              onChange={(event) => setProductDiscount(event.target.value)}
+              placeholder="مثال: 20"
+            />
+          </label>
+
+          <label>
+            انتهاء العرض
+            <input
+              disabled={!hasStores || Number(productDiscount || 0) <= 0}
+              min={formatDateTimeLocal(new Date().toISOString())}
+              type="datetime-local"
+              value={productDiscountEndsAt}
+              onChange={(event) => setProductDiscountEndsAt(event.target.value)}
+            />
+          </label>
+
+          <label>
             حالة المنتج
             <select
               disabled={!hasStores}
@@ -566,7 +613,15 @@ export function MerchantDashboard({
                   )}
                   <div>
                     <strong>{product.name}</strong>
-                    <span>{product.price}</span>
+                    {isDiscountActive(product) ? (
+                      <span className="merchant-offer-price">
+                        <del>{product.originalPrice}</del>
+                        <b>{product.price}</b>
+                        <small>خصم {product.discountPercent}%</small>
+                      </span>
+                    ) : (
+                      <span>{product.originalPrice ?? product.price}</span>
+                    )}
                     {hasLowStock && <small className="low-stock-note">تنبيه: الكمية قليلة</small>}
                   </div>
                   <div>
@@ -1347,4 +1402,20 @@ function getPriceNumber(price) {
   }
 
   return Number(String(price).replace(/[^\d.]/g, ""))
+}
+
+function isDiscountActive(product) {
+  return (
+    Number(product.discountPercent) > 0 &&
+    Boolean(product.discountEndsAt) &&
+    new Date(product.discountEndsAt).getTime() > Date.now()
+  )
+}
+
+function formatDateTimeLocal(value) {
+  if (!value) return ""
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ""
+  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+  return localDate.toISOString().slice(0, 16)
 }
