@@ -68,6 +68,7 @@ export function MerchantDashboard({
   const [pendingDeleteProductName, setPendingDeleteProductName] = useState("")
   const [returnResponses, setReturnResponses] = useState({})
   const [returnMessage, setReturnMessage] = useState("")
+  const [productSaving, setProductSaving] = useState(false)
   const selectedStore = useMemo(
     () => stores.find((store) => store.name === selectedStoreName) ?? stores[0],
     [selectedStoreName, stores],
@@ -245,13 +246,18 @@ export function MerchantDashboard({
       variants: productVariants,
     }
 
+    if (productSaving) return
+    setProductSaving(true)
+
     if (editingProductName) {
       const productUpdated = await onUpdateProduct(selectedStoreName, editingProductName, productData)
       if (productUpdated === false) {
+        setProductSaving(false)
         setProductMessage("تعذر تعديل المنتج بقاعدة البيانات. حاول مرة ثانية.")
         return
       }
       resetProductForm()
+      setProductSaving(false)
       setProductMessage(
         "تم تعديل المنتج بنجاح. السعر والكمية والحالة تحدّثت داخل متجر الزبون.",
       )
@@ -260,10 +266,12 @@ export function MerchantDashboard({
 
     const productAdded = await onAddProduct(selectedStoreName, productData)
     if (productAdded === false) {
+      setProductSaving(false)
       setProductMessage("تعذر حفظ المنتج بقاعدة البيانات. حاول مرة ثانية.")
       return
     }
     resetProductForm()
+    setProductSaving(false)
     setProductMessage(
       "تمت إضافة المنتج بنجاح. إذا المتجر مقبول، المنتج يظهر للزبون ويكدر يضيفه للسلة.",
     )
@@ -723,8 +731,12 @@ export function MerchantDashboard({
             </div>
           )}
 
-          <button className="register-button" disabled={!hasStores} type="submit">
-            {editingProductName ? "حفظ التعديل" : "حفظ المنتج"}
+          <button className="register-button" disabled={!hasStores || productSaving} type="submit">
+            {productSaving
+              ? "جاري الحفظ..."
+              : editingProductName
+                ? "حفظ التعديل"
+                : "حفظ المنتج"}
           </button>
 
           {editingProductName && (

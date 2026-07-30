@@ -55,6 +55,7 @@ export function CustomerDashboard({
   const [returnDrafts, setReturnDrafts] = useState({})
   const [returnMessage, setReturnMessage] = useState("")
   const [productVariantSelections, setProductVariantSelections] = useState({})
+  const [sendingOrder, setSendingOrder] = useState(false)
   const safeSelectedStore = useMemo(
     () =>
       selectedStore ?? stores[0] ?? {
@@ -673,8 +674,12 @@ export function CustomerDashboard({
               <strong>{formatMoney(finalTotal)}</strong>
             </div>
 
-            <button className="confirm-send-button" onClick={confirmSendOrder}>
-              تأكيد إرسال الطلب
+            <button
+              className="confirm-send-button"
+              disabled={sendingOrder}
+              onClick={confirmSendOrder}
+            >
+              {sendingOrder ? "جاري إرسال الطلب..." : "تأكيد إرسال الطلب"}
             </button>
           </div>
         )}
@@ -835,9 +840,15 @@ export function CustomerDashboard({
     setShowOrderReview(true)
   }
 
-  function confirmSendOrder() {
-    onSendOrder(paymentMethod, appliedCoupon?.code ?? "")
-    setShowOrderReview(false)
+  async function confirmSendOrder() {
+    if (sendingOrder) return
+    setSendingOrder(true)
+    try {
+      await onSendOrder(paymentMethod, appliedCoupon?.code ?? "")
+      setShowOrderReview(false)
+    } finally {
+      setSendingOrder(false)
+    }
   }
 
   function applyCoupon() {

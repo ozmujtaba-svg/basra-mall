@@ -1,12 +1,8 @@
-import { useEffect, useRef, useState } from "react"
+import { lazy, Suspense, useEffect, useRef, useState } from "react"
 import "./App.css"
 import { categoryImages, customerStores, dashboardData } from "./data"
-import { AdminDashboard } from "./components/AdminDashboard"
-import { CustomerDashboard } from "./components/CustomerDashboard"
-import { DriverDashboard } from "./components/DriverDashboard"
 import { DriverApprovalScreen } from "./components/DriverApprovalScreen"
 import { LoginScreen } from "./components/LoginScreen"
-import { MerchantDashboard } from "./components/MerchantDashboard"
 import { Shell } from "./components/Shell"
 import { isSupabaseConfigured, supabase } from "./lib/supabase"
 import {
@@ -59,6 +55,19 @@ import {
   fetchReturnRequests,
   updateReturnRequest,
 } from "./lib/returnRepository"
+
+const AdminDashboard = lazy(() =>
+  import("./components/AdminDashboard").then((module) => ({ default: module.AdminDashboard })),
+)
+const CustomerDashboard = lazy(() =>
+  import("./components/CustomerDashboard").then((module) => ({ default: module.CustomerDashboard })),
+)
+const DriverDashboard = lazy(() =>
+  import("./components/DriverDashboard").then((module) => ({ default: module.DriverDashboard })),
+)
+const MerchantDashboard = lazy(() =>
+  import("./components/MerchantDashboard").then((module) => ({ default: module.MerchantDashboard })),
+)
 
 const DELIVERY_FEE = 5000
 const ADMIN_COMMISSION_RATE = 0.05
@@ -2115,6 +2124,7 @@ function App() {
           onBack={logoutCurrentSession}
           onForgetAccount={forgetSavedAccount}
         >
+          <Suspense fallback={<DashboardLoading />}>
           {accountType === "زبون" && (
             <CustomerDashboard
               cartItems={cartItems}
@@ -2208,9 +2218,20 @@ function App() {
               stores={stores}
             />
           )}
+          </Suspense>
         </Shell>
       )}
     </main>
+  )
+}
+
+function DashboardLoading() {
+  return (
+    <div className="dashboard-loading" role="status">
+      <span className="dashboard-loading-spinner" />
+      <strong>جاري فتح الواجهة...</strong>
+      <small>لحظات وتظهر بيانات حسابك.</small>
+    </div>
   )
 }
 
