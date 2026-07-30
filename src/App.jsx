@@ -4,6 +4,7 @@ import { categoryImages, customerStores, dashboardData } from "./data"
 import { DriverApprovalScreen } from "./components/DriverApprovalScreen"
 import { LoginScreen } from "./components/LoginScreen"
 import { Shell } from "./components/Shell"
+import { SupportCenter } from "./components/SupportCenter"
 import { isSupabaseConfigured, supabase } from "./lib/supabase"
 import {
   getBrowserNotificationPermission,
@@ -55,6 +56,11 @@ import {
   fetchReturnRequests,
   updateReturnRequest,
 } from "./lib/returnRepository"
+import {
+  createSupportTicket,
+  fetchSupportTickets,
+  updateSupportTicket,
+} from "./lib/supportRepository"
 
 const AdminDashboard = lazy(() =>
   import("./components/AdminDashboard").then((module) => ({ default: module.AdminDashboard })),
@@ -97,6 +103,7 @@ function App() {
   const [coupons, setCoupons] = useState([])
   const [reviews, setReviews] = useState([])
   const [returnRequests, setReturnRequests] = useState([])
+  const [supportTickets, setSupportTickets] = useState([])
   const [driverApprovalStatus, setDriverApprovalStatus] = useState("pending")
   const [favoriteStoreNames, setFavoriteStoreNames] = useState(savedAppData.favoriteStoreNames)
   const [savedCustomerAddress, setSavedCustomerAddress] = useState(savedAppData.savedCustomerAddress)
@@ -331,6 +338,7 @@ function App() {
         ["الإدارة", "زبون"].includes(accountType) ? fetchCoupons() : Promise.resolve([]),
         fetchOrderReviews(),
         fetchReturnRequests(),
+        fetchSupportTickets(),
       ])
         .then(([
           orders,
@@ -339,6 +347,7 @@ function App() {
           databaseCoupons,
           databaseReviews,
           databaseReturns,
+          databaseSupportTickets,
         ]) => {
           if (ignore) return
 
@@ -354,6 +363,7 @@ function App() {
           setCoupons(databaseCoupons)
           setReviews(databaseReviews)
           setReturnRequests(databaseReturns)
+          setSupportTickets(databaseSupportTickets)
           setStores(() => {
             const marketplaceStores = databaseStores.map(normalizeStore)
             setSelectedStore((currentStore) =>
@@ -452,6 +462,11 @@ function App() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "return_requests" },
+        scheduleMarketplaceRefresh,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "support_tickets" },
         scheduleMarketplaceRefresh,
       )
       .subscribe()
@@ -2062,6 +2077,40 @@ function App() {
     return true
   }
 
+  async function submitSupportTicket(ticket) {
+    if (!authSession?.user?.id) {
+      return { success: false, message: "جلسة الحساب غير متصلة. سجل دخول مرة ثانية." }
+    }
+
+    try {
+      const createdTicket = await createSupportTicket({
+        ...ticket,
+        accountType,
+        name: activeUser.name,
+        phone: activeUser.phone,
+        userId: authSession.user.id,
+      })
+      setSupportTickets((tickets) => [createdTicket, ...tickets])
+      showNotification("تم إرسال تذكرة الدعم للإدارة بنجاح.", "success", accountType)
+      return { success: true, message: `تم إرسال التذكرة رقم ${createdTicket.id} للإدارة.` }
+    } catch (error) {
+      return { success: false, message: `تعذر إرسال التذكرة: ${error.message}` }
+    }
+  }
+
+  async function changeSupportTicket(ticketId, changes) {
+    try {
+      const updatedTicket = await updateSupportTicket(ticketId, changes)
+      setSupportTickets((tickets) =>
+        tickets.map((ticket) => ticket.id === ticketId ? updatedTicket : ticket),
+      )
+      showNotification(`تم تحديث التذكرة رقم ${ticketId}.`, "success", "الإدارة")
+      return { success: true, message: `تم حفظ رد وحالة التذكرة رقم ${ticketId}.` }
+    } catch (error) {
+      return { success: false, message: `تعذر تحديث التذكرة: ${error.message}` }
+    }
+  }
+
   return (
     <main className="page">
       {currentView === "login" ? (
@@ -2218,6 +2267,22 @@ function App() {
               stores={stores}
             />
           )}
+          <SupportCenter
+            accountType={accountType}
+            onCreateTicket={submitSupportTicket}
+            onUpdateTicket={changeSupportTicket}
+            orders={
+              accountType === "زبون"
+                ? visibleCustomerOrders
+                : accountType === "صاحب متجر"
+                  ? visibleMerchantOrders
+                  : accountType === "سائق"
+                    ? deliveryOrders.filter((order) => order.driverId === authSession?.user?.id)
+                    : allOrders
+            }
+            tickets={supportTickets}
+            user={activeUser}
+          />
           </Suspense>
         </Shell>
       )}
@@ -2401,6 +2466,7 @@ function getDashboardNavItems(accountType) {
       { label: "الاستبدال", targetId: "merchant-returns" },
       { label: "الأرباح", targetId: "merchant-earnings" },
       { label: "الطلبات", targetId: "merchant-orders" },
+      { label: "الدعم", targetId: "account-support" },
     ]
   }
 
@@ -2410,6 +2476,7 @@ function getDashboardNavItems(accountType) {
       { label: "الأولوية", targetId: "driver-priority" },
       { label: "السجل", targetId: "driver-history" },
       { label: "الطلبات", targetId: "driver-orders" },
+      { label: "الدعم", targetId: "account-support" },
     ]
   }
 
@@ -2428,6 +2495,7 @@ function getDashboardNavItems(accountType) {
       { label: "البيانات", targetId: "admin-data" },
       { label: "المتاجر", targetId: "admin-stores" },
       { label: "الطلبات", targetId: "admin-orders" },
+      { label: "الدعم", targetId: "account-support" },
     ]
   }
 
@@ -2436,6 +2504,7 @@ function getDashboardNavItems(accountType) {
     { label: "المتاجر", targetId: "customer-stores" },
     { label: "السلة", targetId: "customer-cart" },
     { label: "التتبع", targetId: "customer-tracking" },
+    { label: "الدعم", targetId: "account-support" },
   ]
 }
 

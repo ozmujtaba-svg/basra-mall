@@ -6895,6 +6895,178 @@ button span {
   }
 }
 
+.support-center {
+  margin-top: 24px;
+  padding: 24px;
+  border: 1px solid rgba(30, 96, 86, 0.16);
+  border-radius: 24px;
+  background: linear-gradient(145deg, #fff 0%, #f4fbf8 100%);
+  box-shadow: 0 16px 45px rgba(31, 74, 67, 0.08);
+}
+
+.support-heading,
+.support-submit-row,
+.support-ticket-top,
+.support-toolbar,
+.support-customer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.support-heading span { color: #1f7769; font-weight: 800; }
+.support-heading h2 { margin: 5px 0; }
+.support-heading p { margin: 0; color: var(--muted); }
+.support-heading > b {
+  flex: 0 0 auto;
+  padding: 9px 14px;
+  border-radius: 999px;
+  color: #116354;
+  background: #dff5ed;
+}
+
+.support-form {
+  display: grid;
+  gap: 14px;
+  margin-top: 22px;
+  padding: 20px;
+  border-radius: 18px;
+  background: #fff;
+  border: 1px solid rgba(30, 96, 86, 0.12);
+}
+
+.support-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.support-form label,
+.support-admin-reply {
+  display: grid;
+  gap: 7px;
+  color: #284a44;
+  font-weight: 700;
+}
+
+.support-form input,
+.support-form select,
+.support-form textarea,
+.support-toolbar select,
+.support-admin-reply textarea {
+  width: 100%;
+  border: 1px solid #cfe1dc;
+  border-radius: 12px;
+  padding: 11px 13px;
+  color: #173d36;
+  background: #fbfefd;
+  font: inherit;
+  box-sizing: border-box;
+}
+
+.support-form textarea,
+.support-admin-reply textarea { resize: vertical; }
+
+.support-submit-row button,
+.support-admin-reply button {
+  border: 0;
+  border-radius: 12px;
+  padding: 11px 16px;
+  color: #fff;
+  background: #176f60;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.support-submit-row button:disabled,
+.support-admin-reply button:disabled { cursor: wait; opacity: 0.6; }
+.support-toolbar { margin-top: 22px; }
+.support-toolbar select { width: auto; min-width: 150px; }
+
+.support-feedback {
+  margin-top: 14px;
+  padding: 11px 14px;
+  border-radius: 12px;
+  color: #155e52;
+  background: #e2f6ef;
+  font-weight: 700;
+}
+
+.support-ticket-list {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.support-ticket {
+  padding: 18px;
+  border: 1px solid #dceae6;
+  border-radius: 17px;
+  background: #fff;
+}
+
+.support-ticket h3 { margin: 3px 0 0; }
+.support-ticket-top span,
+.support-ticket-meta,
+.support-waiting { color: var(--muted); font-size: 0.88rem; }
+
+.support-ticket-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 12px 0;
+}
+
+.support-ticket-meta span {
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #f0f6f4;
+}
+
+.support-status {
+  padding: 7px 11px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.support-status.open { color: #8a5a00; background: #fff0c7; }
+.support-status.progress { color: #155a86; background: #dcefff; }
+.support-status.resolved { color: #116142; background: #dff5e9; }
+.support-status.closed { color: #596763; background: #e8eeec; }
+.support-customer { justify-content: flex-start; margin-bottom: 8px; }
+.support-customer a { color: #176f60; direction: ltr; }
+
+.support-reply {
+  margin-top: 14px;
+  padding: 13px;
+  border-radius: 13px;
+  background: #edf8f4;
+}
+
+.support-reply p { margin-bottom: 0; }
+.support-admin-reply { margin-top: 14px; }
+.support-admin-reply > div { display: flex; flex-wrap: wrap; gap: 8px; }
+.support-admin-reply button:nth-child(2) { background: #287d54; }
+.support-admin-reply button:nth-child(3) { background: #66736f; }
+
+.support-empty {
+  padding: 28px;
+  border: 1px dashed #cddfd9;
+  border-radius: 15px;
+  color: var(--muted);
+  text-align: center;
+}
+
+@media (max-width: 680px) {
+  .support-center { padding: 17px; }
+  .support-heading,
+  .support-submit-row { align-items: flex-start; flex-direction: column; }
+  .support-form-grid { grid-template-columns: 1fr; }
+  .support-submit-row button { width: 100%; }
+}
+
 @media (max-width: 760px) {
   .admin-driver-header,
   .admin-driver-card {
