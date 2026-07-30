@@ -902,6 +902,8 @@ export function CustomerDashboard({
       ...current,
       [order.id]: {
         productName: order.items[0]?.name ?? "",
+        variantId: order.items[0]?.variantId ?? null,
+        variantLabel: order.items[0]?.variantLabel ?? "",
         quantity: 1,
         requestType: "exchange",
         reason: "المقاس غير مناسب",
@@ -916,13 +918,19 @@ export function CustomerDashboard({
   async function submitReturn(order) {
     const draft = {
       productName: order.items[0]?.name ?? "",
+      variantId: order.items[0]?.variantId ?? null,
+      variantLabel: order.items[0]?.variantLabel ?? "",
       quantity: 1,
       requestType: "exchange",
       reason: "المقاس غير مناسب",
       customerNote: "",
       ...returnDrafts[order.id],
     }
-    const item = order.items.find((orderItem) => orderItem.name === draft.productName)
+    const item = order.items.find(
+      (orderItem) =>
+        orderItem.name === draft.productName &&
+        String(orderItem.variantId ?? "") === String(draft.variantId ?? ""),
+    )
     if (!item || draft.quantity < 1 || draft.quantity > item.quantity) {
       setReturnMessage("اختار المنتج والكمية بصورة صحيحة.")
       return
@@ -1158,8 +1166,15 @@ function RatingButtons({ label, onChange, value }) {
 }
 
 function ReturnRequestForm({ draft = {}, message, onChange, onSubmit, order, requests }) {
-  const selectedProductName = draft.productName ?? order.items[0]?.name ?? ""
-  const selectedItem = order.items.find((item) => item.name === selectedProductName)
+  const defaultItem = order.items[0]
+  const selectedItemKey =
+    draft.itemKey ??
+    getReturnItemKey({
+      name: draft.productName ?? defaultItem?.name,
+      variantId: draft.variantId ?? defaultItem?.variantId,
+    })
+  const selectedItem =
+    order.items.find((item) => getReturnItemKey(item) === selectedItemKey) ?? defaultItem
 
   return (
     <div className="return-request-form">
@@ -1167,15 +1182,37 @@ function ReturnRequestForm({ draft = {}, message, onChange, onSubmit, order, req
       <div className="existing-return-list">
         {requests.map((request) => (
           <div key={request.id}>
-            <span>{request.productName} — {getReturnStatusLabel(request.status)}</span>
+            <span>
+              {request.productName}
+              {request.variantLabel ? ` (${request.variantLabel})` : ""}
+              {" — "}{getReturnStatusLabel(request.status)}
+            </span>
             {request.merchantResponse && <small>رد المتجر: {request.merchantResponse}</small>}
           </div>
         ))}
       </div>
       <label>
         المنتج
-        <select value={selectedProductName} onChange={(event) => onChange({ productName: event.target.value, quantity: 1 })}>
-          {order.items.map((item) => <option key={item.name}>{item.name}</option>)}
+        <select
+          value={selectedItemKey}
+          onChange={(event) => {
+            const item = order.items.find(
+              (orderItem) => getReturnItemKey(orderItem) === event.target.value,
+            )
+            onChange({
+              itemKey: event.target.value,
+              productName: item?.name ?? "",
+              variantId: item?.variantId ?? null,
+              variantLabel: item?.variantLabel ?? "",
+              quantity: 1,
+            })
+          }}
+        >
+          {order.items.map((item) => (
+            <option key={getReturnItemKey(item)} value={getReturnItemKey(item)}>
+              {item.name}{item.variantLabel ? ` (${item.variantLabel})` : ""}
+            </option>
+          ))}
         </select>
       </label>
       <label>
@@ -1223,6 +1260,10 @@ function getReturnStatusLabel(status) {
     rejected: "مرفوض",
     completed: "مكتمل",
   }[status] ?? status
+}
+
+function getReturnItemKey(item) {
+  return `${item?.name ?? ""}::${item?.variantId ?? ""}`
 }
 
 function renderStars(rating) {

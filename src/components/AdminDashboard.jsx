@@ -1276,7 +1276,10 @@ export function AdminDashboard({
             {returnRequests.map((request) => (
               <article key={request.id}>
                 <div>
-                  <strong>طلب رقم {request.orderId} — {request.productName}</strong>
+                  <strong>
+                    طلب رقم {request.orderId} — {request.productName}
+                    {request.variantLabel ? ` (${request.variantLabel})` : ""}
+                  </strong>
                   <span>{request.storeName}</span>
                 </div>
                 <span>{request.requestType === "exchange" ? "استبدال" : "استرجاع"} | الكمية {request.quantity}</span>

@@ -212,6 +212,14 @@ export function MerchantDashboard({
       return
     }
 
+    const variantKeys = productVariants.map((variant) =>
+      `${variant.size.trim().toLowerCase()}|${variant.color.trim().toLowerCase()}`,
+    )
+    if (new Set(variantKeys).size !== variantKeys.length) {
+      setProductMessage("أكو مقاس ولون مكرر. اترك كل تركيبة مرة واحدة فقط.")
+      return
+    }
+
     if (!Number.isFinite(numericDiscount) || numericDiscount < 0 || numericDiscount > 90) {
       setProductMessage("نسبة الخصم لازم تكون بين 0 و90.")
       return
@@ -293,7 +301,7 @@ export function MerchantDashboard({
   function startEditingProduct(product) {
     setSelectedStoreName(selectedStore?.name ?? "")
     setProductName(product.name)
-    setProductPrice(String(getPriceNumber(product.price)))
+    setProductPrice(String(getPriceNumber(product.originalPrice ?? product.price)))
     setProductQuantity(String(product.quantity))
     setProductImage(product.image ?? "")
     setProductStatus(product.status ?? productStatuses[0])
@@ -435,7 +443,10 @@ export function MerchantDashboard({
             {returnRequests.map((request) => (
               <article key={request.id}>
                 <div>
-                  <strong>{request.requestType === "exchange" ? "استبدال" : "استرجاع"} — {request.productName}</strong>
+                  <strong>
+                    {request.requestType === "exchange" ? "استبدال" : "استرجاع"} — {request.productName}
+                    {request.variantLabel ? ` (${request.variantLabel})` : ""}
+                  </strong>
                   <span>طلب رقم {request.orderId} | الكمية {request.quantity}</span>
                 </div>
                 <span>السبب: {request.reason}</span>

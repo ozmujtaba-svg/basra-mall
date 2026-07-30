@@ -16,6 +16,8 @@ export async function createReturnRequest(request) {
     .insert({
       order_id: request.orderId,
       product_name: request.productName,
+      variant_id: request.variantId || null,
+      variant_label: request.variantLabel || "",
       quantity: Number(request.quantity),
       request_type: request.requestType,
       reason: request.reason,
@@ -52,6 +54,8 @@ function fromDatabaseReturn(request) {
     storeName: request.store_name,
     merchantPhone: request.merchant_phone,
     productName: request.product_name,
+    variantId: request.variant_id,
+    variantLabel: request.variant_label,
     quantity: Number(request.quantity),
     requestType: request.request_type,
     reason: request.reason,
