@@ -19,6 +19,7 @@ export function CustomerDashboard({
   deliveryFee,
   deliveryZones,
   favoriteStoreNames,
+  productWishlists = [],
   savedCustomerAddress,
   onAddToCart,
   onCancelOrder,
@@ -33,6 +34,7 @@ export function CustomerDashboard({
   onSubmitReview,
   onSubmitReturnRequest,
   onToggleFavoriteStore,
+  onToggleProductWishlist,
   onUseSavedCustomerAddress,
   orderMessage,
   reviews,
@@ -57,6 +59,7 @@ export function CustomerDashboard({
   const [returnMessage, setReturnMessage] = useState("")
   const [productVariantSelections, setProductVariantSelections] = useState({})
   const [sendingOrder, setSendingOrder] = useState(false)
+  const [wishlistMessage, setWishlistMessage] = useState("")
   const safeSelectedStore = useMemo(
     () =>
       selectedStore ?? stores[0] ?? {
@@ -124,6 +127,24 @@ export function CustomerDashboard({
     () => banners.filter(isBannerVisible),
     [banners],
   )
+  const wishlistProductIds = useMemo(
+    () => new Set(productWishlists.map((item) => String(item.productId))),
+    [productWishlists],
+  )
+  const wishlistProducts = useMemo(
+    () =>
+      stores.flatMap((store) =>
+        store.products
+          .filter((product) => wishlistProductIds.has(String(product.id)))
+          .map((product) => ({ ...product, store })),
+      ),
+    [stores, wishlistProductIds],
+  )
+
+  async function toggleWishlist(product) {
+    const result = await onToggleProductWishlist(product)
+    setWishlistMessage(result.message)
+  }
 
   return (
     <div className="customer-layout">
@@ -186,6 +207,47 @@ export function CustomerDashboard({
             عرض المفضلة
           </button>
         </div>
+      </section>
+
+      <section className="customer-wishlist-section" id="customer-wishlist">
+        <div className="favorite-stores-header">
+          <div>
+            <h2>قائمة رغباتي</h2>
+            <p>منتجاتك المحفوظة تبقى بحسابك ونبلغك عند الخصم أو رجوع الكمية.</p>
+          </div>
+          <span>{wishlistProducts.length}</span>
+        </div>
+        {wishlistMessage && <div className="wishlist-message">{wishlistMessage}</div>}
+        {wishlistProducts.length === 0 ? (
+          <div className="empty-favorites">
+            ما حافظ منتج بعد. اضغط حفظ بقائمة الرغبات من أي بطاقة منتج.
+          </div>
+        ) : (
+          <div className="wishlist-product-list">
+            {wishlistProducts.map((product) => (
+              <article key={`wishlist-${product.id}`}>
+                {product.image && <img alt="" loading="lazy" src={product.image} />}
+                <div>
+                  <span>{product.store.name}</span>
+                  <strong>{product.name}</strong>
+                  <small>{product.originalPrice ?? product.price}</small>
+                  {isDiscountActive(product) && (
+                    <b>خصم {product.discountPercent}% — {product.price}</b>
+                  )}
+                  {product.status === "نفد" && <em>المنتج نافد حالياً</em>}
+                </div>
+                <div>
+                  <button onClick={() => onSelectStore(product.store)} type="button">
+                    فتح المتجر
+                  </button>
+                  <button onClick={() => toggleWishlist(product)} type="button">
+                    إزالة
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="suggested-stores-panel" id="customer-suggested">
@@ -433,25 +495,34 @@ export function CustomerDashboard({
                       </label>
                     )}
                   </div>
-                  <button
-                    className="add-button"
-                    disabled={disabled}
-                    onClick={() =>
-                      onAddToCart(
-                        selectedVariant
-                          ? {
-                              ...product,
-                              selectedVariant,
-                              variantId: selectedVariant.id,
-                              variantLabel: formatVariantLabel(selectedVariant),
-                            }
-                          : product,
-                        safeSelectedStore,
-                      )
-                    }
-                  >
-                    {!hasStock ? "غير متاح للشراء" : reachedLimit ? "وصلت للكمية المتوفرة" : "إضافة للسلة"}
-                  </button>
+                  <div className="product-card-actions">
+                    <button
+                      className="wishlist-toggle-button"
+                      onClick={() => toggleWishlist(product)}
+                      type="button"
+                    >
+                      {wishlistProductIds.has(String(product.id)) ? "محفوظ ♥" : "حفظ بالرغبات ♡"}
+                    </button>
+                    <button
+                      className="add-button"
+                      disabled={disabled}
+                      onClick={() =>
+                        onAddToCart(
+                          selectedVariant
+                            ? {
+                                ...product,
+                                selectedVariant,
+                                variantId: selectedVariant.id,
+                                variantLabel: formatVariantLabel(selectedVariant),
+                              }
+                            : product,
+                          safeSelectedStore,
+                        )
+                      }
+                    >
+                      {!hasStock ? "غير متاح للشراء" : reachedLimit ? "وصلت للكمية المتوفرة" : "إضافة للسلة"}
+                    </button>
+                  </div>
                 </div>
               )
             })

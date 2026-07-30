@@ -68,6 +68,11 @@ import {
   updateMarketingBanner,
   uploadMarketingBannerImage,
 } from "./lib/bannerRepository"
+import {
+  createProductWishlist,
+  deleteProductWishlist,
+  fetchProductWishlists,
+} from "./lib/wishlistRepository"
 
 const AdminDashboard = lazy(() =>
   import("./components/AdminDashboard").then((module) => ({ default: module.AdminDashboard })),
@@ -112,6 +117,7 @@ function App() {
   const [returnRequests, setReturnRequests] = useState([])
   const [supportTickets, setSupportTickets] = useState([])
   const [marketingBanners, setMarketingBanners] = useState([])
+  const [productWishlists, setProductWishlists] = useState([])
   const [driverApprovalStatus, setDriverApprovalStatus] = useState("pending")
   const [favoriteStoreNames, setFavoriteStoreNames] = useState(savedAppData.favoriteStoreNames)
   const [savedCustomerAddress, setSavedCustomerAddress] = useState(savedAppData.savedCustomerAddress)
@@ -126,6 +132,7 @@ function App() {
   const receivedRealtimeNotifications = useRef(new Set())
   const knownOrderStatuses = useRef(new Map())
   const notificationAudienceContext = useRef({ phone: "", storeNames: [] })
+  const wishlistProductIds = useRef(new Set())
   const completeSupabaseLoginRef = useRef(null)
   const [lastSaveTime, setLastSaveTime] = useState(loadLastSaveTime)
   const [nextOrderId, setNextOrderId] = useState(savedAppData.nextOrderId)
@@ -177,6 +184,7 @@ function App() {
     phone: activeUser.phone,
     storeNames: merchantStoreNames,
   }
+  wishlistProductIds.current = new Set(productWishlists.map((item) => String(item.productId)))
   const approvedStores = stores.filter(
     (store) => store.status !== "pending" && store.status !== "rejected",
   )
@@ -348,6 +356,7 @@ function App() {
         fetchReturnRequests(),
         fetchSupportTickets(),
         fetchMarketingBanners(),
+        fetchProductWishlists(),
       ])
         .then(([
           orders,
@@ -358,6 +367,7 @@ function App() {
           databaseReturns,
           databaseSupportTickets,
           databaseBanners,
+          databaseWishlists,
         ]) => {
           if (ignore) return
 
@@ -375,6 +385,7 @@ function App() {
           setReturnRequests(databaseReturns)
           setSupportTickets(databaseSupportTickets)
           setMarketingBanners(databaseBanners)
+          setProductWishlists(databaseWishlists)
           setStores(() => {
             const marketplaceStores = databaseStores.map(normalizeStore)
             setSelectedStore((currentStore) =>
@@ -437,6 +448,34 @@ function App() {
       }).catch(() => {})
     }
 
+    const handleProductRealtimeChange = (payload) => {
+      scheduleMarketplaceRefresh()
+
+      if (
+        accountType !== "زبون" ||
+        !payload.new?.id ||
+        !wishlistProductIds.current.has(String(payload.new.id))
+      ) return
+
+      const oldQuantity = Number(payload.old?.quantity ?? 0)
+      const newQuantity = Number(payload.new?.quantity ?? 0)
+      const oldDiscount = Number(payload.old?.discount_percent ?? 0)
+      const newDiscount = Number(payload.new?.discount_percent ?? 0)
+
+      if (oldQuantity <= 0 && newQuantity > 0) {
+        showNotification("رجع منتج من قائمة رغباتك متوفر للشراء.", "success", "زبون")
+        return
+      }
+
+      if (newDiscount > oldDiscount && newDiscount > 0) {
+        showNotification(
+          `صار خصم ${newDiscount}% على منتج محفوظ بقائمة رغباتك.`,
+          "success",
+          "زبون",
+        )
+      }
+    }
+
     loadMarketplaceData()
     const realtimeChannel = supabase
       .channel(`marketplace-live-${authSession.user.id}`)
@@ -453,7 +492,7 @@ function App() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "products" },
-        scheduleMarketplaceRefresh,
+        handleProductRealtimeChange,
       )
       .on(
         "postgres_changes",
@@ -483,6 +522,11 @@ function App() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "marketing_banners" },
+        scheduleMarketplaceRefresh,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "product_wishlists" },
         scheduleMarketplaceRefresh,
       )
       .subscribe()
@@ -2162,6 +2206,33 @@ function App() {
     }
   }
 
+  async function toggleProductWishlist(product) {
+    const userId = authSession?.user?.id
+    if (!userId || !product.id) {
+      return { success: false, message: "تعذر حفظ المنتج. سجل دخول مرة ثانية." }
+    }
+
+    const existingWishlist = productWishlists.find(
+      (item) => String(item.productId) === String(product.id) && item.userId === userId,
+    )
+
+    try {
+      if (existingWishlist) {
+        await deleteProductWishlist(product.id, userId)
+        setProductWishlists((items) =>
+          items.filter((item) => item.id !== existingWishlist.id),
+        )
+        return { success: true, message: `تمت إزالة ${product.name} من قائمة الرغبات.` }
+      }
+
+      const createdWishlist = await createProductWishlist(product.id, userId)
+      setProductWishlists((items) => [createdWishlist, ...items])
+      return { success: true, message: `تم حفظ ${product.name} بقائمة الرغبات.` }
+    } catch (error) {
+      return { success: false, message: `تعذر تحديث قائمة الرغبات: ${error.message}` }
+    }
+  }
+
   return (
     <main className="page">
       {currentView === "login" ? (
@@ -2237,6 +2308,7 @@ function App() {
               deliveryFee={activeDeliveryFee}
               deliveryZones={BASRA_DELIVERY_ZONES}
               favoriteStoreNames={favoriteStoreNames}
+              productWishlists={productWishlists}
               savedCustomerAddress={savedCustomerAddress}
               onAddToCart={addToCart}
               onCustomerInfoChange={setCustomerInfo}
@@ -2250,6 +2322,7 @@ function App() {
               onSubmitReview={submitOrderReview}
               onSubmitReturnRequest={submitReturnRequest}
               onToggleFavoriteStore={toggleFavoriteStore}
+              onToggleProductWishlist={toggleProductWishlist}
               onUseSavedCustomerAddress={useSavedCustomerAddress}
               orderMessage={orderMessage}
               selectedStore={activeSelectedStore}
@@ -2294,6 +2367,7 @@ function App() {
             <AdminDashboard
               allOrders={allOrders}
               banners={marketingBanners}
+              productWishlists={productWishlists}
               coupons={coupons}
               reviews={reviews}
               commissionRate={platformSettings.commissionRate}
@@ -2543,6 +2617,7 @@ function getDashboardNavItems(accountType) {
       { label: "السائقين", targetId: "admin-drivers" },
       { label: "تسويات المتاجر", targetId: "admin-merchant-payouts" },
       { label: "التقارير المالية", targetId: "admin-financial-reports" },
+      { label: "اهتمامات الزبائن", targetId: "admin-wishlist-analytics" },
       { label: "الإعلانات", targetId: "admin-banners" },
       { label: "العروض", targetId: "admin-offers" },
       { label: "الكوبونات", targetId: "admin-coupons" },
@@ -2558,6 +2633,7 @@ function getDashboardNavItems(accountType) {
 
   return [
     { label: "الإعلانات", targetId: "customer-banners" },
+    { label: "قائمة الرغبات", targetId: "customer-wishlist" },
     { label: "المقترحة", targetId: "customer-suggested" },
     { label: "المتاجر", targetId: "customer-stores" },
     { label: "السلة", targetId: "customer-cart" },

@@ -64,6 +64,7 @@ export function AdminDashboard({
   onUpdateBanner,
   onUpdateOrderStatus,
   onUpdateReturnRequest,
+  productWishlists = [],
   reviews = [],
   returnRequests = [],
   settings,
@@ -142,6 +143,26 @@ export function AdminDashboard({
       ),
     [stores],
   )
+  const wishlistAnalytics = useMemo(() => {
+    const counts = productWishlists.reduce((result, item) => {
+      const key = String(item.productId)
+      result.set(key, (result.get(key) ?? 0) + 1)
+      return result
+    }, new Map())
+
+    return stores
+      .flatMap((store) =>
+        store.products.map((product) => ({
+          count: counts.get(String(product.id)) ?? 0,
+          image: product.image,
+          name: product.name,
+          storeName: store.name,
+        })),
+      )
+      .filter((product) => product.count > 0)
+      .sort((first, second) => second.count - first.count)
+      .slice(0, 8)
+  }, [productWishlists, stores])
   const topStore = useMemo(() => getTopStore(nonCanceledOrders), [nonCanceledOrders])
   const revenuePeriodOrders = useMemo(
     () => filterOrdersByRevenuePeriod(allOrders, revenuePeriodFilter),
@@ -1417,6 +1438,32 @@ export function AdminDashboard({
                 <span>المتجر: {renderReviewStars(review.storeRating)}</span>
                 <span>السائق: {renderReviewStars(review.driverRating)}</span>
                 {review.comment && <p>{review.comment}</p>}
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="admin-section" id="admin-wishlist-analytics">
+        <div className="admin-monitor-header">
+          <div>
+            <h3>اهتمامات الزبائن</h3>
+            <p>أكثر المنتجات المحفوظة بقوائم الرغبات حتى تعرف الطلب المتوقع.</p>
+          </div>
+          <span>{productWishlists.length} عملية حفظ</span>
+        </div>
+        {wishlistAnalytics.length === 0 ? (
+          <div className="empty-search">ماكو منتجات محفوظة بقوائم الرغبات بعد.</div>
+        ) : (
+          <div className="wishlist-analytics-grid">
+            {wishlistAnalytics.map((product) => (
+              <article key={`${product.storeName}-${product.name}`}>
+                {product.image && <img alt="" loading="lazy" src={product.image} />}
+                <div>
+                  <span>{product.storeName}</span>
+                  <strong>{product.name}</strong>
+                </div>
+                <b>{product.count} حفظ</b>
               </article>
             ))}
           </div>
