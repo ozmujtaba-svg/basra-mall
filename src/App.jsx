@@ -61,6 +61,13 @@ import {
   fetchSupportTickets,
   updateSupportTicket,
 } from "./lib/supportRepository"
+import {
+  createMarketingBanner,
+  deleteMarketingBanner,
+  fetchMarketingBanners,
+  updateMarketingBanner,
+  uploadMarketingBannerImage,
+} from "./lib/bannerRepository"
 
 const AdminDashboard = lazy(() =>
   import("./components/AdminDashboard").then((module) => ({ default: module.AdminDashboard })),
@@ -104,6 +111,7 @@ function App() {
   const [reviews, setReviews] = useState([])
   const [returnRequests, setReturnRequests] = useState([])
   const [supportTickets, setSupportTickets] = useState([])
+  const [marketingBanners, setMarketingBanners] = useState([])
   const [driverApprovalStatus, setDriverApprovalStatus] = useState("pending")
   const [favoriteStoreNames, setFavoriteStoreNames] = useState(savedAppData.favoriteStoreNames)
   const [savedCustomerAddress, setSavedCustomerAddress] = useState(savedAppData.savedCustomerAddress)
@@ -339,6 +347,7 @@ function App() {
         fetchOrderReviews(),
         fetchReturnRequests(),
         fetchSupportTickets(),
+        fetchMarketingBanners(),
       ])
         .then(([
           orders,
@@ -348,6 +357,7 @@ function App() {
           databaseReviews,
           databaseReturns,
           databaseSupportTickets,
+          databaseBanners,
         ]) => {
           if (ignore) return
 
@@ -364,6 +374,7 @@ function App() {
           setReviews(databaseReviews)
           setReturnRequests(databaseReturns)
           setSupportTickets(databaseSupportTickets)
+          setMarketingBanners(databaseBanners)
           setStores(() => {
             const marketplaceStores = databaseStores.map(normalizeStore)
             setSelectedStore((currentStore) =>
@@ -467,6 +478,11 @@ function App() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "support_tickets" },
+        scheduleMarketplaceRefresh,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "marketing_banners" },
         scheduleMarketplaceRefresh,
       )
       .subscribe()
@@ -2111,6 +2127,41 @@ function App() {
     }
   }
 
+  async function addMarketingBanner(banner) {
+    try {
+      const imageUrl = banner.imageData
+        ? await uploadMarketingBannerImage(banner.imageData)
+        : banner.imageUrl
+      const createdBanner = await createMarketingBanner({ ...banner, imageUrl })
+      setMarketingBanners((banners) => [createdBanner, ...banners])
+      return { success: true, message: "تم إنشاء الإعلان وراح يظهر للزبائن ضمن مدته." }
+    } catch (error) {
+      return { success: false, message: `تعذر إنشاء الإعلان: ${error.message}` }
+    }
+  }
+
+  async function changeMarketingBanner(bannerId, changes) {
+    try {
+      const updatedBanner = await updateMarketingBanner(bannerId, changes)
+      setMarketingBanners((banners) =>
+        banners.map((banner) => banner.id === bannerId ? updatedBanner : banner),
+      )
+      return { success: true, message: "تم تحديث حالة الإعلان." }
+    } catch (error) {
+      return { success: false, message: `تعذر تحديث الإعلان: ${error.message}` }
+    }
+  }
+
+  async function removeMarketingBanner(bannerId) {
+    try {
+      await deleteMarketingBanner(bannerId)
+      setMarketingBanners((banners) => banners.filter((banner) => banner.id !== bannerId))
+      return { success: true, message: "تم حذف الإعلان." }
+    } catch (error) {
+      return { success: false, message: `تعذر حذف الإعلان: ${error.message}` }
+    }
+  }
+
   return (
     <main className="page">
       {currentView === "login" ? (
@@ -2176,6 +2227,7 @@ function App() {
           <Suspense fallback={<DashboardLoading />}>
           {accountType === "زبون" && (
             <CustomerDashboard
+              banners={marketingBanners}
               cartItems={cartItems}
               coupons={coupons}
               reviews={reviews}
@@ -2241,10 +2293,12 @@ function App() {
           {accountType === "الإدارة" && (
             <AdminDashboard
               allOrders={allOrders}
+              banners={marketingBanners}
               coupons={coupons}
               reviews={reviews}
               commissionRate={platformSettings.commissionRate}
               onApproveStore={approveStore}
+              onAddBanner={addMarketingBanner}
               onChangePassword={changeAdminPassword}
               onExportBackup={exportDataBackup}
               onImportBackup={importDataBackup}
@@ -2253,6 +2307,7 @@ function App() {
               onUpdateReturnRequest={changeReturnRequest}
               lastSaveTime={lastSaveTime}
               onRejectStore={rejectStore}
+              onDeleteBanner={removeMarketingBanner}
               onReviewStoreAgain={reviewStoreAgain}
               onResetData={resetDemoData}
               deliveredOrders={deliveredOrders}
@@ -2262,6 +2317,7 @@ function App() {
               onSettleDriverEarnings={settleDriverEarnings}
               onSettleMerchantEarnings={settleMerchantEarnings}
               onUpdateDriverApproval={changeDriverApproval}
+              onUpdateBanner={changeMarketingBanner}
               onUpdateOrderStatus={updateAdminOrderStatus}
               settings={platformSettings}
               stores={stores}
@@ -2487,6 +2543,7 @@ function getDashboardNavItems(accountType) {
       { label: "السائقين", targetId: "admin-drivers" },
       { label: "تسويات المتاجر", targetId: "admin-merchant-payouts" },
       { label: "التقارير المالية", targetId: "admin-financial-reports" },
+      { label: "الإعلانات", targetId: "admin-banners" },
       { label: "العروض", targetId: "admin-offers" },
       { label: "الكوبونات", targetId: "admin-coupons" },
       { label: "التقييمات", targetId: "admin-reviews" },
@@ -2500,6 +2557,7 @@ function getDashboardNavItems(accountType) {
   }
 
   return [
+    { label: "الإعلانات", targetId: "customer-banners" },
     { label: "المقترحة", targetId: "customer-suggested" },
     { label: "المتاجر", targetId: "customer-stores" },
     { label: "السلة", targetId: "customer-cart" },

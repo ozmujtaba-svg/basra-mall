@@ -35,9 +35,11 @@ const rejectionReasons = [
   "المنطقة غير محددة",
 ]
 const revenuePeriodFilters = ["اليوم", "آخر 7 أيام", "آخر 30 يوم", "كل الوقت"]
+const MAX_BANNER_IMAGE_SIZE = 1400
 
 export function AdminDashboard({
   allOrders,
+  banners = [],
   commissionRate,
   coupons,
   deliveredOrders,
@@ -46,9 +48,11 @@ export function AdminDashboard({
   lastSaveTime,
   onApproveStore,
   onAddCoupon,
+  onAddBanner,
   onChangePassword,
   onExportBackup,
   onImportBackup,
+  onDeleteBanner,
   onRejectStore,
   onReviewStoreAgain,
   onResetData,
@@ -57,6 +61,7 @@ export function AdminDashboard({
   onSettingsChange,
   onUpdateDriverApproval,
   onUpdateCoupon,
+  onUpdateBanner,
   onUpdateOrderStatus,
   onUpdateReturnRequest,
   reviews = [],
@@ -88,6 +93,15 @@ export function AdminDashboard({
   const [couponMinimum, setCouponMinimum] = useState("0")
   const [couponMaxUses, setCouponMaxUses] = useState("100")
   const [couponExpiresAt, setCouponExpiresAt] = useState("")
+  const [bannerTitle, setBannerTitle] = useState("")
+  const [bannerSubtitle, setBannerSubtitle] = useState("")
+  const [bannerImageData, setBannerImageData] = useState("")
+  const [bannerCtaText, setBannerCtaText] = useState("")
+  const [bannerCtaUrl, setBannerCtaUrl] = useState("")
+  const [bannerStartsAt, setBannerStartsAt] = useState("")
+  const [bannerEndsAt, setBannerEndsAt] = useState("")
+  const [bannerMessage, setBannerMessage] = useState("")
+  const [bannerSaving, setBannerSaving] = useState(false)
   const [couponMessage, setCouponMessage] = useState("")
   const [returnAdminMessage, setReturnAdminMessage] = useState("")
   const pendingStores = useMemo(() => stores.filter((store) => store.status === "pending"), [stores])
@@ -287,6 +301,82 @@ export function AdminDashboard({
       setNewAdminPassword("")
       setConfirmAdminPassword("")
     }
+  }
+
+  async function submitBanner(event) {
+    event.preventDefault()
+
+    if (bannerTitle.trim().length < 3) {
+      setBannerMessage("اكتب عنوان الإعلان من 3 أحرف أو أكثر.")
+      return
+    }
+    if (!bannerEndsAt) {
+      setBannerMessage("حدد وقت انتهاء الإعلان.")
+      return
+    }
+    if (new Date(bannerEndsAt).getTime() <= new Date(bannerStartsAt || Date.now()).getTime()) {
+      setBannerMessage("وقت الانتهاء لازم يكون بعد وقت بداية الإعلان.")
+      return
+    }
+    if (bannerCtaUrl && !isSafeHttpUrl(bannerCtaUrl)) {
+      setBannerMessage("رابط الإعلان لازم يبدأ بـ https:// أو http://.")
+      return
+    }
+
+    setBannerSaving(true)
+    const result = await onAddBanner({
+      ctaText: bannerCtaText,
+      ctaUrl: bannerCtaUrl,
+      endsAt: new Date(bannerEndsAt).toISOString(),
+      imageData: bannerImageData,
+      isActive: true,
+      startsAt: bannerStartsAt ? new Date(bannerStartsAt).toISOString() : new Date().toISOString(),
+      subtitle: bannerSubtitle,
+      title: bannerTitle,
+    })
+    setBannerSaving(false)
+    setBannerMessage(result.message)
+
+    if (result.success) {
+      setBannerTitle("")
+      setBannerSubtitle("")
+      setBannerImageData("")
+      setBannerCtaText("")
+      setBannerCtaUrl("")
+      setBannerStartsAt("")
+      setBannerEndsAt("")
+    }
+  }
+
+  function chooseBannerImage(event) {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith("image/")) {
+      setBannerMessage("هذا الملف مو صورة. اختار صورة PNG أو JPG.")
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = async () => {
+      try {
+        setBannerImageData(await resizeBannerImage(String(reader.result)))
+        setBannerMessage("تم تجهيز الصورة. كمل البيانات واضغط نشر الإعلان.")
+      } catch {
+        setBannerMessage("تعذر تجهيز الصورة. جرّب صورة ثانية.")
+      }
+    }
+    reader.readAsDataURL(file)
+  }
+
+  async function toggleBanner(banner) {
+    const result = await onUpdateBanner(banner.id, { ...banner, isActive: !banner.isActive })
+    setBannerMessage(result.message)
+  }
+
+  async function removeBanner(bannerId) {
+    const result = await onDeleteBanner(bannerId)
+    setBannerMessage(result.message)
   }
 
   return (
@@ -1331,6 +1421,101 @@ export function AdminDashboard({
             ))}
           </div>
         )}
+      </section>
+
+      <section className="admin-section banner-admin-section" id="admin-banners">
+        <div className="admin-monitor-header">
+          <div>
+            <h3>الإعلانات والبنرات</h3>
+            <p>أنشئ إعلان بصورة وحدد وقت ظهوره واختفائه عند الزبائن.</p>
+          </div>
+          <span>{banners.filter(isBannerCurrentlyVisible).length} إعلان ظاهر</span>
+        </div>
+        <form className="banner-admin-form" onSubmit={submitBanner}>
+          <label>
+            عنوان الإعلان
+            <input
+              maxLength="100"
+              onChange={(event) => setBannerTitle(event.target.value)}
+              placeholder="مثال: تخفيضات نهاية الأسبوع"
+              value={bannerTitle}
+            />
+          </label>
+          <label>
+            النص التوضيحي
+            <input
+              maxLength="250"
+              onChange={(event) => setBannerSubtitle(event.target.value)}
+              placeholder="تفاصيل قصيرة تظهر تحت العنوان"
+              value={bannerSubtitle}
+            />
+          </label>
+          <label className="banner-image-picker">
+            صورة الإعلان
+            <input accept="image/*" onChange={chooseBannerImage} type="file" />
+            <span>{bannerImageData ? "تم اختيار الصورة ✓" : "اختار صورة من الجهاز"}</span>
+          </label>
+          <label>
+            نص الزر (اختياري)
+            <input
+              maxLength="40"
+              onChange={(event) => setBannerCtaText(event.target.value)}
+              placeholder="تسوق الآن"
+              value={bannerCtaText}
+            />
+          </label>
+          <label>
+            رابط الزر (اختياري)
+            <input
+              onChange={(event) => setBannerCtaUrl(event.target.value)}
+              placeholder="https://..."
+              type="url"
+              value={bannerCtaUrl}
+            />
+          </label>
+          <label>
+            يبدأ من
+            <input
+              onChange={(event) => setBannerStartsAt(event.target.value)}
+              type="datetime-local"
+              value={bannerStartsAt}
+            />
+          </label>
+          <label>
+            ينتهي في
+            <input
+              onChange={(event) => setBannerEndsAt(event.target.value)}
+              required
+              type="datetime-local"
+              value={bannerEndsAt}
+            />
+          </label>
+          <button disabled={bannerSaving} type="submit">
+            {bannerSaving ? "جاري النشر..." : "نشر الإعلان"}
+          </button>
+        </form>
+        {bannerMessage && <div className="order-message">{bannerMessage}</div>}
+        <div className="banner-admin-list">
+          {banners.length === 0 ? (
+            <div className="empty-search">ماكو إعلانات منشورة بعد.</div>
+          ) : banners.map((banner) => (
+            <article className={banner.isActive ? "active" : "inactive"} key={banner.id}>
+              {banner.imageUrl && <img alt="" src={banner.imageUrl} />}
+              <div>
+                <span>{isBannerCurrentlyVisible(banner) ? "ظاهر للزبائن" : getBannerTimingLabel(banner)}</span>
+                <strong>{banner.title}</strong>
+                {banner.subtitle && <p>{banner.subtitle}</p>}
+                <small>ينتهي: {formatOrderDate(banner.endsAt)}</small>
+              </div>
+              <div className="banner-admin-actions">
+                <button onClick={() => toggleBanner(banner)} type="button">
+                  {banner.isActive ? "إيقاف" : "تفعيل"}
+                </button>
+                <button onClick={() => removeBanner(banner.id)} type="button">حذف</button>
+              </div>
+            </article>
+          ))}
+        </div>
       </section>
 
       <section className="admin-section" id="admin-offers">
@@ -2994,4 +3179,56 @@ function getReturnStatusLabel(status) {
 
 function getPriceNumber(price) {
   return Number(String(price).replace(/[^\d]/g, ""))
+}
+
+function isBannerCurrentlyVisible(banner) {
+  if (!banner.isActive) return false
+  const now = Date.now()
+  const startsAt = banner.startsAt ? new Date(banner.startsAt).getTime() : 0
+  const endsAt = banner.endsAt ? new Date(banner.endsAt).getTime() : Number.POSITIVE_INFINITY
+  return startsAt <= now && endsAt > now
+}
+
+function getBannerTimingLabel(banner) {
+  if (!banner.isActive) return "متوقف"
+  if (banner.startsAt && new Date(banner.startsAt).getTime() > Date.now()) return "مجدول لاحقًا"
+  return "منتهي"
+}
+
+function isSafeHttpUrl(value) {
+  try {
+    const url = new URL(value)
+    return ["http:", "https:"].includes(url.protocol)
+  } catch {
+    return false
+  }
+}
+
+function resizeBannerImage(imageSource) {
+  return new Promise((resolve, reject) => {
+    const image = new Image()
+
+    image.onload = () => {
+      const ratio = Math.min(
+        MAX_BANNER_IMAGE_SIZE / image.width,
+        MAX_BANNER_IMAGE_SIZE / image.height,
+        1,
+      )
+      const canvas = document.createElement("canvas")
+      canvas.width = Math.round(image.width * ratio)
+      canvas.height = Math.round(image.height * ratio)
+      const context = canvas.getContext("2d")
+
+      if (!context) {
+        reject(new Error("Canvas is not available"))
+        return
+      }
+
+      context.drawImage(image, 0, 0, canvas.width, canvas.height)
+      resolve(canvas.toDataURL("image/jpeg", 0.82))
+    }
+
+    image.onerror = reject
+    image.src = imageSource
+  })
 }

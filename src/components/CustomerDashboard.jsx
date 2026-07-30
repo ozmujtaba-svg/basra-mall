@@ -11,6 +11,7 @@ const quickOrderNotes = [
 const paymentMethods = ["الدفع عند الاستلام", "دفع إلكتروني لاحقًا"]
 
 export function CustomerDashboard({
+  banners = [],
   cartItems,
   coupons,
   customerInfo,
@@ -119,9 +120,44 @@ export function CustomerDashboard({
         : customerOrders,
     [customerOrders, normalizedTrackingSearch],
   )
+  const activeBanners = useMemo(
+    () => banners.filter(isBannerVisible),
+    [banners],
+  )
 
   return (
     <div className="customer-layout">
+      {activeBanners.length > 0 && (
+        <section className="customer-banner-section" id="customer-banners">
+          <div className="customer-banner-heading">
+            <div>
+              <span>جديد مول البصرة</span>
+              <h2>إعلانات وعروض مختارة</h2>
+            </div>
+            <b>{activeBanners.length} إعلان</b>
+          </div>
+          <div className="customer-banner-list">
+            {activeBanners.map((banner) => (
+              <article
+                className={banner.imageUrl ? "has-image" : ""}
+                key={banner.id}
+                style={banner.imageUrl ? { backgroundImage: `url("${banner.imageUrl}")` } : undefined}
+              >
+                <div>
+                  <span>عرض مميز</span>
+                  <h3>{banner.title}</h3>
+                  {banner.subtitle && <p>{banner.subtitle}</p>}
+                  {isSafeBannerUrl(banner.ctaUrl) && (
+                    <a href={banner.ctaUrl} rel="noreferrer" target="_blank">
+                      {banner.ctaText || "عرض التفاصيل"}
+                    </a>
+                  )}
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
       <section className="customer-start-card">
         <div>
           <span>واجهة الزبون</span>
@@ -1014,6 +1050,25 @@ export function CustomerDashboard({
 
   function scrollToFavorites() {
     document.getElementById("customer-favorites")?.scrollIntoView({ behavior: "smooth" })
+  }
+}
+
+function isBannerVisible(banner) {
+  if (!banner.isActive) return false
+  const now = Date.now()
+  const startsAt = banner.startsAt ? new Date(banner.startsAt).getTime() : 0
+  const endsAt = banner.endsAt ? new Date(banner.endsAt).getTime() : Number.POSITIVE_INFINITY
+  return startsAt <= now && endsAt > now
+}
+
+function isSafeBannerUrl(value) {
+  if (!value) return false
+
+  try {
+    const url = new URL(value)
+    return ["http:", "https:"].includes(url.protocol)
+  } catch {
+    return false
   }
 }
 
