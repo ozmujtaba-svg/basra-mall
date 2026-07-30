@@ -54,6 +54,7 @@ export function MerchantDashboard({
   const [productStatus, setProductStatus] = useState(productStatuses[0])
   const [productDiscount, setProductDiscount] = useState("")
   const [productDiscountEndsAt, setProductDiscountEndsAt] = useState("")
+  const [productVariants, setProductVariants] = useState([])
   const [editingProductName, setEditingProductName] = useState("")
   const [orderSearch, setOrderSearch] = useState("")
   const [orderStatusFilter, setOrderStatusFilter] = useState("الكل")
@@ -170,7 +171,12 @@ export function MerchantDashboard({
   async function submitProduct(event) {
     event.preventDefault()
 
-    if (!selectedStoreName || !productName.trim() || !productPrice.trim() || !productQuantity.trim()) {
+    if (
+      !selectedStoreName ||
+      !productName.trim() ||
+      !productPrice.trim() ||
+      (!productQuantity.trim() && productVariants.length === 0)
+    ) {
       setProductMessage(
         "بيانات المنتج ناقصة. اختار المتجر واكتب اسم المنتج والسعر والكمية حتى نكدر نحفظه.",
       )
@@ -178,7 +184,10 @@ export function MerchantDashboard({
     }
 
     const numericPrice = Number(productPrice)
-    const numericQuantity = Number(productQuantity)
+    const numericQuantity =
+      productVariants.length > 0
+        ? productVariants.reduce((total, variant) => total + Number(variant.quantity), 0)
+        : Number(productQuantity)
     const numericDiscount = Number(productDiscount || 0)
 
     if (!Number.isFinite(numericPrice) || numericPrice <= 0) {
@@ -188,6 +197,18 @@ export function MerchantDashboard({
 
     if (!Number.isFinite(numericQuantity) || numericQuantity < 0) {
       setProductMessage("الكمية غير صحيحة. اكتب رقم صفر أو أكثر، مثال: 10")
+      return
+    }
+
+    if (
+      productVariants.some(
+        (variant) =>
+          (!variant.size.trim() && !variant.color.trim()) ||
+          !Number.isInteger(Number(variant.quantity)) ||
+          Number(variant.quantity) < 0,
+      )
+    ) {
+      setProductMessage("راجع المقاسات والألوان: اكتب مقاس أو لون وكمية صحيحة لكل خيار.")
       return
     }
 
@@ -213,6 +234,7 @@ export function MerchantDashboard({
       discountPercent: numericDiscount,
       discountEndsAt:
         numericDiscount > 0 ? new Date(productDiscountEndsAt).toISOString() : "",
+      variants: productVariants,
     }
 
     if (editingProductName) {
@@ -277,6 +299,7 @@ export function MerchantDashboard({
     setProductStatus(product.status ?? productStatuses[0])
     setProductDiscount(product.discountPercent ? String(product.discountPercent) : "")
     setProductDiscountEndsAt(formatDateTimeLocal(product.discountEndsAt))
+    setProductVariants(product.variants ?? [])
     setEditingProductName(product.name)
     setProductMessage("عدّل البيانات بالنموذج، وبعدها اضغط حفظ التعديل.")
   }
@@ -304,7 +327,24 @@ export function MerchantDashboard({
     setProductStatus(productStatuses[0])
     setProductDiscount("")
     setProductDiscountEndsAt("")
+    setProductVariants([])
     setEditingProductName("")
+  }
+
+  function addVariantRow() {
+    setProductVariants((current) => [...current, { size: "", color: "", quantity: 0 }])
+  }
+
+  function updateVariantRow(index, field, value) {
+    setProductVariants((current) =>
+      current.map((variant, variantIndex) =>
+        variantIndex === index ? { ...variant, [field]: value } : variant,
+      ),
+    )
+  }
+
+  function removeVariantRow(index) {
+    setProductVariants((current) => current.filter((_, variantIndex) => variantIndex !== index))
   }
 
   async function copyMerchantOrder(order) {
@@ -569,12 +609,44 @@ export function MerchantDashboard({
           <label>
             الكمية
             <input
-              disabled={!hasStores}
+              disabled={!hasStores || productVariants.length > 0}
               value={productQuantity}
               onChange={(event) => setProductQuantity(event.target.value)}
               placeholder="مثال: 10"
             />
           </label>
+
+          <div className="product-variants-editor wide-field">
+            <div>
+              <span>المقاسات والألوان (اختياري)</span>
+              <button onClick={addVariantRow} type="button">إضافة خيار</button>
+            </div>
+            {productVariants.map((variant, index) => (
+              <div className="variant-edit-row" key={index}>
+                <input
+                  onChange={(event) => updateVariantRow(index, "size", event.target.value)}
+                  placeholder="المقاس: M أو 42"
+                  value={variant.size}
+                />
+                <input
+                  onChange={(event) => updateVariantRow(index, "color", event.target.value)}
+                  placeholder="اللون"
+                  value={variant.color}
+                />
+                <input
+                  min="0"
+                  onChange={(event) => updateVariantRow(index, "quantity", event.target.value)}
+                  placeholder="الكمية"
+                  type="number"
+                  value={variant.quantity}
+                />
+                <button onClick={() => removeVariantRow(index)} type="button">حذف</button>
+              </div>
+            ))}
+            {productVariants.length > 0 && (
+              <small>الكمية الكلية تُحسب تلقائيًا من جميع الخيارات.</small>
+            )}
+          </div>
 
           <label>
             نسبة الخصم
@@ -702,6 +774,9 @@ export function MerchantDashboard({
                       <span>{product.originalPrice ?? product.price}</span>
                     )}
                     {hasLowStock && <small className="low-stock-note">تنبيه: الكمية قليلة</small>}
+                    {product.variants?.length > 0 && (
+                      <small>{product.variants.map(formatVariantLabel).join("، ")}</small>
+                    )}
                   </div>
                   <div>
                     <small>الكمية</small>
@@ -1198,7 +1273,11 @@ function getOrderItemCount(items) {
 }
 
 function formatOrderPrepItems(items) {
-  return items.map((item) => `${item.name} × ${item.quantity}`).join("، ")
+  return items
+    .map((item) =>
+      `${item.name}${item.variantLabel ? ` (${item.variantLabel})` : ""} × ${item.quantity}`,
+    )
+    .join("، ")
 }
 
 function getMerchantOrderSummary(orders) {
@@ -1492,6 +1571,11 @@ function getAverageRating(reviews, field) {
 
 function renderStars(rating) {
   return "★".repeat(Number(rating)) + "☆".repeat(5 - Number(rating))
+}
+
+function formatVariantLabel(variant) {
+  const option = [variant.size, variant.color].filter(Boolean).join(" / ")
+  return `${option}: ${variant.quantity}`
 }
 
 function getReturnStatusLabel(status) {

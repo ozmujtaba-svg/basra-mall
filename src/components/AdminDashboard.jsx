@@ -1998,7 +1998,11 @@ export function AdminDashboard({
 }
 
 function formatOrderItems(items) {
-  return items.map((item) => `${item.name} × ${item.quantity}`).join("، ")
+  return items
+    .map((item) =>
+      `${item.name}${item.variantLabel ? ` (${item.variantLabel})` : ""} × ${item.quantity}`,
+    )
+    .join("، ")
 }
 
 function formatProjectSummaryText(projectSummary, lastSaveTime) {

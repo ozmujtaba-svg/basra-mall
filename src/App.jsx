@@ -1001,10 +1001,15 @@ function App() {
     const availableProduct = stores
       .find((store) => store.name === storeName)
       ?.products.find((item) => item.name === product.name)
-    const availableQuantity = Number(availableProduct?.quantity)
+    const availableVariant = product.variantId
+      ? availableProduct?.variants?.find(
+          (variant) => String(variant.id) === String(product.variantId),
+        )
+      : null
+    const availableQuantity = Number(availableVariant?.quantity ?? availableProduct?.quantity)
     const productStatus = availableProduct?.status ?? "متوفر"
     const currentCartItem = cartItems.find(
-      (item) => item.store === storeName && item.name === product.name,
+      (item) => isSameCartItem(item, { ...product, store: storeName }),
     )
     const cartQuantity = currentCartItem?.quantity ?? 0
 
@@ -1052,12 +1057,12 @@ function App() {
 
     setCartItems((items) => {
       const existingItem = items.find(
-        (item) => item.store === storeName && item.name === product.name,
+        (item) => isSameCartItem(item, { ...product, store: storeName }),
       )
 
       if (existingItem) {
         return items.map((item) =>
-          item.store === storeName && item.name === product.name
+          isSameCartItem(item, { ...product, store: storeName })
             ? { ...item, quantity: item.quantity + 1 }
             : item,
         )
@@ -1124,7 +1129,12 @@ function App() {
     const stockItem = stores
       .find((store) => store.name === itemToUpdate.store)
       ?.products.find((product) => product.name === itemToUpdate.name)
-    const availableQuantity = Number(stockItem?.quantity)
+    const stockVariant = itemToUpdate.variantId
+      ? stockItem?.variants?.find(
+          (variant) => String(variant.id) === String(itemToUpdate.variantId),
+        )
+      : null
+    const availableQuantity = Number(stockVariant?.quantity ?? stockItem?.quantity)
     const productStatus = stockItem?.status ?? "متوفر"
 
     if (productStatus === "مخفي مؤقتًا" || productStatus === "نفد") {
@@ -1141,7 +1151,7 @@ function App() {
 
     setCartItems((items) =>
       items.map((item) =>
-        item.store === itemToUpdate.store && item.name === itemToUpdate.name
+        isSameCartItem(item, itemToUpdate)
           ? { ...item, quantity: item.quantity + 1 }
           : item,
       ),
@@ -1153,7 +1163,7 @@ function App() {
     setCartItems((items) =>
       items
         .map((item) =>
-          item.store === itemToUpdate.store && item.name === itemToUpdate.name
+          isSameCartItem(item, itemToUpdate)
             ? { ...item, quantity: item.quantity - 1 }
             : item,
         )
@@ -1164,9 +1174,7 @@ function App() {
 
   function removeCartItem(itemToRemove) {
     setCartItems((items) =>
-      items.filter(
-        (item) => item.store !== itemToRemove.store || item.name !== itemToRemove.name,
-      ),
+      items.filter((item) => !isSameCartItem(item, itemToRemove)),
     )
     setOrderMessage("")
   }
@@ -1180,16 +1188,23 @@ function App() {
         .find((store) => store.name === orderItem.store)
         ?.products.find((product) => product.name === orderItem.name)
       const availableQuantity = Number(stockItem?.quantity)
+      const stockVariant = orderItem.variantId
+        ? stockItem?.variants?.find(
+            (variant) => String(variant.id) === String(orderItem.variantId),
+          )
+        : null
+      const itemAvailableQuantity = Number(stockVariant?.quantity ?? availableQuantity)
       const productStatus = stockItem?.status ?? "متوفر"
       const cartQuantity =
-        cartItems.find((item) => item.store === orderItem.store && item.name === orderItem.name)
+        cartItems.find((item) => isSameCartItem(item, orderItem))
           ?.quantity ?? 0
 
       if (
         !stockItem ||
         productStatus === "مخفي مؤقتًا" ||
         productStatus === "نفد" ||
-        (Number.isFinite(availableQuantity) && cartQuantity + orderItem.quantity > availableQuantity)
+        (Number.isFinite(itemAvailableQuantity) &&
+          cartQuantity + orderItem.quantity > itemAvailableQuantity)
       ) {
         unavailableItems.push(orderItem.name)
         return
@@ -1262,12 +1277,18 @@ function App() {
         .find((store) => store.name === cartItem.store)
         ?.products.find((product) => product.name === cartItem.name)
       const availableQuantity = Number(stockItem?.quantity)
+      const stockVariant = cartItem.variantId
+        ? stockItem?.variants?.find(
+            (variant) => String(variant.id) === String(cartItem.variantId),
+          )
+        : null
+      const itemAvailableQuantity = Number(stockVariant?.quantity ?? availableQuantity)
       const productStatus = stockItem?.status ?? "متوفر"
 
       return (
         productStatus === "مخفي مؤقتًا" ||
         productStatus === "نفد" ||
-        (Number.isFinite(availableQuantity) && cartItem.quantity > availableQuantity)
+        (Number.isFinite(itemAvailableQuantity) && cartItem.quantity > itemAvailableQuantity)
       )
     })
 
@@ -1330,20 +1351,32 @@ function App() {
       const updatedStores = currentStores.map((store) => ({
         ...store,
         products: store.products.map((product) => {
-          const orderedItem = cartItems.find(
+          const orderedItems = cartItems.filter(
             (item) => item.store === store.name && item.name === product.name,
           )
           const currentQuantity = Number(product.quantity)
 
-          if (!orderedItem || !Number.isFinite(currentQuantity)) {
+          if (orderedItems.length === 0 || !Number.isFinite(currentQuantity)) {
             return product
           }
+          const orderedQuantity = orderedItems.reduce(
+            (total, item) => total + item.quantity,
+            0,
+          )
 
           return {
             ...product,
-            quantity: Math.max(currentQuantity - orderedItem.quantity, 0),
+            variants: product.variants?.map((variant) => {
+              const variantItem = orderedItems.find(
+                (item) => String(item.variantId) === String(variant.id),
+              )
+              return variantItem
+                ? { ...variant, quantity: Math.max(variant.quantity - variantItem.quantity, 0) }
+                : variant
+            }),
+            quantity: Math.max(currentQuantity - orderedQuantity, 0),
             status:
-              Math.max(currentQuantity - orderedItem.quantity, 0) === 0 ? "نفد" : product.status,
+              Math.max(currentQuantity - orderedQuantity, 0) === 0 ? "نفد" : product.status,
           }
         }),
       }))
@@ -1862,6 +1895,7 @@ function App() {
       originalPrice: `${Number(product.price).toLocaleString("en-US")} د.ع`,
       discountPercent: Number(product.discountPercent ?? 0),
       discountEndsAt: product.discountEndsAt ?? "",
+      variants: product.variants ?? [],
       quantity: product.quantity,
       image: product.image || categoryImages[storeCategory],
       status: Number(product.quantity) === 0 ? "نفد" : product.status || "متوفر",
@@ -1914,6 +1948,7 @@ function App() {
       originalPrice: `${Number(product.price).toLocaleString("en-US")} د.ع`,
       discountPercent: Number(product.discountPercent ?? 0),
       discountEndsAt: product.discountEndsAt ?? "",
+      variants: product.variants ?? [],
       quantity: product.quantity,
       image: product.image || categoryImages[storeCategory],
       status: Number(product.quantity) === 0 ? "نفد" : product.status || "متوفر",
@@ -2776,6 +2811,14 @@ function calculateCouponDiscount(coupon, subtotal) {
       ? Math.round(subtotal * coupon.discountValue / 100)
       : coupon.discountValue
   return Math.min(discount, subtotal)
+}
+
+function isSameCartItem(firstItem, secondItem) {
+  return (
+    firstItem.store === secondItem.store &&
+    firstItem.name === secondItem.name &&
+    String(firstItem.variantId ?? "") === String(secondItem.variantId ?? "")
+  )
 }
 
 function normalizeCustomerInfo(info, fallback) {

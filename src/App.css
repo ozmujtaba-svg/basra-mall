@@ -3676,6 +3676,45 @@ button span {
   font-weight: 800;
 }
 
+.product-variants-editor {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #d8e3df;
+  border-radius: 14px;
+  background: #f8fbfa;
+}
+
+.product-variants-editor > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+}
+
+.variant-edit-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 110px auto;
+  gap: 8px;
+}
+
+.customer-variant-select {
+  display: grid;
+  gap: 5px;
+  margin-top: 8px;
+  font-size: 0.85rem;
+}
+
+.customer-variant-select select {
+  max-width: 100%;
+}
+
+@media (max-width: 650px) {
+  .variant-edit-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 .merchant-order-alert {
   display: grid;
   grid-template-columns: 1fr auto;

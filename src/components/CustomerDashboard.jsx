@@ -54,6 +54,7 @@ export function CustomerDashboard({
   const [reviewMessage, setReviewMessage] = useState("")
   const [returnDrafts, setReturnDrafts] = useState({})
   const [returnMessage, setReturnMessage] = useState("")
+  const [productVariantSelections, setProductVariantSelections] = useState({})
   const safeSelectedStore = useMemo(
     () =>
       selectedStore ?? stores[0] ?? {
@@ -333,7 +334,18 @@ export function CustomerDashboard({
             </div>
           ) : (
             filteredProducts.map((product) => {
-              const quantity = Number(product.quantity)
+              const availableVariants = (product.variants ?? []).filter(
+                (variant) => Number(variant.quantity) > 0,
+              )
+              const selectedVariant =
+                availableVariants.find(
+                  (variant) =>
+                    String(variant.id) === String(productVariantSelections[product.id]),
+                ) ?? availableVariants[0]
+              const quantity =
+                availableVariants.length > 0
+                  ? Number(selectedVariant?.quantity ?? 0)
+                  : Number(product.quantity)
               const cartQuantity = getCartQuantity(cartItems, safeSelectedStore.name, product.name)
               const isSoldOut = product.status === "نفد" || quantity === 0
               const hasStock = !isSoldOut && (!Number.isFinite(quantity) || quantity > 0)
@@ -363,11 +375,43 @@ export function CustomerDashboard({
                     {hasLowStock && <small className="product-status low-stock">باقي كمية قليلة</small>}
                     {Number.isFinite(quantity) && <small>المتوفر: {quantity}</small>}
                     {cartQuantity > 0 && <small>بالسلة: {cartQuantity}</small>}
+                    {availableVariants.length > 0 && (
+                      <label className="customer-variant-select">
+                        المقاس واللون
+                        <select
+                          onChange={(event) =>
+                            setProductVariantSelections((current) => ({
+                              ...current,
+                              [product.id]: event.target.value,
+                            }))
+                          }
+                          value={selectedVariant?.id ?? ""}
+                        >
+                          {availableVariants.map((variant) => (
+                            <option key={variant.id} value={variant.id}>
+                              {formatVariantLabel(variant)} — متوفر {variant.quantity}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
                   </div>
                   <button
                     className="add-button"
                     disabled={disabled}
-                    onClick={() => onAddToCart(product, safeSelectedStore)}
+                    onClick={() =>
+                      onAddToCart(
+                        selectedVariant
+                          ? {
+                              ...product,
+                              selectedVariant,
+                              variantId: selectedVariant.id,
+                              variantLabel: formatVariantLabel(selectedVariant),
+                            }
+                          : product,
+                        safeSelectedStore,
+                      )
+                    }
                   >
                     {!hasStock ? "غير متاح للشراء" : reachedLimit ? "وصلت للكمية المتوفرة" : "إضافة للسلة"}
                   </button>
@@ -419,6 +463,7 @@ export function CustomerDashboard({
                 <div>
                   <strong>{item.name}</strong>
                   <small>{item.store}</small>
+                  {item.variantLabel && <small>{item.variantLabel}</small>}
                   <span>{item.price}</span>
                 </div>
                 <div className="cart-controls">
@@ -1182,6 +1227,10 @@ function getReturnStatusLabel(status) {
 
 function renderStars(rating) {
   return "★".repeat(Number(rating)) + "☆".repeat(5 - Number(rating))
+}
+
+function formatVariantLabel(variant) {
+  return [variant.size, variant.color].filter(Boolean).join(" / ")
 }
 
 function calculateCartCouponDiscount(items, coupon) {

@@ -3,7 +3,7 @@ import { supabase } from "./supabase"
 export async function fetchMarketplaceStores() {
   const { data, error } = await supabase
     .from("stores")
-    .select("*, products(*)")
+    .select("*, products(*, product_variants(*))")
     .order("created_at", { ascending: false })
 
   if (error) throw error
@@ -22,7 +22,7 @@ export async function createMarketplaceStore(store, ownerId, ownerName, ownerPho
       description: store.description,
       image_url: store.image,
     })
-    .select("*, products(*)")
+    .select("*, products(*, product_variants(*))")
     .single()
 
   if (error) throw error
@@ -46,7 +46,8 @@ export async function createMarketplaceProduct(storeId, product) {
     .single()
 
   if (error) throw error
-  return fromDatabaseProduct(data)
+  const variants = await replaceProductVariants(data.id, product.variants)
+  return fromDatabaseProduct({ ...data, product_variants: variants })
 }
 
 export async function updateMarketplaceProduct(productId, storeId, product) {
@@ -58,7 +59,8 @@ export async function updateMarketplaceProduct(productId, storeId, product) {
     .single()
 
   if (error) throw error
-  return fromDatabaseProduct(data)
+  const variants = await replaceProductVariants(productId, product.variants)
+  return fromDatabaseProduct({ ...data, product_variants: variants })
 }
 
 export async function deleteMarketplaceProduct(productId) {
@@ -109,7 +111,16 @@ function fromDatabaseStore(store, owner = {}) {
 }
 
 function fromDatabaseProduct(product) {
-  const quantity = Number(product.quantity)
+  const variants = (product.product_variants ?? []).map((variant) => ({
+    id: variant.id,
+    size: variant.size ?? "",
+    color: variant.color ?? "",
+    quantity: Number(variant.quantity),
+  }))
+  const quantity =
+    variants.length > 0
+      ? variants.reduce((total, variant) => total + variant.quantity, 0)
+      : Number(product.quantity)
   const basePrice = Number(product.price)
   const discountPercent = Number(product.discount_percent ?? 0)
   const discountEndsAt = product.discount_ends_at ?? ""
@@ -126,6 +137,7 @@ function fromDatabaseProduct(product) {
     originalPrice: `${basePrice.toLocaleString("en-US")} د.ع`,
     discountPercent,
     discountEndsAt,
+    variants,
     quantity,
     image: product.image_url,
     status: !product.is_visible ? "مخفي مؤقتًا" : quantity === 0 ? "نفد" : "متوفر",
@@ -134,16 +146,45 @@ function fromDatabaseProduct(product) {
 }
 
 function toDatabaseProduct(storeId, product) {
+  const variants = product.variants ?? []
   return {
     store_id: storeId,
     name: product.name,
     price: Number(product.price),
     discount_percent: Number(product.discountPercent ?? 0),
     discount_ends_at: product.discountEndsAt || null,
-    quantity: Number(product.quantity),
+    quantity:
+      variants.length > 0
+        ? variants.reduce((total, variant) => total + Number(variant.quantity), 0)
+        : Number(product.quantity),
     image_url: product.image || null,
     is_visible: product.status !== "مخفي مؤقتًا",
   }
+}
+
+async function replaceProductVariants(productId, variants = []) {
+  const { error: deleteError } = await supabase
+    .from("product_variants")
+    .delete()
+    .eq("product_id", productId)
+  if (deleteError) throw deleteError
+
+  if (variants.length === 0) return []
+
+  const { data, error } = await supabase
+    .from("product_variants")
+    .insert(
+      variants.map((variant) => ({
+        product_id: productId,
+        size: variant.size.trim(),
+        color: variant.color.trim(),
+        quantity: Number(variant.quantity),
+      })),
+    )
+    .select("*")
+
+  if (error) throw error
+  return data
 }
 
 function getImageExtension(contentType) {
